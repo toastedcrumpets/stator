@@ -63,8 +63,8 @@ include_directories(${PROJECT_SOURCE_DIR}/extern/eigen)
 ######### TEST TARGETS
 ######################################################################
 function(stator_test name) #Registers a unit-test
-  add_executable(${name}_exe ${CMAKE_CURRENT_SOURCE_DIR}/testing/${name}.cpp)
-  add_test(${name} ${name}_exe)
+  add_executable(${name} ${CMAKE_CURRENT_SOURCE_DIR}/testing/${name}.cpp)
+  add_test(${name} ${name})
 endfunction(stator_test)
 
 stator_test(orphan_static_list)

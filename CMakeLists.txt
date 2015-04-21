@@ -40,11 +40,24 @@ else()
   endif()
 endif()
 
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost 1.46 COMPONENTS "unit_test_framework")
+if(NOT Boost_FOUND)
+  message(STATUS "Cannot find a static installation of boost, trying a dynamic version")
+  set(Boost_USE_STATIC_LIBS OFF)
+  find_package(Boost 1.46 REQUIRED COMPONENTS "unit_test_framework")
+  if(NOT Boost_FOUND)
+    message(SEND_ERROR "Cannot find a dynamic installation of boost, failing")
+  endif()
+endif()
+include_directories(${Boost_INCLUDE_DIRS})
+link_libraries(${Boost_SYSTEM_LIBRARY})
+
 ######################################################################
 ########## HEADER DIRECTORIES
 ######################################################################
-include_directories(${PROJECT_SOURCE_DIR}/stator/)
-include_directories(${PROJECT_SOURCE_DIR}/extern/eigen/)
+include_directories(${PROJECT_SOURCE_DIR}/)
+include_directories(${PROJECT_SOURCE_DIR}/extern/eigen)
 
 ######################################################################
 ######### TEST TARGETS
@@ -54,4 +67,4 @@ function(stator_test name) #Registers a unit-test
   add_test(${name} ${name}_exe)
 endfunction(stator_test)
 
-#stator_test(polynomial)
+stator_test(orphan_static_list)

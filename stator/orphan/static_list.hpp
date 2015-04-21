@@ -19,6 +19,9 @@
 
 #pragma once
 
+// C++
+#include <cstddef>
+
 namespace stator {
 
   namespace orphan {
@@ -155,11 +158,11 @@ namespace stator {
 
     /*! \brief Access an item in a static list by index.
     */
-    template<size_t Index, typename List>
+    template<typename List, size_t Index>
     struct get_static_list_item;
 
-    template<size_t Index, typename T, T... ListItems>
-    struct get_static_list_item<Index, static_list<T, ListItems...>> {
+    template<typename T, T... ListItems, size_t Index>
+    struct get_static_list_item<static_list<T, ListItems...>, Index> {
       static_assert(Index < sizeof...(ListItems), "Index out of range!");
 
       static const T value = detail::get_static_list_item_helper<Index, 0,
@@ -180,16 +183,16 @@ namespace stator {
     /*! \brief Replace a value at a certain position of a static list by a
         different one.
     */
-    template<typename T, size_t Index, typename List, T Value>
+    template<typename T, typename List, size_t Index, T Value>
     struct replace_static_list_item;
 
     template<typename T, size_t Index, T Value>
-    struct replace_static_list_item<T, Index, static_list<T>, Value> {
+    struct replace_static_list_item<T, static_list<T>, Index, Value> {
       typedef static_list<T> type;
     };
 
-    template<typename T, size_t Index, T... ListItems, T Value>
-    struct replace_static_list_item<T, Index, static_list<T, ListItems...>,
+    template<typename T, T... ListItems, size_t Index, T Value>
+    struct replace_static_list_item<T, static_list<T, ListItems...>, Index,
       Value> {
 
       static_assert(Index < sizeof...(ListItems), "Index out of range!");
@@ -228,19 +231,31 @@ namespace stator {
       static const size_t value = sizeof...(ListItems);
     };
 
+    /*! \brief Merge two static lists into one.
+    */
+    template<typename List0, typename List1>
+    struct merge_static_lists;
+
+    template<typename T, T... ListItems0, T... ListItems1>
+    struct merge_static_lists<static_list<T, ListItems0...>, static_list<T,
+      ListItems1...>> {
+
+        typedef static_list<T, ListItems0..., ListItems1...> type;
+    };
+
     /*! \brief Split a static list at a certain index.
     */
-    template<size_t Index, typename List>
+    template<typename List, size_t Index>
     struct split_static_list;
 
-    template<size_t Index, typename T>
-    struct split_static_list<Index, static_list<T>> {
+    template<typename T, size_t Index>
+    struct split_static_list<static_list<T>, Index> {
       typedef static_list<T> first;
       typedef static_list<T> second;
     };
 
-    template<size_t Index, typename T, T... ListItems>
-    struct split_static_list<Index, static_list<T, ListItems...>> {
+    template<typename T, T... ListItems, size_t Index>
+    struct split_static_list<static_list<T, ListItems...>, Index> {
       typedef typename detail::split_static_list_helper<Index, 0,
         static_list<T>, static_list<T>, static_list<T, ListItems...>,
         Index == 0>::first first;

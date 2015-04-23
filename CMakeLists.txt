@@ -12,7 +12,7 @@ include(CTest)
 ##########   RELEASE MODE
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 ##########   DEBUG MODE
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -g")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -g -DEIGEN_INTERNAL_DEBUGGING")
 
 ######################################################################
 ########## COMPILER C++11/C++0x SUPPORT TESTS
@@ -68,3 +68,4 @@ function(stator_test name) #Registers a unit-test
 endfunction(stator_test)
 
 stator_test(orphan_static_list)
+stator_test(symbolic_generic)

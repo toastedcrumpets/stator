@@ -323,29 +323,28 @@ BOOST_AUTO_TEST_CASE( Vector_symbolic )
   const size_t testcount = 100;
   const double errlvl = 1e-10;
 
-  auto f = Vector{0,1,2} * Variable<'x'>();
-  auto g = substitution(f, Variable<'x'>() == 2);
-  std::cout << f << std::endl;
-  //std::cout << Vector{0,1,2} * 2 << std::endl;
-  std::cout << g.eval() << std::endl;
+  Vector test1 = substitution(Vector{0,1,2} * Variable<'x'>(), Variable<'x'>() == 2);
+  BOOST_CHECK(test1[0] == 0);
+  BOOST_CHECK(test1[1] == 2);
+  BOOST_CHECK(test1[2] == 4);
 
-//  //A tough test is to implement the Rodriugues formula symbolically.
-//  RNG.seed();
-//  for (size_t i(0); i < testcount; ++i)
-//    {
-//      double angle = angle_dist(RNG);
-//      Vector axis = random_unit_vec().normalized();
-//      Vector start = random_unit_vec();
-//      Vector end = Eigen::AngleAxis<double>(angle, axis) * start;
-//      
-//      Vector r = axis * axis.dot(start);
-//      auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
-//      Vector err = end - eval(f, angle);
-//      
-//      BOOST_CHECK(std::abs(err[0]) < errlvl);
-//      BOOST_CHECK(std::abs(err[1]) < errlvl);
-//      BOOST_CHECK(std::abs(err[2]) < errlvl);
-//    }
+  //A tough test is to implement the Rodriugues formula symbolically.
+  RNG.seed();
+  for (size_t i(0); i < testcount; ++i)
+    {
+      double angle = angle_dist(RNG);
+      Vector axis = random_unit_vec().normalized();
+      Vector start = random_unit_vec();
+      Vector end = Eigen::AngleAxis<double>(angle, axis) * start;
+      
+      Vector r = axis * axis.dot(start);
+      auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
+      Vector err = end - eval(f, angle);
+      
+      BOOST_CHECK(std::abs(err[0]) < errlvl);
+      BOOST_CHECK(std::abs(err[1]) < errlvl);
+      BOOST_CHECK(std::abs(err[2]) < errlvl);
+    }
 }
 
 BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )

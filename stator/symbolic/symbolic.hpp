@@ -215,8 +215,8 @@ namespace stator {
       substitution.
     */
     template<char Letter, class Arg> struct VariableSubstitution {
-      VariableSubstitution(const Arg& val):_val(val) {}
-      Arg _val;
+      VariableSubstitution(const Arg& val): _val(val) {}
+      const Arg& _val;
     };
 
     /*!\brief Symbolic representation of a variable.
@@ -291,10 +291,16 @@ namespace stator {
       expression at a given point.
       
       This implementation only applies if the term is a constant term.
+
+      We deliberately return by const reference as, if this is an
+      Eigen expression, the Eigen library may take an internal
+      reference to this object to allow delayed evaluation. By
+      returning the original object we can try to ensure its lifetime
+      is at least longer than the current expression.
     */
     template<class T, char Letter, class Arg,
 	     typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-    T substitution(const T& f, const VariableSubstitution<Letter, Arg>&)
+    const T& substitution(const T& f, const VariableSubstitution<Letter, Arg>&)
     { return f; }
 
     /*! \brief Evaluates a symbolic Variable at a given point.
@@ -303,7 +309,7 @@ namespace stator {
       substitution.
     */
     template<char Letter, class Arg>
-    Arg substitution(const Variable<Letter>& f, const VariableSubstitution<Letter, Arg>& x)
+    const Arg& substitution(const Variable<Letter>& f, const VariableSubstitution<Letter, Arg>& x)
     { return x._val; }
 
     /*! \brief Evaluates a symbolic Variable at a given point.

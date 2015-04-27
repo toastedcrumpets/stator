@@ -1,19 +1,22 @@
-/*  dynamo:- Event driven molecular dynamics simulator 
-    http://www.dynamomd.org
-    Copyright (C) 2011  Marcus N Campbell Bannerman <m.bannerman@gmail.com>
+/*
+  Copyright (C) 2015 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
-    This program is free software: you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    version 3 as published by the Free Software Foundation.
+  This file is part of stator.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  stator is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  stator is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
+
 #pragma once
 #include "stator/exception.hpp"
 #include "Eigen/Dense"
@@ -83,6 +86,38 @@ namespace stator {
       struct distribute_poly<Eigen::EigenBase<Derived>, PolyType> {
  	static const bool value = std::is_arithmetic<PolyType>::value;
       };
+
+      /*! \brief The preferred implementation of try_eval().
+
+        This takes a higher precedence to the try_eval implementation
+        below due to not requiring a conversion for the second
+        argument (if called as try_eval_imp(a, 0)).
+       */
+      template<class T>
+      auto try_eval_imp(const T& a, int) -> decltype(a.eval()) {
+        return a.eval();
+      }
+
+#define STORETYPE(A) typename std::decay<decltype(try_eval(A))>::type
+
+      /*! \brief The backup implementation of try_eval().
+        
+        This takes a lower precedence to the above try_eval due to the
+        implicit conversion from int->long for the second argument.
+       */
+      template<class T>
+      const T& try_eval_imp(const T& a, long) {
+	return a;
+      }
+    }
+
+    /*!\brief Returns the result of calling the eval() member function
+       (if available) on the passed argument, or the unmodified
+       argument (if not).
+     */
+    template<class T>
+    auto try_eval(const T& a) -> decltype(detail::try_eval_imp(a, 0)) {
+      return detail::try_eval_imp(a, 0);
     }
 
     /*! \brief Representation of Polynomial with basic algebra operations.
@@ -248,7 +283,7 @@ namespace stator {
      */
     template<class Real, size_t Order, char Letter, class Real2,
 	     typename = typename std::enable_if<std::is_arithmetic<Real2>::value>::type>
-    decltype(Real() * Real2()) substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
+    STORETYPE(Real() * Real2()) substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
     {
       //Handle the case where this is actually a constant and not a
       //Polynomial. This is free to evaluate now as Order is a
@@ -276,7 +311,7 @@ namespace stator {
 	return f[0];
       }
 
-      typedef decltype(Real() * Real2()) RetType;
+      typedef STORETYPE(Real() * Real2()) RetType;
       RetType sum = RetType();
       for(size_t i = Order; i > 0; --i)
 	sum = sum * x + f[i];
@@ -451,9 +486,9 @@ namespace stator {
     /*!\brief Addition operator for two Polynomial types. 
      */
     template<size_t M, size_t N, class Real1, class Real2, char Letter>
-    auto operator+(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<detail::max_order(M, N), decltype(poly1[0] + poly2[0]), Letter>
+    auto operator+(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<detail::max_order(M, N), STORETYPE(poly1[0] + poly2[0]), Letter>
     {
-      Polynomial<detail::max_order(M, N), decltype(poly1[0] + poly2[0]), Letter> retval(poly1);
+      Polynomial<detail::max_order(M, N), STORETYPE(poly1[0] + poly2[0]), Letter> retval(poly1);
       for (size_t i(0); i <= N; ++i)
 	retval[i] += poly2[i];
       return retval;
@@ -523,21 +558,33 @@ namespace stator {
     /*! \brief Multiplication between two Polynomial types.
      */
     template<class Real1, class Real2, size_t M, size_t N, char Letter>
-    auto operator*(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<M + N, decltype(poly1[0] * poly2[0]), Letter>
+    auto operator*(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<M + N, STORETYPE(poly1[0] * poly2[0]), Letter>
     {
-      Polynomial<M + N, decltype(poly1[0] * poly2[0]), Letter> retval;
+      Polynomial<M + N, STORETYPE(poly1[0] * poly2[0]), Letter> retval;
       for (size_t i(0); i <= N+M; ++i)
 	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
 	  retval[i] += poly1[j] * poly2[i-j];
       return retval;
     }
 
+    /*! \brief Multiplication between two Polynomial types.
+     */
+    template<class Real1, class Real2, size_t M, size_t N, char Letter>
+    auto dot(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<M + N, STORETYPE(poly1[0].dot(poly2[0])), Letter>
+    {
+      Polynomial<M + N, STORETYPE(poly1[0].dot(poly2[0])), Letter> retval;
+      for (size_t i(0); i <= N+M; ++i)
+	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
+	  retval[i] += poly1[j].dot(poly2[i-j]);
+      return retval;
+    }
+
     /*! \brief Division of a Polynomial by a constant. */
     template<class Real1, class Real2, size_t N, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
-    auto operator/(const Polynomial<N, Real1, Letter>& poly, const Real2& r) -> Polynomial<N, decltype(poly[0] / r), Letter>
+    auto operator/(const Polynomial<N, Real1, Letter>& poly, const Real2& r) -> Polynomial<N, STORETYPE(poly[0] / r), Letter>
     {
-      Polynomial<N, decltype(Real1() / Real2()), Letter> retval;
+      Polynomial<N, STORETYPE(poly[0] / r), Letter> retval;
       for (size_t i(0); i <= N; ++i)
 	retval[i] = poly[i] / r;
       return retval;
@@ -1007,7 +1054,7 @@ namespace stator {
 	  //We don't test if the polishing fails. Without established
 	  //bounds polishing is hard to do for multiple roots, so we
 	  //just accept a polished root if it is available
-	  halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, root);
+          stator::numeric::halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, root);
 	
 	roots.push_back(root);
 	std::sort(roots.begin(), roots.end());
@@ -1122,7 +1169,7 @@ namespace stator {
 	  //We don't test if the polishing fails. Without established
 	  //bounds polishing is hard to do for multiple roots, so we
 	  //just accept a polished root if it is available
-	  halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, root);
+	  stator::numeric::halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, root);
 
 	  return deflate_and_solve_polynomial(f, root);
 	}
@@ -1163,9 +1210,9 @@ namespace stator {
       //We don't test if the polishing fails. Without established
       //bounds polishing is "hard" with multiple real roots, so we
       //just accept a polished root if it is available
-      halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, roots[0]);
-      halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, roots[1]);
-      halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, roots[2]);
+      stator::numeric::halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, roots[0]);
+      stator::numeric::halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, roots[1]);
+      stator::numeric::halleys_method([&](double x){ return eval_derivatives<2>(f, x); }, roots[2]);
       
       std::sort(roots.begin(), roots.end());
       return roots;

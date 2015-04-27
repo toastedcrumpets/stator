@@ -69,3 +69,4 @@ endfunction(stator_test)
 
 stator_test(orphan_static_list)
 stator_test(symbolic_generic)
+stator_test(symbolic_polynomial)

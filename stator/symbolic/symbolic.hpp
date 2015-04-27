@@ -1,19 +1,22 @@
-/*  dynamo:- Event driven molecular dynamics simulator 
-    http://www.dynamomd.org
-    Copyright (C) 2011  Marcus N Campbell Bannerman <m.bannerman@gmail.com>
+/*
+  Copyright (C) 2015 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
-    This program is free software: you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    version 3 as published by the Free Software Foundation.
+  This file is part of stator.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  stator is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  stator is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
+
 #pragma once
 #include "Eigen/Dense"
 #include <complex>
@@ -200,10 +203,10 @@ namespace stator {
     }
     
     template<class T,
-	     typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-    T toArithmetic(T val) { return val; }
+	     typename = typename std::enable_if<std::is_arithmetic<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
+    const T& toArithmetic(const T& val) { return val; }
     
-    template<std::intmax_t n1, std::intmax_t d1, 
+    template<std::intmax_t n1, std::intmax_t d1,
     	     typename = typename std::enable_if<!(n1 % d1)>::type> 
     std::intmax_t toArithmetic(ratio<n1,d1> val) { return n1 / d1; }
     

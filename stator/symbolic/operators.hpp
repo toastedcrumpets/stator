@@ -1,19 +1,22 @@
-/*  dynamo:- Event driven molecular dynamics simulator 
-    http://www.dynamomd.org
-    Copyright (C) 2011  Marcus N Campbell Bannerman <m.bannerman@gmail.com>
+/*
+  Copyright (C) 2015 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
-    This program is free software: you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    version 3 as published by the Free Software Foundation.
+  This file is part of stator.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  stator is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  stator is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
+
 #pragma once
 
 namespace stator {
@@ -87,8 +90,8 @@ namespace stator {
 									\
     template<class LHS, class RHS, char Letter, class Arg>		\
     auto substitution(const CLASSNAME<LHS, RHS>& f, const VariableSubstitution<Letter, Arg>& x)	\
-      -> decltype(substitution(f._l, x) OP substitution(f._r, x))	\
-    { return substitution(f._l, x) OP substitution(f._r, x); }		\
+      -> decltype((substitution(f._l, x)) OP (substitution(f._r, x)))	\
+    { return (substitution(f._l, x)) OP (substitution(f._r, x)); }      \
     									\
     template<class LHS, class RHS>					\
     typename std::enable_if<!(detail::IsConstant<LHS>::value && detail::IsConstant<RHS>::value), CLASSNAME<LHS, RHS> >::type \
@@ -96,32 +99,32 @@ namespace stator {
     { return CLASSNAME<LHS, RHS>(l, r); }				\
 									\
     template<class LHS, class RHS>					\
-    auto HELPERNAME(const LHS& l, const RHS& r, detail::last_choice) -> decltype(toArithmetic(l) OP toArithmetic(r)) \
-    { return toArithmetic(l) OP toArithmetic(r); }			\
+    auto HELPERNAME(const LHS& l, const RHS& r, detail::last_choice) -> decltype((toArithmetic(l)) OP (toArithmetic(r))) \
+    { return (toArithmetic(l)) OP (toArithmetic(r)); }			\
     									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<0>) -> decltype(simplify(simplify(f._l) OP simplify(f._r))) \
-    { return simplify(simplify(f._l) OP simplify(f._r)); }			\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<0>) -> decltype((simplify(simplify(f._l)) OP (simplify(f._r)))) \
+    { return (simplify(simplify(f._l)) OP (simplify(f._r))); }          \
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<1>) -> decltype(simplify(f._l OP simplify(f._r))) \
-    { return simplify(f._l OP simplify(f._r)); }				\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<1>) -> decltype(simplify((f._l) OP (simplify(f._r)))) \
+    { return simplify((f._l) OP (simplify(f._r))); }                    \
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<2>) -> decltype(simplify(simplify(f._l) OP f._r)) \
-    { return simplify(simplify(f._l) OP f._r); }				\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<2>) -> decltype(simplify((simplify(f._l)) OP (f._r))) \
+    { return simplify((simplify(f._l)) OP (f._r)); }                    \
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<3>) -> decltype(simplify(f._l) OP simplify(f._r)) \
-    { return simplify(f._l) OP simplify(f._r); }			\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<3>) -> decltype((simplify(f._l)) OP (simplify(f._r))) \
+    { return (simplify(f._l)) OP (simplify(f._r)); }			\
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<4>) -> decltype(f._l OP simplify(f._r)) \
-    { return f._l OP simplify(f._r); }					\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<4>) -> decltype((f._l) OP (simplify(f._r))) \
+    { return (f._l) OP (simplify(f._r)); }                              \
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<5>) -> decltype(simplify(f._l) OP f._r) \
-    { return simplify(f._l) OP f._r; }				\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<5>) -> decltype((simplify(f._l)) OP (f._r)) \
+    { return (simplify(f._l)) OP (f._r); }                              \
 									\
     template<class LHS, class RHS>					\
     auto simplify(const CLASSNAME<LHS, RHS>& f) ->decltype(simplify_##HELPERNAME##_impl(f, detail::select_overload{})) \
@@ -131,29 +134,29 @@ namespace stator {
     template<class T1, class T2, class T3,				\
 	     typename = typename std::enable_if<Reorder<T2, T3>::value && !Reorder<T1, T2>::value>::type>	\
       auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<0>) \
-      -> CLASSNAME<decltype(l._r OP r), T1>				\
-    { return HELPERNAME(l._r OP r, l._l, detail::select_overload{}); }				\
+      -> CLASSNAME<decltype((l._r) OP (r)), T1>				\
+    { return HELPERNAME((l._r) OP (r), l._l, detail::select_overload{}); } \
 									\
     /*! \brief Helper function which reorders (A*B)*C to (A*C)*B operations. */	\
     template<class T1, class T2, class T3,				\
 	     typename = typename std::enable_if<Reorder<T1, T3>::value && !Reorder<T1, T2>::value && !Reorder<T2, T3>::value>::type>	\
       auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<0>)		\
-      -> CLASSNAME<decltype(l._l OP r), T2>				\
-    { return HELPERNAME(l._l OP r, l._r, detail::select_overload{}); }				\
+      -> CLASSNAME<decltype((l._l) OP (r)), T2>				\
+    { return HELPERNAME((l._l) OP (r), l._r, detail::select_overload{}); } \
     									\
     /*! \brief Helper function which reorders A*(B*C) to (A*B)*C operations. */	\
     template<class T1, class T2, class T3,				\
 	     typename = typename std::enable_if<Reorder<T1, T2>::value && !Reorder<T2, T3>::value>::type> \
       auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<0>) \
-      -> CLASSNAME<decltype(l OP r._l), T3>				\
-    { return HELPERNAME(l OP r._l, r._r, detail::select_overload{}); }	\
+      -> CLASSNAME<decltype((l) OP (r._l)), T3>				\
+    { return HELPERNAME((l) OP (r._l), r._r, detail::select_overload{}); } \
 									\
     /*! \brief Helper function which reorders A*(B*C) to (A*C)*B operations. */	\
     template<class T1, class T2, class T3,				\
 	     typename = typename std::enable_if<Reorder<T1, T3>::value  && !Reorder<T1, T2>::value  && !Reorder<T2, T3>::value>::type> \
       auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<0>) \
-      -> CLASSNAME<decltype(l OP r._r), T2>				\
-    { return HELPERNAME(l OP r._r, r._l, detail::select_overload{}); }				\
+      -> CLASSNAME<decltype((l) OP (r._r)), T2>				\
+    { return HELPERNAME((l) OP (r._r), r._l, detail::select_overload{}); } \
 									\
     template<class LHS, class RHS>					\
     inline std::ostream& operator<<(std::ostream& os, const CLASSNAME<LHS, RHS>& op) {\
@@ -165,6 +168,7 @@ namespace stator {
     CREATE_BINARY_OP(subtract, SubtractOp, -, "-")
     CREATE_BINARY_OP(multiply, MultiplyOp, *, "×")
     CREATE_BINARY_OP(divide, DivideOp, /, "÷")
+    CREATE_BINARY_OP(dot, DotOp, .dot , "•")
 
     /*! \name Symbolic algebra
       \{

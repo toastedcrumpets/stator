@@ -1,0 +1,70 @@
+/*! 
+  \namespace stator
+  
+  \brief The stator library namespace.
+
+  Although the stator namespace is used for a number of key shared
+  functionality (e.g., \ref stator::Exception), most is implemented
+  under the namespaces \ref stator::symbolic, and \ref stator::orphan.
+
+  \namespace stator::symbolic
+  
+  \brief The stator symbolic math library.
+
+  This namespace encapsulates the symbolic math functionality of
+  stator. This library allows you to perform compile-time operations
+  on mathematical expressions, as well as perform run-time
+  calculations.
+
+  \namespace stator::orphan
+  
+  \brief The stator namespace for additional functionality without a
+  particular grouping.
+
+  \mainpage stator API documentation
+
+  stator is a header-only C++11 library. It builds upon the Eigen
+  library (http://eigen.tuxfamily.org/), and to use it you must have
+  both added to your include path:
+  
+  \code{.unparsed}
+  g++ -I /path/to/stator/folder -I /path/to/Eigen/folder
+  \endcode
+
+  The library uses a range of advanced techniques to provide
+  interesting mathematical capability. For example, here is an
+  introduction to the stator::symbolic functionality :
+  
+  // \code{.cpp}
+#include <stator/symbolic/symbolic.hpp>
+  
+int main() {
+  //We can create mathematical expressions using Variables
+  stator::symbolic::Variable<'x'> x;
+  auto f = x * x * (1.5 + 2 * x) + 3 * x;
+  
+  //We can print these statements
+  std::cout << f << std::endl;
+  //output: (((x)^2) × ((1.5) + ((2) × (x)))) + ((3) × (x))
+
+  //Simplification finds better/more efficient representations 
+  auto g = stator::symbolic::simplify(f);
+  std::cout << g << std::endl;
+  //output: 2 × x³ + 1.5 × x² + 3 × x
+
+  //We can do simple things like substitutions to either evaluate the
+  //function:
+  std::cout << stator::symbolic::substitution(g, x == 2) << std::endl;
+  //output: 28
+
+  //Or perform a symbolic substitution
+  std::cout << stator::symbolic::simplify(substitution(g, x == x + 2)) << std::endl;
+  //output: 2 × x³ + 13.5 × x² + 33 × x + 28
+
+  //And even perform analysis of the function to find there is only
+  //one real root at x=0:
+  std::cout << stator::symbolic::solve_real_roots(g) << std::endl;
+  //output: StackVector{ 0 }
+}
+  \endcode
+*/

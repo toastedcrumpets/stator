@@ -126,27 +126,6 @@ namespace stator {
     //Removal of sign via abs on compile-time constants!
     template<std::intmax_t num, std::intmax_t den>
     constexpr ratio<(num >= 0) ? num : -num, den> abs(const ratio<num, den>&) { return ratio<(num >= 0) ? num : -num, den>(); }
-
-//    /*! \brief Simplify multiplication and addition operations. */
-//    template<class LHS1, class RHS1, class RHS>
-//    auto simplify(const MultiplyOp<AddOp<LHS1, RHS1>, RHS>& f)
-//      -> decltype(simplify(f._l._l * f._r + f._l._r * f._r)) {
-//      return simplify(f._l._l * f._r + f._l._r * f._r);
-//    }
-//
-//    /*! \brief Simplify multiplication and addition operations. */
-//    template<class LHS1, class RHS1, class RHS>
-//    auto simplify(const MultiplyOp<RHS, AddOp<LHS1, RHS1> >& f)
-//      -> decltype(simplify(f._l * f._r._l + f._l * f._r._r)) {
-//      return simplify(f._l * f._r._l + f._l * f._r._r);
-//    }
-//
-//    /*! \brief Simplify multiplication and addition operations. */
-//    template<class LHS1, class RHS1, class LHS2, class RHS2>
-//    auto simplify(const MultiplyOp<AddOp<LHS1, RHS1>,  AddOp<LHS2, RHS2> >& f)
-//      -> decltype(simplify(f._l._l * f._r._l + f._l._l * f._r._r + f._l._r * f._r._l + f._l._r * f._r._r)) {
-//      return simplify(f._l._l * f._r._l + f._l._l * f._r._r + f._l._r * f._r._l + f._l._r * f._r._r);
-//    }
     
     namespace detail {
       template<class T>

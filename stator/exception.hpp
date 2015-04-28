@@ -27,7 +27,8 @@
   throw stator::Exception(__LINE__,__FILE__, __func__)
 
 namespace stator {
-  /*! \brief An exception class that works like a stream object.
+  /*! \brief An exception class that also appears to function like an
+      ostream object.
 
     This class is thrown using the stator_throw() macro like so :-
 

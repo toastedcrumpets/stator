@@ -587,9 +587,11 @@ namespace stator {
     auto dot(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<M + N, STORETYPE(poly1[0].dot(poly2[0])), Letter>
     {
       Polynomial<M + N, STORETYPE(poly1[0].dot(poly2[0])), Letter> retval;
-      for (size_t i(0); i <= N+M; ++i)
+      for (size_t i(0); i <= N+M; ++i) {
+	retval[i] = STORETYPE(poly1[0].dot(poly2[0]))::setZero();
 	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
 	  retval[i] += poly1[j].dot(poly2[i-j]);
+      }
       return retval;
     }
 

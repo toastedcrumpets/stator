@@ -1,3 +1,4 @@
+/*! @file */
 /*
   Copyright (C) 2015 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
@@ -98,8 +99,6 @@ namespace stator {
         return a.eval();
       }
 
-#define STORETYPE(A) typename std::decay<decltype(try_eval(A))>::type
-
       /*! \brief The backup implementation of try_eval().
         
         This takes a lower precedence to the above try_eval due to the
@@ -119,6 +118,21 @@ namespace stator {
     auto try_eval(const T& a) -> decltype(detail::try_eval_imp(a, 0)) {
       return detail::try_eval_imp(a, 0);
     }
+
+/*! Determine the type used to store the result of an expression.
+  
+  This Macro handles everything, including Eigen expressions, and
+  returns an appropriate type to store the results of the expression
+  A. Example usage is:
+  
+  \code{.cpp}
+  STORETYPE(A.dot(B) + C) val = A.dot(B) + C;
+  \endcode
+
+  This macro is often used to determine the coefficient type of a
+  Polynomial class.
+*/
+#define STORETYPE(A) typename std::decay<decltype(try_eval(A))>::type
 
     /*! \brief Representation of Polynomial with basic algebra operations.
 

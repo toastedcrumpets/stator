@@ -97,6 +97,7 @@ namespace stator {
       size_t _size;
     };
 
+    /*! Output operator for pretty printing StackVector classes. */
     template<class T, size_t Nmax>
     std::ostream& operator<<(std::ostream& os, const StackVector<T,Nmax>&s) {
       os << "StackVector{ ";
@@ -106,6 +107,7 @@ namespace stator {
       return os;
     }
 
+    /*! Output operator for pretty printing StackVector classes containing pairs. */
     template<class T1, class T2, size_t Nmax>
     std::ostream& operator<<(std::ostream& os, const StackVector<std::pair<T1,T2>,Nmax>&s) {
       os << "StackVector{ ";

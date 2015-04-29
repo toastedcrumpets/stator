@@ -581,6 +581,13 @@ namespace stator {
       return retval;
     }
 
+    template<class T,
+	     typename = typename std::enable_if<!std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
+    void setZero(T& val) { val = T(); }
+
+    template<class T>
+    typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type setZero(T& val) { val.setZero(); }
+
     /*! \brief Multiplication between two Polynomial types.
      */
     template<class Real1, class Real2, size_t M, size_t N, char Letter>
@@ -588,7 +595,7 @@ namespace stator {
     {
       Polynomial<M + N, STORETYPE(poly1[0].dot(poly2[0])), Letter> retval;
       for (size_t i(0); i <= N+M; ++i) {
-	retval[i] = STORETYPE(poly1[0].dot(poly2[0]))::setZero();
+	setZero(retval[i]);
 	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
 	  retval[i] += poly1[j].dot(poly2[i-j]);
       }

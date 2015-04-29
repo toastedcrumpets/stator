@@ -16,6 +16,51 @@
   on mathematical expressions, as well as perform run-time
   calculations.
 
+For example:
+  // \code{.cpp}
+#include <stator/symbolic/symbolic.hpp>
+  
+int main() {
+  using namespace stator::symbolic;
+  //We can create mathematical expressions using Variables
+  Variable<'x'> x;
+  auto f = x * x * (1.5 + 2 * x) - 3 * x;
+  
+  //We can print these statements
+  std::cout << f << std::endl;
+  //output: (((x)^2) × ((1.5) + ((2) × (x)))) - ((3) × (x))
+
+  //Simplification finds better/more efficient representations 
+  auto simplef = simplify(f);
+  std::cout << simplef << std::endl;
+  //output: 2 × x³ + 1.5 × x² + -3 × x
+
+  //We can do simple things like substitutions to either evaluate the
+  //function
+  std::cout << substitution(simplef, x == 2) << std::endl;
+  //output: 16
+
+  //Or perform a symbolic substitution
+  std::cout << simplify(substitution(simplef, x == x + 2)) << std::endl;
+  //output: 2 × x³ + 13.5 × x² + 27 × x + 16
+
+  //And even perform analysis of the function to determine the real
+  //roots:
+  std::cout << solve_real_roots(simplef) << std::endl;
+  //output: StackVector{ -1.65587 0 0.905869 }
+
+  //The analysis is not limited to root finding of real polynomials,
+  //we can take derivatives
+  std::cout << simplify(derivative(4 * x * cos(2*x+2), x)) << std::endl;
+  //output: ((4) × (cos(2 × x + 2))) + ((-8 × x) × (sin(2 × x + 2)))
+  
+  //We can perform a 5th order Taylor expansion about zero in x
+  std::cout << taylor_series<5>(4 * x * cos(2*x+2), 0.0, x) << std::endl;
+  //output: -1.10972 × x^5 + 4.84959 × x^4 + 3.32917 × x³ + -7.27438 × x² + -1.66459 × x
+}
+  \endcode
+
+
   \namespace stator::orphan
   
   \brief The stator namespace for additional functionality without a
@@ -34,37 +79,4 @@
   The library uses a range of advanced techniques to provide
   interesting mathematical capability. For example, here is an
   introduction to the stator::symbolic functionality :
-  
-  // \code{.cpp}
-#include <stator/symbolic/symbolic.hpp>
-  
-int main() {
-  //We can create mathematical expressions using Variables
-  stator::symbolic::Variable<'x'> x;
-  auto f = x * x * (1.5 + 2 * x) + 3 * x;
-  
-  //We can print these statements
-  std::cout << f << std::endl;
-  //output: (((x)^2) × ((1.5) + ((2) × (x)))) + ((3) × (x))
-
-  //Simplification finds better/more efficient representations 
-  auto g = stator::symbolic::simplify(f);
-  std::cout << g << std::endl;
-  //output: 2 × x³ + 1.5 × x² + 3 × x
-
-  //We can do simple things like substitutions to either evaluate the
-  //function:
-  std::cout << stator::symbolic::substitution(g, x == 2) << std::endl;
-  //output: 28
-
-  //Or perform a symbolic substitution
-  std::cout << stator::symbolic::simplify(substitution(g, x == x + 2)) << std::endl;
-  //output: 2 × x³ + 13.5 × x² + 33 × x + 28
-
-  //And even perform analysis of the function to find there is only
-  //one real root at x=0:
-  std::cout << stator::symbolic::solve_real_roots(g) << std::endl;
-  //output: StackVector{ 0 }
-}
-  \endcode
 */

@@ -249,11 +249,6 @@ namespace stator {
 	static const bool value = std::is_arithmetic<T>::value || IsSymbolicConstant<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value;
       };
 
-      template<class Derived>
-      struct IsConstant<Eigen::MatrixBase<Derived> > {
-	static const bool value = true;
-      };
-
       template<class T>
       struct IsConstant<std::complex<T> > {
 	static const bool value = IsConstant<T>::value;
@@ -268,8 +263,13 @@ namespace stator {
       constructors create the empty sum.
     */
     template<class T>
-    constexpr auto empty_sum(const T&) -> typename std::enable_if<detail::IsConstant<T>::value, T>::type { 
+    typename std::enable_if<detail::IsConstant<T>::value && !std::is_base_of<Eigen::EigenBase<T>, T>::value, T>::type empty_sum(const T&) {
       return T();
+    }
+
+    template<class T>
+    typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value, T>::type empty_sum(const T&) {
+      return T::Zero();
     }
 
     /*! \brief Evaluates a symbolic expression by substituting a
@@ -481,7 +481,7 @@ namespace stator {
         expression.
      */
     template<size_t Order, char Letter, class F, class Real>
-    auto taylor_series(const F& f, Real a) -> decltype(try_simplify(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a)))
+    auto taylor_series(const F& f, Real a, Variable<Letter>) -> decltype(try_simplify(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a)))
     { return try_simplify(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a)); }
   }
 }

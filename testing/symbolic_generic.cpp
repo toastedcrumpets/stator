@@ -281,33 +281,31 @@ BOOST_AUTO_TEST_CASE( taylor_series_test )
   Variable<'y'> y;
 
   //Simplifying in the wrong variable
-  BOOST_CHECK(compare_expression(taylor_series<3, 'x'>(y*y*y, NullSymbol()), y*y*y));
+  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, NullSymbol(), Variable<'x'>()), y*y*y));
   
-  detail::TaylorSeriesWorker<0, 3, 'y'>::eval(y*y*y, NullSymbol());
-
   ////Simplifying PowerOp expressions into Polynomial
-  BOOST_CHECK(compare_expression(taylor_series<3, 'y'>(y*y*y, NullSymbol()), Polynomial<3,int,'y'>{0,0,0,1}));
+  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, NullSymbol(), y), Polynomial<3,int,'y'>{0,0,0,1}));
   
   //Test truncation of PowerOp expressions when the order is too high
-  BOOST_CHECK(compare_expression(taylor_series<2, 'y'>(y*y*y, NullSymbol()), NullSymbol()));
+  BOOST_CHECK(compare_expression(taylor_series<2>(y*y*y, NullSymbol(), y), NullSymbol()));
   
   //Partially truncate a Polynomial through expansion
-  BOOST_CHECK(compare_expression(taylor_series<2, 'y'>(Polynomial<3,int,'y'>{1,2,3,4}, NullSymbol()), Polynomial<2,int,'y'>{1,2,3}));
+  BOOST_CHECK(compare_expression(taylor_series<2>(Polynomial<3,int,'y'>{1,2,3,4}, NullSymbol(), y), Polynomial<2,int,'y'>{1,2,3}));
   
   //Keep the order the same
-  BOOST_CHECK(compare_expression(taylor_series<3, 'y'>(Polynomial<3,int,'y'>{1,2,3,4}, NullSymbol()), Polynomial<3,int,'y'>{1,2,3,4}));
+  BOOST_CHECK(compare_expression(taylor_series<3>(Polynomial<3,int,'y'>{1,2,3,4}, NullSymbol(), y), Polynomial<3,int,'y'>{1,2,3,4}));
   
   //Taylor simplify at a higher order
-  BOOST_CHECK(compare_expression(taylor_series<4, 'y'>(Polynomial<3,int,'y'>{1,2,3,4}, NullSymbol()), Polynomial<3,int,'y'>{1,2,3,4}));
+  BOOST_CHECK(compare_expression(taylor_series<4>(Polynomial<3,int,'y'>{1,2,3,4}, NullSymbol(), y), Polynomial<3,int,'y'>{1,2,3,4}));
   
   //Test simple Taylor expansion of sine 
-  BOOST_CHECK(compare_expression(taylor_series<6, 'y'>(sin(y), NullSymbol()), simplify((1.0/120) * y*y*y*y*y - (1.0/6) * y*y*y + y)));
-  BOOST_CHECK(compare_expression(taylor_series<8, 'y'>(sin(y*y), NullSymbol()), simplify(- (1.0/6) * y*y*y*y*y*y + y*y)));
+  BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), NullSymbol(), y), simplify((1.0/120) * y*y*y*y*y - (1.0/6) * y*y*y + y)));
+  BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), NullSymbol(), y), simplify(- (1.0/6) * y*y*y*y*y*y + y*y)));
   
   //Test Taylor expansion of a complex expression at zero
-  BOOST_CHECK(compare_expression(taylor_series<3, 'x'>(sin(cos(x)+2*x*x - x + 3), NullSymbol()), (3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0)));
+  BOOST_CHECK(compare_expression(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), NullSymbol(), Variable<'x'>()), (3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0)));
   //Test Taylor expansion again at a non-zero location
-  BOOST_CHECK(compare_expression(taylor_series<3, 'x'>(sin(cos(x)+2*x*x - x + 3), 3.0), 82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172));
+  BOOST_CHECK(compare_expression(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, Variable<'x'>()), 82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172));
 }
 
 BOOST_AUTO_TEST_CASE( Vector_symbolic )

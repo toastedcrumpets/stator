@@ -168,10 +168,10 @@ namespace stator {
  	This initialises all Polynomial orders to be equivalent to
  	zero.
       */
-      Polynomial() { Base::fill(Real()); }
+      Polynomial() { Base::fill(empty_sum(Real())); }
 
       Polynomial(const PowerOp<Variable<Letter>, Order>&) { 
-	Base::fill(Real());
+	Base::fill(empty_sum(Real()));
 	Base::operator[](Order) = Real(1);
       }
     
@@ -194,7 +194,7 @@ namespace stator {
  	  Base::operator[](i) = *it;
 
  	for (; i <= Order; ++i)
- 	  Base::operator[](i) = Real();
+ 	  Base::operator[](i) = empty_sum(Real());
       }
 
       template<class InputIt>
@@ -208,7 +208,7 @@ namespace stator {
 	  stator_throw() << "Polynomial type too short to hold this range of coefficients";
 
  	for (; i <= Order; ++i)
- 	  Base::operator[](i) = Real();
+ 	  Base::operator[](i) = empty_sum(Real());
       }
 
       /*! \brief Constructor for constructing higher-order Polynomial
@@ -221,7 +221,7 @@ namespace stator {
  	for (; i <= N; ++i)
  	  Base::operator[](i) = poly[i];
  	for (; i <= Order; ++i)
- 	  Base::operator[](i) = Real();
+ 	  Base::operator[](i) = empty_sum(Real());
       }
 
       /*! \brief Unary negative operator to change the sign of a Polynomial. */
@@ -385,7 +385,7 @@ namespace stator {
     std::array<Real, D+1> eval_derivatives(const Polynomial<Order, Real, Letter>& f, const Real2& x)
     {
       std::array<Real, D+1> retval;
-      retval.fill(Real());
+      retval.fill(empty_sum(Real()));
       retval[0] = f[Order];
       for (size_t i(Order); i>0; --i) {
 	for (size_t j = std::min(D, Order-(i-1)); j>0; --j)
@@ -464,9 +464,9 @@ namespace stator {
       typedef std::tuple<Polynomial<Order1, Real, Letter>, Polynomial<0, Real, Letter> > RetType;
       if (g[0] == 0)
 	return RetType(Polynomial<Order1, Real, Letter>{std::numeric_limits<Real>::infinity()}, 
-		       Polynomial<0, Real, Letter>{Real()});
+		       Polynomial<0, Real, Letter>{empty_sum(Real())});
 
-      return RetType(f * (1.0 / g[0]), Polynomial<0, Real, Letter>{Real()});
+      return RetType(f * (1.0 / g[0]), Polynomial<0, Real, Letter>{empty_sum(Real())});
     }
 
     /*! \brief Right-handed addition operation on a Polynomial.
@@ -581,13 +581,6 @@ namespace stator {
       return retval;
     }
 
-    template<class T,
-	     typename = typename std::enable_if<!std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
-    void setZero(T& val) { val = T(); }
-
-    template<class T>
-    typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type setZero(T& val) { val.setZero(); }
-
     /*! \brief Multiplication between two Polynomial types.
      */
     template<class Real1, class Real2, size_t M, size_t N, char Letter>
@@ -595,7 +588,7 @@ namespace stator {
     {
       Polynomial<M + N, STORETYPE(poly1[0].dot(poly2[0])), Letter> retval;
       for (size_t i(0); i <= N+M; ++i) {
-	setZero(retval[i]);
+	retval[i] = empty_sum(retval[i]);
 	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
 	  retval[i] += poly1[j].dot(poly2[i-j]);
       }
@@ -747,7 +740,7 @@ namespace stator {
       if (t == 0) return f;
 
       Polynomial<Order, double, Letter> retval;
-      retval.fill(Real());
+      retval.fill(empty_sum(Real()));
       retval[0] = f[Order];
       for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)
@@ -766,7 +759,7 @@ namespace stator {
     template<size_t Order, class Real, char Letter>
     inline Polynomial<Order, Real, Letter> shift_function(const Polynomial<Order, Real, Letter>& f, UnitySymbol) {
       Polynomial<Order, Real, Letter> retval;
-      retval.fill(Real());
+      retval.fill(empty_sum(Real()));
       retval[0] = f[Order];
       for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)
@@ -817,7 +810,7 @@ namespace stator {
     template<size_t Order, class Real, char Letter>
     inline Polynomial<Order, Real, Letter> invert_taylor_shift(const Polynomial<Order, Real, Letter>& f) {
       Polynomial<Order, Real, Letter> retval;
-      retval.fill(Real());
+      retval.fill(empty_sum(Real()));
       retval[0] = f[0];
       for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)

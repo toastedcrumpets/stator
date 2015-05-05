@@ -477,9 +477,10 @@ namespace stator {
       };
     }
 
-    /*! \brief Generate a Taylor series representation of a Symbolic
-        expression.
-     */
+    /*! \function taylor_series
+      \brief Generate a Taylor series representation of a Symbolic
+      expression.
+    */
     template<size_t Order, char Letter, class F, class Real>
     auto taylor_series(const F& f, Real a, Variable<Letter>) -> decltype(try_simplify(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a)))
     { return try_simplify(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a)); }

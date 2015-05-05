@@ -20,7 +20,7 @@
 
 #pragma once
 #include "stator/exception.hpp"
-#include "Eigen/Dense"
+#include "stator/config.hpp"
 #include "stator/symbolic/numeric.hpp"
 #include <boost/math/tools/roots.hpp>
 #include <stdexcept>
@@ -108,7 +108,7 @@ namespace stator {
       const T& try_eval_imp(const T& a, long) {
 	return a;
       }
-    }
+    } // namespace detail
 
     /*!\brief Returns the result of calling the eval() member function
        (if available) on the passed argument, or the unmodified
@@ -215,7 +215,7 @@ namespace stator {
           types from lower order Polynomial types. 
       */
       template<size_t N, class Real2,
-	       typename = typename std::enable_if<N <= Order>::type >
+	       typename = typename std::enable_if<(N <= Order)>::type >
 	       Polynomial(const Polynomial<N, Real2, Letter>& poly) {
  	size_t i(0);
  	for (; i <= N; ++i)
@@ -1685,9 +1685,9 @@ namespace stator {
 	VAS_real_root_bounds_worker function. A mobius transformation is
 	the following function:
 	
-	\[
+	\$
 	M(x) = \frac{a\,x+b}{c\,x+d}
-	\]
+	\$
 
 	This allows a polynomial to be transformed and (provided the
 	Mobius transformation has the same operations applied to it)
@@ -1885,14 +1885,14 @@ namespace stator {
     }
     
     /*! \brief Enumeration of the types of root bounding methods we
-        have for \ref solve_real_roots_poly. 
+        have for \ref solve_real_roots. 
     */
     enum class  PolyRootBounder {
       VCA, VAS, STURM
     };
 
     /*! \brief Enumeration of the types of bisection routines we have
-        for \ref solve_real_roots_poly. */
+        for \ref solve_real_roots. */
     enum class  PolyRootBisector {
       BISECTION, TOMS748
     };
@@ -2135,7 +2135,7 @@ namespace stator {
       std::sort(roots.begin(), roots.end());
       return roots;
     }
-
     /*! \endcond \} */
-  }
-}
+
+  } // namespace symbolic
+} // namespace stator

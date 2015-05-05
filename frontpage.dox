@@ -1,71 +1,4 @@
 /*! 
-  \namespace stator
-  
-  \brief The stator library namespace.
-
-  Although the stator namespace is used for a number of key shared
-  functionality (e.g., \ref stator::Exception), most is implemented
-  under the namespaces \ref stator::symbolic, and \ref stator::orphan.
-
-  \namespace stator::symbolic
-  
-  \brief The stator symbolic math library.
-
-  This namespace encapsulates the symbolic math functionality of
-  stator. This library allows you to perform compile-time operations
-  on mathematical expressions, as well as perform run-time
-  calculations.
-
-For example:
-  // \code{.cpp}
-#include <stator/symbolic/symbolic.hpp>
-  
-int main() {
-  using namespace stator::symbolic;
-  //We can create mathematical expressions using Variables
-  Variable<'x'> x;
-  auto f = x * x * (1.5 + 2 * x) - 3 * x;
-  
-  //We can print these statements
-  std::cout << f << std::endl;
-  //output: (((x)^2) × ((1.5) + ((2) × (x)))) - ((3) × (x))
-
-  //Simplification finds better/more efficient representations 
-  auto simplef = simplify(f);
-  std::cout << simplef << std::endl;
-  //output: 2 × x³ + 1.5 × x² + -3 × x
-
-  //We can do simple things like substitutions to either evaluate the
-  //function
-  std::cout << substitution(simplef, x == 2) << std::endl;
-  //output: 16
-
-  //Or perform a symbolic substitution
-  std::cout << simplify(substitution(simplef, x == x + 2)) << std::endl;
-  //output: 2 × x³ + 13.5 × x² + 27 × x + 16
-
-  //And even perform analysis of the function to determine the real
-  //roots:
-  std::cout << solve_real_roots(simplef) << std::endl;
-  //output: StackVector{ -1.65587 0 0.905869 }
-
-  //The analysis is not limited to root finding of real polynomials,
-  //we can take derivatives
-  std::cout << simplify(derivative(4 * x * cos(2*x+2), x)) << std::endl;
-  //output: ((4) × (cos(2 × x + 2))) + ((-8 × x) × (sin(2 × x + 2)))
-  
-  //We can perform a 5th order Taylor expansion about zero in x
-  std::cout << taylor_series<5>(4 * x * cos(2*x+2), 0.0, x) << std::endl;
-  //output: -1.10972 × x^5 + 4.84959 × x^4 + 3.32917 × x³ + -7.27438 × x² + -1.66459 × x
-}
-  \endcode
-
-
-  \namespace stator::orphan
-  
-  \brief The stator namespace for additional functionality without a
-  particular grouping.
-
   \mainpage stator API documentation
 
   stator is a header-only C++11 library. It builds upon the Eigen
@@ -80,3 +13,94 @@ int main() {
   interesting mathematical capability. For example, here is an
   introduction to the stator::symbolic functionality :
 */
+
+/*! \brief The stator library namespace.
+
+  Although the stator namespace is used for a number of key shared
+  functionality (e.g., \ref stator::Exception), most is implemented
+  under the namespaces \ref stator::symbolic, and \ref stator::orphan.
+*/
+namespace stator {
+   
+  namespace geometry {
+    /*! \brief Compute a measure (length/area/volume) of an object. 
+
+      The measure returned depends on the object. For example, a
+      CenteredSphere will return its surface area whereas a
+      CenteredBall will return its volume.
+     */
+    template<typename Obj> auto measure(const Obj&);
+  } // namespace geometry
+
+
+  /*! \namespace stator::geometry 
+
+    \brief Geometric types and algorithms for calculating properties
+    (e.g., intersection, volume).
+  */
+  namespace geometry {
+  } // namespace geometry
+  
+  /*! \namespace stator::orphan
+    \brief General functionality without a particular grouping.
+  */
+  namespace orphan {
+  } // namespace orphan
+
+  
+  /*! \namespace stator::symbolic
+    \brief The stator symbolic math library.
+    
+    This namespace encapsulates the symbolic math functionality of
+    stator. This library allows you to perform compile-time operations
+    on mathematical expressions, as well as perform run-time
+    calculations.
+
+    For example:
+    // \code{.cpp}
+    #include <stator/symbolic/symbolic.hpp>
+  
+    int main() {
+    using namespace stator::symbolic;
+    //We can create mathematical expressions using Variables
+    Variable<'x'> x;
+    auto f = x * x * (1.5 + 2 * x) - 3 * x;
+  
+    //We can print these statements
+    std::cout << f << std::endl;
+    //output: (((x)^2) × ((1.5) + ((2) × (x)))) - ((3) × (x))
+
+    //Simplification finds better/more efficient representations 
+    auto simplef = simplify(f);
+    std::cout << simplef << std::endl;
+    //output: 2 × x³ + 1.5 × x² + -3 × x
+
+    //We can do simple things like substitutions to either evaluate the
+    //function
+    std::cout << substitution(simplef, x == 2) << std::endl;
+    //output: 16
+
+    //Or perform a symbolic substitution
+    std::cout << simplify(substitution(simplef, x == x + 2)) << std::endl;
+    //output: 2 × x³ + 13.5 × x² + 27 × x + 16
+
+    //And even perform analysis of the function to determine the real
+    //roots:
+    std::cout << solve_real_roots(simplef) << std::endl;
+    //output: StackVector{ -1.65587 0 0.905869 }
+
+    //The analysis is not limited to root finding of real polynomials,
+    //we can take derivatives
+    std::cout << simplify(derivative(4 * x * cos(2*x+2), x)) << std::endl;
+    //output: ((4) × (cos(2 × x + 2))) + ((-8 × x) × (sin(2 × x + 2)))
+  
+    //We can perform a 5th order Taylor expansion about zero in x
+    std::cout << taylor_series<5>(4 * x * cos(2*x+2), 0.0, x) << std::endl;
+    //output: -1.10972 × x^5 + 4.84959 × x^4 + 3.32917 × x³ + -7.27438 × x² + -1.66459 × x
+    }
+    \endcode
+  */
+  namespace symbolic {
+  } // namespace symbolic
+
+} // namespace stator

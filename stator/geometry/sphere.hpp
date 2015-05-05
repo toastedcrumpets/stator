@@ -19,6 +19,7 @@
 
 #pragma once
 
+// stator
 #include "stator/constants.hpp"
 #include "stator/geometry/object.hpp"
 
@@ -46,7 +47,7 @@ namespace stator {
      */
     template<typename Scalar, size_t D> class UnitSphere{};
     
-    /*! \brief An n-ball in the body-frame of reference.
+    /*! \brief An unorientated n-ball.
 
       In three dimensions, a ball represents the volume of the
       interior of a sphere, but this class is generalised to other
@@ -58,7 +59,7 @@ namespace stator {
       \tparam D The dimensionality of the ball.
     */
     template<typename Scalar, size_t D>
-    class CenteredBall {
+    class Ball {
     public:
       /*! \brief Default constructor.
         
@@ -67,20 +68,26 @@ namespace stator {
         comprimising the detection of uninitialised accesses by tools
         such as valgrind.
       */
-      CenteredBall() {}
+      Ball() {}
       
       /*! \brief RAII constructor. */
-      CenteredBall(Scalar radius): radius_(radius) {}
+      Ball(const Scalar& radius, const Vector<Scalar, D>& center = Vector<Scalar, D>::Zero().eval()): radius_(radius), center_(center) {}
       
       /*! \brief Get function for the ball radius. */
       const Scalar& radius() const { return radius_; }
       
+      /*! \brief Get function for the ball center. */
+      const Vector<Scalar, D>& center() const { return center_; }
+
     protected:
       /*! \brief Radius of the ball. */
       Scalar radius_;
+
+      /*! \brief Center of the ball. */
+      Vector<Scalar, D> center_;
     };
 
-    /*! \brief An n-sphere in the body-frame of reference.
+    /*! \brief An unorientated n-sphere.
 
       A sphere is a surface (not to be confused with a ball, which is
       the volume encased by a sphere).
@@ -91,7 +98,7 @@ namespace stator {
       \tparam D The dimensionality of the sphere.
     */
     template<typename Scalar, size_t D>
-    class CenteredSphere {
+    class Sphere {
     public:
       /*! \brief Default constructor.
         
@@ -100,17 +107,23 @@ namespace stator {
         comprimising the detection of uninitialised accesses by tools
         such as valgrind.
       */
-      CenteredSphere() {}
+      Sphere() {}
       
       /*! \brief RAII constructor. */
-      CenteredSphere(Scalar radius): radius_(radius) {}
+      Sphere(const Scalar& radius, const Vector<Scalar, D>& center = Vector<Scalar, D>::Zero().eval()): radius_(radius), center_(center) {}
       
       /*! \brief Get function for the sphere radius. */
       const Scalar& radius() const { return radius_; }
-      
+
+      /*! \brief Get function for the sphere center. */
+      const Vector<Scalar, D>& center() const { return center_; }
+
     protected:
       /*! \brief Radius of the sphere. */
       Scalar radius_;
+
+      /*! \brief Center of the sphere. */
+      Vector<Scalar, D> center_;
     };
         
     template<typename Scalar>
@@ -140,15 +153,14 @@ namespace stator {
 
 
     template<typename Scalar, size_t D>
-    Scalar measure(const CenteredBall<Scalar, D>& ball) {
+    Scalar measure(const Ball<Scalar, D>& ball) {
       return measure(UnitBall<Scalar, D>()) * std::pow(ball.radius(), D);
     }
     
     template<typename Scalar, size_t D>
-    Scalar measure(const CenteredSphere<Scalar, D>& sphere) {
+    Scalar measure(const Sphere<Scalar, D>& sphere) {
       return measure(UnitSphere<Scalar, D>()) * std::pow(sphere.radius(), D-1);
     }
-    
   } // namespace geometry
 } // namespace stator
 

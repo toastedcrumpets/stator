@@ -19,21 +19,29 @@
 
 //stator
 #include <stator/geometry/sphere.hpp>
+#include <stator/geometry/AABB.hpp>
 
 //boost
 #define BOOST_TEST_MODULE Geometry_sphere_test
 #include <boost/test/included/unit_test.hpp>
 
 using namespace stator::geometry;
+using namespace stator;
 
-BOOST_AUTO_TEST_CASE( CenteredBall_test )
+BOOST_AUTO_TEST_CASE( Ball_Sphere_test )
 {
-  BOOST_CHECK_EQUAL(measure(CenteredBall<double, 0>(1.0)), 1);
-  BOOST_CHECK_EQUAL(measure(CenteredBall<double, 1>(1.0)), 2);
-  BOOST_CHECK_CLOSE(measure(CenteredBall<double, 2>(1.0)), M_PI, 1e-11);
-  BOOST_CHECK_CLOSE(measure(CenteredBall<double, 3>(2.0)), 4.0/3.0 * M_PI * 2 * 2 * 2, 1e-11);
+  BOOST_CHECK_EQUAL(measure(Ball<double, 0>(1.0)), 1);
+  BOOST_CHECK_EQUAL(measure(Ball<double, 1>(1.0)), 2);
+  BOOST_CHECK_CLOSE(measure(Ball<double, 2>(1.0)), M_PI, 1e-11);
+  BOOST_CHECK_CLOSE(measure(Ball<double, 3>(2.0)), 4.0/3.0 * M_PI * 2 * 2 * 2, 1e-11);
 
-  BOOST_CHECK_EQUAL(measure(CenteredSphere<double, 1>(1.0)), 2);
-  BOOST_CHECK_CLOSE(measure(CenteredSphere<double, 2>(1.0)), 2 * M_PI, 1e-11);
-  BOOST_CHECK_CLOSE(measure(CenteredSphere<double, 3>(2.0)), 4.0 * M_PI * 2 * 2, 1e-11);
+  BOOST_CHECK_EQUAL(measure(Sphere<double, 1>(1.0)), 2);
+  BOOST_CHECK_CLOSE(measure(Sphere<double, 2>(1.0)), 2 * M_PI, 1e-11);
+  BOOST_CHECK_CLOSE(measure(Sphere<double, 3>(2.0)), 4.0 * M_PI * 2 * 2, 1e-11);
+}
+
+BOOST_AUTO_TEST_CASE( AABB_test )
+{
+  BOOST_CHECK_EQUAL(measure(AABB<double, 3>(Vector<double, 3>{0,0,0}, Vector<double, 3>{1,1,1})), 1);
+  BOOST_CHECK_EQUAL(measure(AABB<double, 3>(Vector<double, 3>{0,0,0}, Vector<double, 3>{1,0,1})), 0);
 }

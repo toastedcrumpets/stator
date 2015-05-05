@@ -25,28 +25,6 @@
 
 namespace stator {
   namespace geometry {
-    /*! \brief An empty-class representation of a unit ball.
-      
-      A UnitBall represents the space contained within a UnitSphere.
-
-      \tparam Scalar The scalar type used for computation of
-      properties of the object.
-      
-      \tparam D The dimensionality of the ball.
-     */
-    template<typename Scalar, size_t D> class UnitBall{};
-
-    /*! \brief An empty-class representation of a unit sphere.
-      
-      A unit sphere is a sphere of radius 1.
-
-      \tparam Scalar The scalar type used for computation of
-      properties of the object.
-      
-      \tparam D The dimensionality of the ball.
-     */
-    template<typename Scalar, size_t D> class UnitSphere{};
-    
     /*! \brief An unorientated n-ball.
 
       In three dimensions, a ball represents the volume of the
@@ -125,16 +103,41 @@ namespace stator {
       /*! \brief Center of the sphere. */
       Vector<Scalar, D> center_;
     };
+
+    namespace detail {
+      /*! \brief An empty-class representation of a unit ball.
+      
+	A UnitBall represents the space contained within a UnitSphere.
+
+	\tparam Scalar The scalar type used for computation of
+	properties of the object.
+      
+	\tparam D The dimensionality of the ball.
+      */
+      template<typename Scalar, size_t D> class UnitBall{};
+
+      /*! \brief An empty-class representation of a unit sphere.
+      
+	A unit sphere is a sphere of radius 1.
+
+	\tparam Scalar The scalar type used for computation of
+	properties of the object.
+      
+	\tparam D The dimensionality of the ball.
+      */
+      template<typename Scalar, size_t D> class UnitSphere{};
+    }// namespace detail
         
+    /*! \cond INTERNAL */
     template<typename Scalar>
-    constexpr Scalar measure(const UnitBall<Scalar, 0>& ball) { return Scalar(1); }
+    constexpr Scalar measure(const detail::UnitBall<Scalar, 0>& ball) { return Scalar(1); }
 
     template<typename Scalar>
-    constexpr Scalar measure(const UnitBall<Scalar, 1>& ball) { return Scalar(2); }
+    constexpr Scalar measure(const detail::UnitBall<Scalar, 1>& ball) { return Scalar(2); }
         
     template<typename Scalar, size_t D>
     constexpr typename std::enable_if<(D%2) && (D>1), Scalar>::type
-      measure(const UnitBall<Scalar, D>& ball) {
+      measure(const detail::UnitBall<Scalar, D>& ball) {
       return 2 * std::tgamma((D-1)/2+1)
         * std::pow(4 * stator::constant<Scalar>::pi(), (D-1)/2)
         / std::tgamma(D+1);
@@ -142,24 +145,24 @@ namespace stator {
 
     template<typename Scalar, size_t D>
     constexpr typename std::enable_if<(!(D%2)) && (D>1), Scalar>::type 
-      measure(const UnitBall<Scalar, D>& ball) {
+      measure(const detail::UnitBall<Scalar, D>& ball) {
       return std::pow(stator::constant<Scalar>::pi(), D/2) / std::tgamma(D/2+1);
     }
     
     template<typename Scalar, size_t D>
-    Scalar measure(const UnitSphere<Scalar, D>& ball) {
-      return D * measure(UnitBall<Scalar,D>());
+    Scalar measure(const detail::UnitSphere<Scalar, D>& ball) {
+      return D * measure(detail::UnitBall<Scalar,D>());
     }
-
+    /*! \endcond */
 
     template<typename Scalar, size_t D>
     Scalar measure(const Ball<Scalar, D>& ball) {
-      return measure(UnitBall<Scalar, D>()) * std::pow(ball.radius(), D);
+      return measure(detail::UnitBall<Scalar, D>()) * std::pow(ball.radius(), D);
     }
     
     template<typename Scalar, size_t D>
     Scalar measure(const Sphere<Scalar, D>& sphere) {
-      return measure(UnitSphere<Scalar, D>()) * std::pow(sphere.radius(), D-1);
+      return measure(detail::UnitSphere<Scalar, D>()) * std::pow(sphere.radius(), D-1);
     }
   } // namespace geometry
 } // namespace stator

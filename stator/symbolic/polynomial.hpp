@@ -1920,7 +1920,6 @@ namespace stator {
       //Now loop solving for the quadratic factor
       do {
 	++nIterations;
-	std::cout << "start = " << factor << std::endl;
 	  
 	Polynomial<2, Real, Letter> rem1, rem2;
 	Polynomial<Order, Real, Letter> p1;
@@ -1940,8 +1939,6 @@ namespace stator {
 	dFactor = J.inverse() * (-F);
 	factor[0] = factor[0] + dFactor[0];
 	factor[1] = factor[1] + dFactor[1];
-	std::cout << "end = " << factor << std::endl;
-	std::cout << factor << std::endl;
       } while (dFactor.nrm2() > tolerance*tolerance);
       
       return factor;
@@ -2090,7 +2087,6 @@ namespace stator {
 	case PolyRootBisector::TOMS748: 
 	  {
 	    boost::uintmax_t iter = 100;
-	    //std::cout << a << "->" << b << std::endl;
 	    auto root = boost::math::tools::toms748_solve([&](Real x) { return eval(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Real>(100), iter);
 	    retval.push_back((root.first + root.second) / 2);
 	    break;

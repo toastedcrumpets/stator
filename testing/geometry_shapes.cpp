@@ -42,6 +42,6 @@ BOOST_AUTO_TEST_CASE( Ball_Sphere_test )
 
 BOOST_AUTO_TEST_CASE( AABB_test )
 {
-  BOOST_CHECK_EQUAL(measure(AABB<double, 3>(Vector<double, 3>{0,0,0}, Vector<double, 3>{1,1,1})), 1);
-  BOOST_CHECK_EQUAL(measure(AABB<double, 3>(Vector<double, 3>{0,0,0}, Vector<double, 3>{1,0,1})), 0);
+  BOOST_CHECK_EQUAL(measure(AABB<double, 3>(Vector<double, 3>{1,1,1}, Vector<double, 3>{0,0,0})), 1);
+  BOOST_CHECK_EQUAL(measure(AABB<double, 3>(Vector<double, 3>{1,0,5}, Vector<double, 3>{0,0,0})), 0);
 }

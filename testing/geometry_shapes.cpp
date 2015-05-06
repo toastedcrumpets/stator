@@ -19,7 +19,8 @@
 
 //stator
 #include <stator/geometry/sphere.hpp>
-#include <stator/geometry/AABB.hpp>
+#include <stator/geometry/box.hpp>
+#include <stator/geometry/intersect.hpp>
 
 //boost
 #define BOOST_TEST_MODULE Geometry_sphere_test
@@ -30,18 +31,20 @@ using namespace stator;
 
 BOOST_AUTO_TEST_CASE( Ball_Sphere_test )
 {
-  BOOST_CHECK_EQUAL(measure(Ball<double, 0>(1.0)), 1);
-  BOOST_CHECK_EQUAL(measure(Ball<double, 1>(1.0)), 2);
-  BOOST_CHECK_CLOSE(measure(Ball<double, 2>(1.0)), M_PI, 1e-11);
-  BOOST_CHECK_CLOSE(measure(Ball<double, 3>(2.0)), 4.0/3.0 * M_PI * 2 * 2 * 2, 1e-11);
+  BOOST_CHECK_EQUAL(volume(Ball<double, 0>(1.0)), 1);
+  BOOST_CHECK_EQUAL(volume(Ball<double, 1>(1.0)), 2);
+  BOOST_CHECK_CLOSE(volume(Ball<double, 2>(1.0)), M_PI, 1e-11);
+  BOOST_CHECK_CLOSE(volume(Ball<double, 3>(2.0)), 4.0/3.0 * M_PI * 2 * 2 * 2, 1e-11);
 
-  BOOST_CHECK_EQUAL(measure(Sphere<double, 1>(1.0)), 2);
-  BOOST_CHECK_CLOSE(measure(Sphere<double, 2>(1.0)), 2 * M_PI, 1e-11);
-  BOOST_CHECK_CLOSE(measure(Sphere<double, 3>(2.0)), 4.0 * M_PI * 2 * 2, 1e-11);
+  BOOST_CHECK_EQUAL(area(Ball<double, 1>(1.0)), 2);
+  BOOST_CHECK_CLOSE(area(Ball<double, 2>(1.0)), 2 * M_PI, 1e-11);
+  BOOST_CHECK_CLOSE(area(Ball<double, 3>(2.0)), 4.0 * M_PI * 2 * 2, 1e-11);
+
+  BOOST_CHECK(intersects(Ball<double, 3>(0.5, Vector<double, 3>{0,0,0}), Ball<double, 3>(0.5, Vector<double, 3>{0.5, -0.5, 0.5})));
 }
 
-BOOST_AUTO_TEST_CASE( AABB_test )
+BOOST_AUTO_TEST_CASE( AABox_test )
 {
-  BOOST_CHECK_EQUAL(measure(AABB<double, 3>(Vector<double, 3>{1,1,1}, Vector<double, 3>{0,0,0})), 1);
-  BOOST_CHECK_EQUAL(measure(AABB<double, 3>(Vector<double, 3>{1,0,5}, Vector<double, 3>{0,0,0})), 0);
+  BOOST_CHECK_EQUAL(volume(AABox<double, 3>(Vector<double, 3>{1,1,1}, Vector<double, 3>{0,0,0})), 1);
+  BOOST_CHECK_EQUAL(volume(AABox<double, 3>(Vector<double, 3>{1,0,5}, Vector<double, 3>{0,0,0})), 0);
 }

@@ -28,21 +28,22 @@ namespace stator {
     (e.g., intersection, volume).
   */
   namespace geometry {
-    /*! \brief Compute a Hausdorf measure (length/area/volume) of an object.
+    /*! \brief Compute a Hausdorf measure of the interior of an object.
 
-      The measure returned depends on the object. For example, a
-      Sphere will return its surface area whereas a
-      Ball will return its volume. To determine the surface
-      area of a volume, first generate its surface.
+      The measure returned depends on the dimensionality of the
+      object, a circle will return its area but a sphere will return
+      its volume
     */
-    template<typename Obj> auto measure(const Obj&);
+    template<typename Obj> auto volume(const Obj&);
 
-    /*! \brief Generate a representation of the surface of an object.
-
-      For example, when called on Ball, this function will return the
-      corresponding Sphere.
+    /*! \brief Compute a Hausdorf measure of the boundary/boundaries
+      of an object.
+      
+      The measure returned depends on the dimensionality object. For
+      example, a Sphere will return its surface area whereas a circle
+      will return its perimeter.
     */
-    template<typename Obj> auto surface(const Obj&);
+    template<typename Obj> auto area(const Obj&);
 
     /*! \brief Determine if two objects are intersecting.
      */

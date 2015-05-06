@@ -25,17 +25,18 @@
 
 namespace stator {
   namespace geometry {
-    /*! \brief A half-space.
+    /*! \brief A planar half-space (a plane and the volume on one side
+        of the plane).
 
-      A half-space is the volume on one side of a infinite planar
-      surface. A plane is defined through a normal and a point on the
-      plane (origin), and by definition the normal points away from
-      the volume.
+      A half-space represents the volume on one side of a infinite
+      planar surface. A plane is defined through a normal and a point
+      on the plane (origin), and (by definition) the normal points
+      away from the represented volume.
       
       \tparam Scalar The scalar type used for computation of
       properties of the object.
       
-      \tparam D The dimensionality of the ball.
+      \tparam D The dimensionality of the HalfSpace.
     */
     template<typename Scalar, size_t D>
     class HalfSpace {
@@ -50,6 +51,30 @@ namespace stator {
       protected:
       Vector<Scalar, D> origin_;
       Vector<Scalar, D> normal_;
+    };
+
+    /*! \brief An infinite flat surface of fixed thickness.
+
+      \tparam Scalar The scalar type used for computation of
+      properties of the object.
+      
+      \tparam D The dimensionality of the Plane.
+    */
+    template<typename Scalar, size_t D>
+    class Plane {
+    public:
+      Plane(const Vector<Scalar, D>& origin, const Vector<Scalar, D>& normal, const Scalar thickness = Scalar(0)):
+	origin_(origin), normal_(normal), thickness_(thickness)
+      {}
+      
+      const Vector<Scalar, D>& origin() const { return origin_; }
+      const Vector<Scalar, D>& normal() const { return normal_; }
+      const Vector<Scalar, D>& thickness() const { return thickness_; }
+
+      protected:
+      Vector<Scalar, D> origin_;
+      Vector<Scalar, D> normal_;
+      Scalar thickness_;
     };
   }// namespace geometry
 }// namespace stator

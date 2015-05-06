@@ -21,11 +21,11 @@
 
 // stator
 #include "stator/constants.hpp"
-#include "stator/geometry/object.hpp"
+#include "stator/config.hpp"
 
 namespace stator {
   namespace geometry {
-    /*! \brief An axis-aligned bounding box.
+    /*! \brief An axis-aligned box/block (including its interior volume).
       
       \tparam Scalar The scalar type used for computation of
       properties of the object.
@@ -33,9 +33,9 @@ namespace stator {
       \tparam D The dimensionality of the ball.
      */
     template<typename Scalar, size_t D>
-    class AABB {
+    class AABox {
     public:
-      AABB(const Vector<Scalar, D>& max, const Vector<Scalar, D>& min):
+      AABox(const Vector<Scalar, D>& max, const Vector<Scalar, D>& min):
         max_(max), min_(min)
       {}
       
@@ -49,8 +49,9 @@ namespace stator {
       Vector<Scalar, D> min_;
     };
 
+    /*! \brief Calculate the volume of an Axis-Aligned Box.*/
     template<typename Scalar, size_t D>
-    Scalar measure(const AABB<Scalar, D>& bb) {
+    Scalar volume(const AABox<Scalar, D>& bb) {
       auto extent = bb.dimensions();
       Scalar measure = extent[0];
       for (size_t i(1); i < D; ++i) 
@@ -58,5 +59,15 @@ namespace stator {
       return measure;
     }
 
+    /*! \brief Calculate the surface area of an Axis-Aligned Box.*/
+    template<typename Scalar, size_t D>
+    Scalar area(const AABox<Scalar, D>& bb) {
+      auto extent = bb.dimensions();
+      Scalar measure = 0;
+      for (size_t i(0); i < D; ++i)
+        for (size_t j(i+1); j < D; ++j)
+          measure += extent[i] * extent[j];
+      return 2 * measure;
+    }
   } // namespace geometry
 } //namespace stator

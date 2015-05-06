@@ -164,6 +164,14 @@ namespace stator {
     Scalar measure(const Sphere<Scalar, D>& sphere) {
       return measure(detail::UnitSphere<Scalar, D>()) * std::pow(sphere.radius(), D-1);
     }
+    
+    /*! \brief Calculate a representation of the Surface of a Ball
+        volume.
+     */
+    template<typename Scalar, size_t D>
+    Sphere<Scalar, D> surface(const Ball<Scalar, D>& b) {
+      return Sphere<Scalar, D>(b.radius(), b.center());
+    }
   } // namespace geometry
 } // namespace stator
 

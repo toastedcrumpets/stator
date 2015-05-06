@@ -22,24 +22,33 @@
 */
 namespace stator {
    
-  namespace geometry {
-    /*! \brief Compute a measure (length/area/volume) of an object. 
-
-      The measure returned depends on the object. For example, a
-      CenteredSphere will return its surface area whereas a
-      CenteredBall will return its volume.
-     */
-    template<typename Obj> auto measure(const Obj&);
-  } // namespace geometry
-
-
   /*! \namespace stator::geometry 
 
     \brief Geometric types and algorithms for calculating properties
     (e.g., intersection, volume).
   */
   namespace geometry {
+    /*! \brief Compute a Hausdorf measure (length/area/volume) of an object.
+
+      The measure returned depends on the object. For example, a
+      Sphere will return its surface area whereas a
+      Ball will return its volume. To determine the surface
+      area of a volume, first generate its surface.
+    */
+    template<typename Obj> auto measure(const Obj&);
+
+    /*! \brief Generate a representation of the surface of an object.
+
+      For example, when called on Ball, this function will return the
+      corresponding Sphere.
+    */
+    template<typename Obj> auto surface(const Obj&);
+
+    /*! \brief Determine if two objects are intersecting.
+     */
+    bool intersects(const Object1&, const Object2&);
   } // namespace geometry
+  
   
   /*! \namespace stator::orphan
     \brief General functionality without a particular grouping.

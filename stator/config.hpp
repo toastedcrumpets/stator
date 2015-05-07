@@ -21,6 +21,10 @@
 #include <Eigen/Dense>
 
 namespace stator {
+  
+  /*! \brief A convenience typedef for a non-aligned Eigen Matrix.*/
   template<typename Scalar, size_t D1, size_t D2> using Matrix = Eigen::Matrix<Scalar, D1, D2, Eigen::DontAlign>;
+  
+  /*! \brief A convenience typedef for a non-aligned Eigen Vector.*/
   template<typename Scalar, size_t D> using Vector = Matrix<Scalar, D, 1>;
 } // namespace stator

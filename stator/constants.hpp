@@ -21,6 +21,7 @@
 #pragma once
 
 // C++
+#include <ratio>
 #include <type_traits>
 
 namespace stator {
@@ -67,25 +68,38 @@ namespace stator {
   /*! \brief Physical constants approximated in std::ratio
       representation.
     
-    C++11 requires implementations to support at least the long long
-    type (64bits). std::ratio always uses the maximum size integer to
-    represent its numerator/denominator, therefore std::ratio may use
-    any natural number in \f$[-2^{63},+2^{63}-1]\f$ for the numerator
-    and/or denominator. However, when calculations are performed using
-    std::ratio, sufficient range must be reserved for the calculation.
+    Selecting an appropriate approximation depends on a number of
+    factors.  C++11 requires implementations to support at least the
+    long long type (64bits). As std::ratio always uses the maximum
+    size integer to represent its numerator/denominator, std::ratio
+    must support \f$[-2^{63},+2^{63}-1]\f$ for the numerator and/or
+    denominator. However, when calculations are performed using
+    std::ratio, sufficient range must be retained for the calculation.
 
     Because of these reasons, we choose rational approximations close
     to the limits of double precision, or slightly less accurate
     approximations where increased precision would require a dramatic
-    increase in the size of the numerator/denominator.
+    increase in the magnitude of the numerator/denominator terms.
     
   */
   struct constant_ratio {
-    /*! \brief Rational approximation of pi with an error
-        \f$<1.60e-14\f$. */
+    /*! \brief A rational approximation of \f$\pi\f$.
+      
+      The rational approximation, plus the remainder:
+      \f[
+      \pi = \frac{47627751}{15160384} + 1.5987211554602254\ldots\times10^{-14}
+      \f]
+    */
     typedef std::ratio<47627751, 15160384> pi; 
 
-    /*! \brief approximation of e with an error < 8.89e-16. */
+    /*! \brief A rational approximation of \f$\mathrm{e}\f$. 
+
+      The rational approximation, plus the remainder:
+      \f[
+      \mathrm{e} = \frac{28245729}{10391023} + 8.8817841970012523\ldots\times10^{-16}
+      \f]
+      
+     */
     typedef std::ratio<28245729, 10391023> e; 
   };
 } // namespace stator

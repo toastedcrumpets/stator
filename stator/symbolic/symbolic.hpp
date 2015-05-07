@@ -18,7 +18,14 @@
 */
 
 #pragma once
+
+// stator
+#include "stator/constants.hpp"
+
+// Eigen
 #include "Eigen/Dense"
+
+// C++
 #include <complex>
 #include <ratio>
 
@@ -152,16 +159,16 @@ namespace stator {
     template<std::intmax_t Num, std::intmax_t Denom = 1>
     struct ratio : std::ratio<Num, Denom> {};
 
-    //Compile time constants with special meaning
+    /*! \brief A symbolic representation of zero. */
     typedef ratio<0> NullSymbol;
+    /*! \brief A symbolic representation of one. */
     typedef ratio<1> UnitySymbol;
-    //C++11 requires implementations support long long (64bits), so
-    //ratio's may have up to 2^32 in numerator or denominator. We
-    //choose rational approximations close to the limits of double
-    //precision. Higher precision approximations require significantly
-    //more digits.
-    typedef ratio<47627751, 15160384> pi; //approximation of pi with an error < 1.60e-14
-    typedef ratio<28245729, 10391023> e; //approximation of e with an error < 8.89e-16
+    
+    /*! \brief A symbolic/compile-time rational approximation of \f$\pi\f$. */
+    typedef ratio<constant_ratio::pi::num, constant_ratio::pi::denom> pi; 
+
+    /*! \brief A symbolic/compile-time rational approximation of \f$\mathrm{e}\f$. */
+    typedef ratio<constant_ratio::e::num, constant_ratio::e::denom> e; 
 
     /*! \brief Output operator for ratio types */
     template<std::intmax_t Num, std::intmax_t Denom>
@@ -484,5 +491,5 @@ namespace stator {
     template<size_t Order, char Letter, class F, class Real>
     auto taylor_series(const F& f, Real a, Variable<Letter>) -> decltype(try_simplify(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a)))
     { return try_simplify(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a)); }
-  }
-}
+  } // namespace symbolic
+}// namespace stator

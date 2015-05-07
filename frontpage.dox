@@ -16,11 +16,11 @@
 
 /*! \brief The stator library namespace.
 
-  Although the stator namespace is used for a number of key shared
-  functionality (e.g., \ref stator::Exception), most is implemented
-  under the namespaces \ref stator::symbolic, and \ref stator::orphan.
-*/
-namespace stator {
+  Although the \ref stator namespace is used for shared functionality
+  (e.g., \ref stator::Exception), most of the code is implemented
+  under the namespaces \ref stator::symbolic, \ref stator::geometry,
+  and \ref stator::orphan.  
+  */ namespace stator {
    
   /*! \namespace stator::geometry 
 

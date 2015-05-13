@@ -20,6 +20,7 @@
 #pragma once
 
 // stator
+#include "stator/config.hpp"
 #include "stator/constants.hpp"
 
 // Eigen

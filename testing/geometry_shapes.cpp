@@ -17,6 +17,9 @@
   along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
 
+//C++
+#include <iostream>
+
 //stator
 #include <stator/geometry/sphere.hpp>
 #include <stator/geometry/box.hpp>
@@ -52,5 +55,10 @@ BOOST_AUTO_TEST_CASE( AABox_test )
 
 BOOST_AUTO_TEST_CASE( indicator_test )
 {
-  //std::cout << indicator(Ball<double, 3>(2.0), Ball<double, 3>(2.0, Vector<double, 3>{2,2,2}), symbolic::NullSymbol()) << std::endl;
+  auto bi = Ball<double, 3>(1.0, Vector<double, 3>{0,0,0});
+  auto bj = Ball<double, 3>(1.0, Vector<double, 3>{2,2,2});
+  
+
+  stator::symbolic::Variable<'t'> t;
+  std::cout << indicator(bi, bj,  Vector<double, 3>{-1,-2,-3} - t * Vector<double, 3>{1,2,3}) << std::endl;
 }

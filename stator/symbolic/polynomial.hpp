@@ -38,57 +38,45 @@ namespace stator {
       /*! \relates Polynomial 
 	
  	\brief Type trait which determines if an operation
- 	(multiplication, addition) can be distributed over a
- 	polynomials coefficients.
+ 	(multiplication, addition) can be distributed over the
+ 	coefficients of a polynomial.
 
- 	This general form allows all operations between fundamental
- 	aritmatic types.
+ 	This general form allows all operations between all constants.
       */
       template<class OpType, class PolyType>
       struct distribute_poly {
- 	static const bool value = std::is_arithmetic<OpType>::value && std::is_arithmetic<PolyType>::value;
+ 	static const bool value = (detail::IsConstant<OpType>::value && detail::IsConstant<PolyType>::value);
       };
 
-      /*! \relates Polynomial 
-	
- 	\brief Type trait enabling use of std::complex as a Polynomial
- 	coefficient with arithmetic types.
-      */
-      template<class OpType, class T>
-      struct distribute_poly<OpType, std::complex<T> > {
- 	static const bool value = std::is_arithmetic<OpType>::value;
-      };
-
-      /*! \relates Polynomial 
-	
- 	\brief Type trait enabling use of std::complex as an operation
- 	with Polynomials with arithmetic type coefficients.
-      */
-      template<class T, class PolyType>
-      struct distribute_poly<std::complex<T>, PolyType> {
- 	static const bool value = std::is_arithmetic<PolyType>::value;
-      };
-
-      /*! \relates Polynomial 
-	
- 	\brief Type trait enabling use of std::complex as an operation
- 	with Polynomials.
-      */
-      template<class T>
-      struct distribute_poly<std::complex<T>, std::complex<T> > {
- 	static const bool value = true;
-      };
-
-      /*! \relates Polynomial 
-	
- 	\brief Type trait enabling use of Eigen types as an operation
- 	with Polynomials.
-      */
-      template<class Derived, class PolyType>
-      struct distribute_poly<Eigen::EigenBase<Derived>, PolyType> {
- 	static const bool value = std::is_arithmetic<PolyType>::value;
-      };
-
+//      /*! \relates Polynomial 
+//	
+// 	\brief Type trait enabling use of std::complex as a Polynomial
+// 	coefficient with arithmetic types.
+//      */
+//      template<class OpType, class T>
+//      struct distribute_poly<OpType, std::complex<T> > {
+// 	static const bool value = std::is_arithmetic<OpType>::value;
+//      };
+//
+//      /*! \relates Polynomial 
+//	
+// 	\brief Type trait enabling use of std::complex as an operation
+// 	with Polynomials with arithmetic type coefficients.
+//      */
+//      template<class T, class PolyType>
+//      struct distribute_poly<std::complex<T>, PolyType> {
+// 	static const bool value = std::is_arithmetic<PolyType>::value;
+//      };
+//
+//      /*! \relates Polynomial 
+//	
+// 	\brief Type trait enabling use of std::complex as an operation
+// 	with Polynomials.
+//      */
+//      template<class T>
+//      struct distribute_poly<std::complex<T>, std::complex<T> > {
+// 	static const bool value = true;
+//      };
     }// namespace detail
 
     /*! \brief Representation of Polynomial with basic algebra operations.
@@ -435,7 +423,7 @@ namespace stator {
     */
     template<class Real1, size_t Order, class Real, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    auto operator+(const Real1& r, const Polynomial<Order, Real, Letter>& poly) -> Polynomial<Order, decltype(poly[0] + r), Letter>
+    auto operator+(const Real1& r, const Polynomial<Order, Real, Letter>& poly) -> decltype(poly+r)
     { return poly + r; }
 
     /*!\brief Left-handed addition operator for Polynomials 
@@ -447,10 +435,10 @@ namespace stator {
     */
     template<class Real1, class Real2, size_t N, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
-    auto operator+(const Polynomial<N, Real1, Letter>& poly, const Real2& r) -> Polynomial<N, decltype(poly[0] + r), Letter>
+    auto operator+(const Polynomial<N, Real1, Letter>& poly, const Real2& r) -> Polynomial<N, STORETYPE(poly[0] + r), Letter>
     {
-      Polynomial<N, decltype(poly[0] + r), Letter> retval(poly);
-      retval[0] += r;
+      Polynomial<N, STORETYPE(poly[0] + r), Letter> retval(poly);
+      retval[0] = retval[0] + r;
       return retval;
     }
 
@@ -616,6 +604,34 @@ namespace stator {
 
     /*! \endcond \} */
 
+    namespace detail {
+      template<class T>
+      typename std::enable_if<!std::is_base_of<Eigen::EigenBase<T>, T>::value>::type print_coeff(std::ostream& os, const T& val) {
+	os << val;
+      }
+
+      template<class T>
+      typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type print_coeff(std::ostream& os, const T& val) {
+	if ((val.cols() == 1) && (val.rows()==1))
+	  os << val;
+	else if (val.cols() == 1) {
+	  os << "{ ";
+	  for (size_t i(0); i < val.rows(); ++i)
+	    os << val(i, 0) << " ";
+	  os << "}^T";
+	} else {
+	  os << "{ ";
+	  for (size_t i(0); i < val.cols(); ++i) {
+	    os << "{ ";
+	    for (size_t j(0); j < val.rows(); ++j)
+	      os << val(i, j) << " ";
+	    os << "} ";
+	  }
+	  os << "}";
+	}
+      }
+    }// namespace detail
+
     /*! \relates Polynomial 
       \name Polynomial input/output operations
       \{
@@ -631,7 +647,8 @@ namespace stator {
 	if (terms != 0)
 	  oss << " + ";
 	++terms;
-        oss << poly[i] << " × " << Letter;
+        detail::print_coeff(oss, poly[i]);
+	oss << " × " << Letter;
 	if (i > 1)
 	  switch (i) {
 	  case 2: oss << "²"; break;
@@ -643,12 +660,11 @@ namespace stator {
 	if (terms != 0)
 	  oss << " + ";
 	++terms;
-	oss << poly[0];
+	detail::print_coeff(oss, poly[0]);
       }
       os << oss.str();
       return os;
     }
-
     /*! \} */
     
     /*! \relates Polynomial 

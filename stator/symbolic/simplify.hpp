@@ -338,7 +338,7 @@ namespace stator {
     /*! \brief Conversion of PowerOp RHS multiplied by a constant to a
       Polynomial. */
     template<char Letter, size_t Order, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<Order, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
     simplify(const MultiplyOp<PowerOp<Variable<Letter>, Order>, Real>& f)
     {
       Polynomial<Order, Real, Letter> retval;
@@ -349,7 +349,7 @@ namespace stator {
     /*! \brief Conversion of PowerOp LHS multiplied by a constant to a
       Polynomial. */
     template<char Letter, size_t Order, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<Order, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
     simplify(const MultiplyOp<Real, PowerOp<Variable<Letter>, Order> >& f)
     {
       Polynomial<Order, Real, Letter> retval;
@@ -360,21 +360,21 @@ namespace stator {
     /*! \brief Conversion of Variable RHS multiplied by a constant to a
       Polynomial. */
     template<char Letter, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<1, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, Real, Letter> >::type 
     simplify(const MultiplyOp<Variable<Letter>, Real> & f)
-    { return Polynomial<1, Real, Letter>{0, f._r}; }
+    { return Polynomial<1, Real, Letter>{empty_sum(f._r), f._r}; }
 
     /*! \brief Conversion of Variable LHS multiplied by a constant to a
       Polynomial. */
     template<char Letter, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<1, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, Real, Letter> >::type 
     simplify(const MultiplyOp<Real, Variable<Letter> > & f)
-    { return Polynomial<1, Real, Letter>{0, f._l}; }
+    { return Polynomial<1, Real, Letter>{empty_sum(f._l), f._l}; }
 
     /*! \brief Conversion of PowerOp LHS added with a constant to a
       Polynomial. */
     template<char Letter, size_t Order, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<Order, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
     simplify(const AddOp<PowerOp<Variable<Letter>, Order>, Real>& f)
     { 
       Polynomial<Order, Real, Letter> retval;
@@ -386,7 +386,7 @@ namespace stator {
     /*! \brief Conversion of PowerOp LHS added with a constant to a
       Polynomial. */
     template<char Letter, size_t Order, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<Order, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
     simplify(const AddOp<Real, PowerOp<Variable<Letter>, Order> >& f)
     { 
       Polynomial<Order, Real, Letter> retval;
@@ -398,7 +398,7 @@ namespace stator {
     /*! \brief Conversion of PowerOp LHS subtracted with a constant to a
       Polynomial. */
     template<char Letter, size_t Order, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<Order, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
     simplify(const SubtractOp<PowerOp<Variable<Letter>, Order>, Real>& f)
     {
       Polynomial<Order, Real, Letter> retval;
@@ -410,9 +410,9 @@ namespace stator {
     /*! \brief Conversion of PowerOp LHS subtracted with a constant to a
       Polynomial. */
     template<char Letter, size_t Order, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<Order, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
     simplify(const SubtractOp<Real, PowerOp<Variable<Letter>, Order> >& f)
-    { 
+    {
       Polynomial<Order, Real, Letter> retval;
       retval[Order] = -1;
       retval[0] = f._l;
@@ -421,13 +421,13 @@ namespace stator {
 
     /*! \brief Conversion of a Variable RHS added with a constant. */
     template<char Letter, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<1, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, Real, Letter> >::type 
     simplify(const AddOp<Variable<Letter>, Real>& f)
     { return Polynomial<1, Real, Letter>{f._r, Real(1)}; }
 
     /*! \brief Conversion of a Variable LHS added with a constant. */
     template<char Letter, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<1, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, Real, Letter> >::type 
     simplify(const AddOp<Real, Variable<Letter> >& f)
     { return Polynomial<1, Real, Letter>{f._r, Real(1)}; }
 
@@ -441,13 +441,13 @@ namespace stator {
 
     /*! \brief Conversion of a Variable RHS subtracted with a constant. */
     template<char Letter, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<1, Real, Letter> >::type 
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, Real, Letter> >::type 
     simplify(const SubtractOp<Variable<Letter>, Real>& f)
     { return Polynomial<1, Real, Letter>{-f._r, Real(1)}; }
 
     /*! \brief Conversion of a Variable LHS subtracted with a constant. */
     template<char Letter, class Real>
-    typename std::enable_if<std::is_arithmetic<Real>::value, Polynomial<1, Real, Letter> >::type
+    typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, Real, Letter> >::type
     simplify(const SubtractOp<Real, Variable<Letter> >& f)
     { return Polynomial<1, Real, Letter>{f._l, Real(-1)}; }
 

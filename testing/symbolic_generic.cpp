@@ -373,6 +373,8 @@ BOOST_AUTO_TEST_CASE( Vector_symbolic )
   BOOST_CHECK(toArithmetic(Vector{1,2,3}) == (Vector{1,2,3}));
   BOOST_CHECK(dot(Vector{1,2,3} , Vector{4,5,6}, stator::symbolic::detail::select_overload{}) == 32);
 
+  //std::cout << simplify(Vector{1,2,3} + Variable<'x'>() * Vector{1,2,3}) << std::endl;
+  //std::cout << Polynomial<1, Vector>{{1,2,3}, Vector{2,2,3}} << std::endl;
 }
 
 BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )

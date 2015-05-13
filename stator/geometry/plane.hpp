@@ -76,5 +76,7 @@ namespace stator {
       Vector<Scalar, D> normal_;
       Scalar thickness_;
     };
+
+    
   }// namespace geometry
 }// namespace stator

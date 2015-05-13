@@ -165,10 +165,10 @@ namespace stator {
     typedef ratio<1> UnitySymbol;
     
     /*! \brief A symbolic/compile-time rational approximation of \f$\pi\f$. */
-    typedef ratio<constant_ratio::pi::num, constant_ratio::pi::denom> pi; 
+    typedef ratio<constant_ratio::pi::num, constant_ratio::pi::den> pi; 
 
     /*! \brief A symbolic/compile-time rational approximation of \f$\mathrm{e}\f$. */
-    typedef ratio<constant_ratio::e::num, constant_ratio::e::denom> e; 
+    typedef ratio<constant_ratio::e::num, constant_ratio::e::den> e; 
 
     /*! \brief Output operator for ratio types */
     template<std::intmax_t Num, std::intmax_t Denom>

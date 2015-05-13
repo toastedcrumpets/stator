@@ -22,28 +22,28 @@
 // stator
 #include "stator/constants.hpp"
 #include "stator/geometry/sphere.hpp"
+#include "stator/geometry/point.hpp"
 
 namespace stator {
   namespace geometry {
-    /*! \brief Test if two Ball volumes intersect.
-      
-      This is a simple distance test:
-      
-      \f[
-      \left| \bm{r}_{ij}\right| < \frac{1}{2}(\sigma_i + \sigma_j)
-      \f]
+    /*! \brief Test if a point intersects with a ball volume.*/
+    template<typename Scalar, size_t D>
+    bool intersects(const Ball<Scalar, D>& b1, const Point<Scalar, D>& b2) {
+      return (b1.center() - b2.center()).squaredNorm() <= std::pow(b1.radius(), 2);
+    }
 
-      As both sides are always positive, we can avoid taking the square
-      root and just square both sides:
+    /*! \brief Test if a point intersects with a ball volume.*/
+    template<typename Scalar, size_t D>
+    bool intersects(const Point<Scalar, D>& b1, const Ball<Scalar, D>& b2) {
+      return intersects(b2, b1);
+    }
 
-      \f[
-      r_{ij}^2 < \frac{1}{4}(\sigma_i + \sigma_j)^2
-      \f]
-    */
+    /*! \brief Test if two ball volumes intersect.*/
     template<typename Scalar, size_t D>
     bool intersects(const Ball<Scalar, D>& b1, const Ball<Scalar, D>& b2) {
-      return (b1.center() - b2.center()).squaredNorm() <= std::pow((b1.radius() + b2.radius()), 2);
+      return (b1.center() - b2.center()).squaredNorm() <= std::pow(b1.radius() + b2.radius(), 2);
     }
+    
 
   } // namespace geometry
 } // namespace stator

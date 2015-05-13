@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE( poly_vector )
   BOOST_CHECK_EQUAL(poly1[0], (Vector{3,2,1}));
   BOOST_CHECK_EQUAL(poly1[1], (Vector{1,2,3}));
   
-  auto poly2 = dot(poly1, poly1);
+  auto poly2 = pow<2>(poly1);
   BOOST_CHECK_EQUAL(poly2[0], 14);
   BOOST_CHECK_EQUAL(poly2[1], 20);
   BOOST_CHECK_EQUAL(poly2[2], 14);

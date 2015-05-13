@@ -305,9 +305,22 @@ namespace stator {
       \name PowerOp helper functions.
     */
     /*! \brief Helper function for creating PowerOp types. */
-    template<size_t N, class Arg>
-    PowerOp<Arg, N> pow(const Arg& f)
-    { return PowerOp<Arg, N>(f); }
+    template<size_t Power, class Arg>
+    typename std::enable_if<!detail::IsConstant<Arg>::value, PowerOp<Arg, Power> >::type
+    pow(const Arg& f)
+    { return PowerOp<Arg, Power>(f); }
+
+    /*! \brief Helper function for immediately evaluating powers of constants. */
+    template<size_t Power, class Arg,
+             typename = typename std::enable_if<detail::IsConstant<Arg>::value && !std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
+    auto pow(const Arg& f) -> decltype(PowerOpSubstitution<Power>::eval(f))
+    { return PowerOpSubstitution<Power>::eval(f); }
+
+    /*! \brief Specialisation for squares of matrix expressions. */
+    template<size_t Power, class Arg,
+             typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
+      auto pow(const Arg& f) -> STORETYPE(f.dot(f))
+    { return f.dot(f); }
 
     /*! \} */
 
@@ -350,7 +363,7 @@ namespace stator {
     template<char dVariable, class Arg>
     auto derivative(const PowerOp<Arg, 2>& f, Variable<dVariable>) -> decltype(ratio<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg)
     { return ratio<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg; }
-    /*! \}*/    
+    /*! \}*/
   }
 }
     

@@ -22,6 +22,7 @@
 #include "stator/exception.hpp"
 #include "stator/config.hpp"
 #include "stator/symbolic/numeric.hpp"
+#include "stator/symbolic/operators.hpp"
 #include <boost/math/tools/roots.hpp>
 #include <stdexcept>
 #include <ostream>
@@ -88,51 +89,7 @@ namespace stator {
  	static const bool value = std::is_arithmetic<PolyType>::value;
       };
 
-      /*! \brief The preferred implementation of try_eval().
-
-        This takes a higher precedence to the try_eval implementation
-        below due to not requiring a conversion for the second
-        argument (if called as try_eval_imp(a, 0)).
-       */
-      template<class T>
-      auto try_eval_imp(const T& a, int) -> decltype(a.eval()) {
-        return a.eval();
-      }
-
-      /*! \brief The backup implementation of try_eval().
-        
-        This takes a lower precedence to the above try_eval due to the
-        implicit conversion from int->long for the second argument.
-       */
-      template<class T>
-      const T& try_eval_imp(const T& a, long) {
-	return a;
-      }
-    } // namespace detail
-
-    /*!\brief Returns the result of calling the eval() member function
-       (if available) on the passed argument, or the unmodified
-       argument (if not).
-     */
-    template<class T>
-    auto try_eval(const T& a) -> decltype(detail::try_eval_imp(a, 0)) {
-      return detail::try_eval_imp(a, 0);
-    }
-
-/*! Determine the type used to store the result of an expression.
-  
-  This Macro handles everything, including Eigen expressions, and
-  returns an appropriate type to store the results of the expression
-  A. Example usage is:
-  
-  \code{.cpp}
-  STORETYPE(A.dot(B) + C) val = A.dot(B) + C;
-  \endcode
-
-  This macro is often used to determine the coefficient type of a
-  Polynomial class.
-*/
-#define STORETYPE(A) typename std::decay<decltype(try_eval(A))>::type
+    }// namespace detail
 
     /*! \brief Representation of Polynomial with basic algebra operations.
 
@@ -581,17 +538,15 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Multiplication between two Polynomial types.
-     */
-    template<class Real1, class Real2, size_t M, size_t N, char Letter>
-    auto dot(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<M + N, STORETYPE(poly1[0].dot(poly2[0])), Letter>
-    {
-      Polynomial<M + N, STORETYPE(poly1[0].dot(poly2[0])), Letter> retval;
-      for (size_t i(0); i <= N+M; ++i) {
-	retval[i] = empty_sum(retval[i]);
-	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
-	  retval[i] += poly1[j].dot(poly2[i-j]);
-      }
+    /*! \brief Specialisation for squares of matrix expressions. */
+    template<size_t Power, class Matrix, size_t N, char Letter,
+             typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Matrix>, Matrix>::value>::type>
+      auto pow(const Polynomial<N, Matrix, Letter>& f) -> Polynomial<2 * N, STORETYPE(f[0].dot(f[0])), Letter>
+    { 
+      Polynomial<2 * N, STORETYPE(f[0].dot(f[0])), Letter> retval;
+      for (size_t i(0); i <= 2 * N; ++i)
+	for (size_t j(i>N?i-N:0); (j <= i) && (j <=N); ++j)
+	  retval[i] += f[j].dot(f[i-j]);
       return retval;
     }
 

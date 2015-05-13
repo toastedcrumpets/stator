@@ -21,6 +21,7 @@
 #include <stator/geometry/sphere.hpp>
 #include <stator/geometry/box.hpp>
 #include <stator/geometry/intersect.hpp>
+#include <stator/geometry/indicator.hpp>
 
 //boost
 #define BOOST_TEST_MODULE Geometry_sphere_test
@@ -47,4 +48,9 @@ BOOST_AUTO_TEST_CASE( AABox_test )
 {
   BOOST_CHECK_EQUAL(volume(AABox<double, 3>(Vector<double, 3>{1,1,1}, Vector<double, 3>{0,0,0})), 1);
   BOOST_CHECK_EQUAL(volume(AABox<double, 3>(Vector<double, 3>{1,0,5}, Vector<double, 3>{0,0,0})), 0);
+}
+
+BOOST_AUTO_TEST_CASE( indicator_test )
+{
+  //std::cout << indicator(Ball<double, 3>(2.0), Ball<double, 3>(2.0, Vector<double, 3>{2,2,2}), symbolic::NullSymbol()) << std::endl;
 }

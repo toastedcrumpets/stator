@@ -22,6 +22,7 @@
 // stator
 #include "stator/constants.hpp"
 #include "stator/geometry/object.hpp"
+#include "stator/geometry/inverse.hpp"
 
 namespace stator {
   namespace geometry {
@@ -45,11 +46,15 @@ namespace stator {
 	origin_(origin), normal_(normal)
       {}
       
-      const Vector<Scalar, D>& origin() const { return origin_; }
+      const Vector<Scalar, D>& center() const { return origin_; }
       const Vector<Scalar, D>& normal() const { return normal_; }
 
+      HalfSpace inverse() const {
+        return HalfSpace(origin, -normal);
+      }
+        
       protected:
-      Vector<Scalar, D> origin_;
+      Vector<Scalar, D> center_;
       Vector<Scalar, D> normal_;
     };
 
@@ -67,12 +72,16 @@ namespace stator {
 	origin_(origin), normal_(normal), thickness_(thickness)
       {}
       
-      const Vector<Scalar, D>& origin() const { return origin_; }
+      const Vector<Scalar, D>& center() const { return origin_; }
       const Vector<Scalar, D>& normal() const { return normal_; }
       const Vector<Scalar, D>& thickness() const { return thickness_; }
 
+      Inverse<Ball> inverse() const {
+        return Inverse<Plane>(*this);
+      }
+
       protected:
-      Vector<Scalar, D> origin_;
+      Vector<Scalar, D> center_;
       Vector<Scalar, D> normal_;
       Scalar thickness_;
     };

@@ -180,7 +180,9 @@ BOOST_AUTO_TEST_CASE( function_poly_derivatives_special )
 
 BOOST_AUTO_TEST_CASE( power_basic )
 {
-  //Check evaluation of powers
+  BOOST_CHECK(pow<3>(3) == 27);
+  BOOST_CHECK(pow<2>(Vector{0,1,2}) == 5);
+
   BOOST_CHECK_CLOSE(substitution(pow<3>(x), Variable<'x'>()==4.0), 4.0*4.0*4.0, 1e-10);
   BOOST_CHECK_CLOSE(eval(pow<3>(x), 0.75), std::pow(0.75, 3), 1e-10);
 

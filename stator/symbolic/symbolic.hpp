@@ -260,7 +260,52 @@ namespace stator {
       struct IsConstant<std::complex<T> > {
 	static const bool value = IsConstant<T>::value;
       };
+         /*! \brief The preferred implementation of try_eval().
+
+        This takes a higher precedence to the try_eval implementation
+        below due to not requiring a conversion for the second
+        argument (if called as try_eval_imp(a, 0)).
+       */
+      template<class T>
+      auto try_eval_imp(const T& a, int) -> decltype(a.eval()) {
+        return a.eval();
+      }
+
+      /*! \brief The backup implementation of try_eval().
+        
+        This takes a lower precedence to the above try_eval due to the
+        implicit conversion from int->long for the second argument.
+       */
+      template<class T>
+      const T& try_eval_imp(const T& a, long) {
+	return a;
+      }
+
+    } // namespace detail
+    
+    /*!\brief Returns the result of calling the eval() member function
+       (if available) on the passed argument, or the unmodified
+       argument (if not).
+     */
+    template<class T>
+    auto try_eval(const T& a) -> decltype(detail::try_eval_imp(a, 0)) {
+      return detail::try_eval_imp(a, 0);
     }
+
+/*! Determine the type used to store the result of an expression.
+  
+  This Macro handles everything, including Eigen expressions, and
+  returns an appropriate type to store the results of the expression
+  A. Example usage is:
+  
+  \code{.cpp}
+  STORETYPE(A.dot(B) + C) val = A.dot(B) + C;
+  \endcode
+
+  This macro is often used to determine the coefficient type of a
+  Polynomial class.
+*/
+#define STORETYPE(A) typename std::decay<decltype(try_eval(A))>::type
 
     /*! \brief Returns the empty sum of a type.
       

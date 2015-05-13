@@ -22,6 +22,7 @@
 // stator
 #include "stator/config.hpp"
 #include "stator/constants.hpp"
+#include "stator/geometry/inverse.hpp"
 
 namespace stator {
   namespace geometry {
@@ -56,6 +57,10 @@ namespace stator {
       
       /*! \brief Get function for the ball center. */
       const Vector<Scalar, D>& center() const { return center_; }
+
+      Inverse<Ball> inverse() const {
+        return Inverse<Ball>(*this);
+      }
 
     protected:
       /*! \brief Radius of the ball. */

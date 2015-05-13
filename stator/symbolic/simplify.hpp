@@ -144,8 +144,6 @@ namespace stator {
       return detail::try_simplify_imp(a, 0);
     }
 
-
-
     template<class Arg, size_t Power>
     auto simplify_powerop_impl(const PowerOp<Arg, Power>& f, detail::choice<0>) -> decltype(simplify(PowerOpSubstitution<Power>::eval(simplify(f._arg))))
     { return PowerOpSubstitution<Power>::eval(simplify(f._arg)); }

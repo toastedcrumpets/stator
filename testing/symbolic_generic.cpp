@@ -216,6 +216,9 @@ BOOST_AUTO_TEST_CASE( Null_tests )
   //Check derivatives of constants becomes Null
   BOOST_CHECK(compare_expression(derivative(2, Variable<'x'>()), NullSymbol()));
   BOOST_CHECK(compare_expression(derivative(3.141, Variable<'x'>()), NullSymbol()));
+
+  BOOST_CHECK(compare_expression(Vector{1,2,3} * NullSymbol(), NullSymbol()));
+  BOOST_CHECK(compare_expression(Vector{1,2,3} + NullSymbol(), Vector{1,2,3}));
 }
 
 BOOST_AUTO_TEST_CASE( Unity_tests )

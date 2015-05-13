@@ -27,16 +27,16 @@
 
 namespace stator {
   namespace geometry {
-    namespace sym = stator::symbolic;
-
+    namespace symbolic = stator::symbolic;
+    
     template<class Scalar, size_t D, class VijFunc>
-    auto indicator(const Ball<Scalar, D>& bi,  const Point<Scalar, D>& bj, const VijFunc& vij) -> decltype(sym::simplify(sym::pow(vij + bi.center() - bj.center(), 2) - sym::pow(bi.radius(), 2))) {
-      return sym::simplify(sym::pow(vij + bi.center() - bj.center(), 2) - sym::pow(bi.radius(), 2));
+    auto indicator(const Ball<Scalar, D>& bi,  const Point<Scalar, D>& bj, const VijFunc& vij) -> decltype(symbolic::try_simplify(symbolic::pow(vij + bi.center() - bj.center(), 2) - symbolic::pow(bi.radius(), 2))) {
+      return symbolic::try_simplify(symbolic::pow(vij + bi.center() - bj.center(), 2) - symbolic::pow(bi.radius(), 2));
     }
 
     template<class Scalar, size_t D, class VijFunc>
-    auto indicator(const Ball<Scalar, D>& bi,  const Ball<Scalar, D>& bj, const VijFunc& vij) -> decltype(sym::simplify(sym::pow<2>(vij + bi.center() - bj.center()) - sym::pow<2>(bi.radius() + bj.radius()))) {
-      return sym::simplify(sym::pow<2>(vij + bi.center() - bj.center()) - sym::pow<2>(bi.radius() + bj.radius()));
+    auto indicator(const Ball<Scalar, D>& bi,  const Ball<Scalar, D>& bj, const VijFunc& vij) -> decltype(symbolic::try_simplify(symbolic::pow<2>(vij + bi.center() - bj.center()) - symbolic::pow<2>(bi.radius() + bj.radius()))) {
+      return symbolic::try_simplify(symbolic::pow<2>(vij + bi.center() - bj.center()) - symbolic::pow<2>(bi.radius() + bj.radius()));
     }
 
   } // namespace geometry

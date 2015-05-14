@@ -27,18 +27,16 @@
 
 namespace stator {
   namespace geometry {
-    namespace symbolic = stator::symbolic;
-    
     template<class Scalar, size_t D, class VijFunc>
     auto indicator(const Ball<Scalar, D>& bi,  const Point<Scalar, D>& bj, const VijFunc& vij) 
-      -> typename std::decay<decltype(symbolic::try_simplify(symbolic::try_simplify(symbolic::pow<2>(vij * symbolic::Variable<'t'>() + bi.center() - bj.center()) - symbolic::pow<2>(bi.radius()))))>::type {
-      return symbolic::try_simplify(symbolic::try_simplify(symbolic::pow<2>(vij * symbolic::Variable<'t'>() + bi.center() - bj.center()) - symbolic::pow<2>(bi.radius())));
+      -> STORETYPE(stator::symbolic::try_simplify(stator::symbolic::try_simplify(stator::symbolic::pow<2>(vij * stator::symbolic::Variable<'t'>() + bi.center() - bj.center()) - stator::symbolic::pow<2>(bi.radius())))) {
+      return stator::symbolic::try_simplify(stator::symbolic::try_simplify(stator::symbolic::pow<2>(vij * stator::symbolic::Variable<'t'>() + bi.center() - bj.center()) - stator::symbolic::pow<2>(bi.radius())));
     }
 
     template<class Scalar, size_t D, class VijFunc>
     auto indicator(const Ball<Scalar, D>& bi,  const Ball<Scalar, D>& bj, const VijFunc& vij)
-      -> typename std::decay<decltype(symbolic::try_simplify(symbolic::pow<2>(symbolic::try_simplify(vij * symbolic::Variable<'t'>() + bi.center() - bj.center())) - symbolic::pow<2>(bi.radius() + bj.radius())))>::type {
-      return symbolic::try_simplify(symbolic::pow<2>(symbolic::try_simplify(vij * symbolic::Variable<'t'>() + bi.center() - bj.center())) - symbolic::pow<2>(bi.radius() + bj.radius()));
+      -> STORETYPE(stator::symbolic::try_simplify(stator::symbolic::pow<2>(stator::symbolic::try_simplify(vij * stator::symbolic::Variable<'t'>() + bi.center() - bj.center())) - stator::symbolic::pow<2>(bi.radius() + bj.radius()))) {
+      return stator::symbolic::try_simplify(stator::symbolic::pow<2>(stator::symbolic::try_simplify(vij * stator::symbolic::Variable<'t'>() + bi.center() - bj.center())) - stator::symbolic::pow<2>(bi.radius() + bj.radius()));
     }
 
   } // namespace geometry

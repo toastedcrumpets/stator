@@ -173,7 +173,7 @@ namespace stator {
     auto simplify(const PowerOp<Arg, Power>& f) -> decltype(simplify_powerop_impl(f, detail::select_overload{}))
     { return simplify_powerop_impl(f, detail::select_overload{}); }
 
-    /*! \brief Optimisation of a Polynomial LHS multiplied by a
+    /*! \brief Simplification of a Polynomial LHS multiplied by a
       Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
@@ -184,7 +184,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial RHS multiplied by a
+    /*! \brief Simplification of a Polynomial RHS multiplied by a
       Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
@@ -195,7 +195,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial LHS added to a
+    /*! \brief Simplification of a Polynomial LHS added to a
       Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
@@ -205,7 +205,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial RHS added to a
+    /*! \brief Simplification of a Polynomial RHS added to a
       Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const AddOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
@@ -215,7 +215,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial LHS subtracted by a
+    /*! \brief Simplification of a Polynomial LHS subtracted by a
       Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
@@ -225,7 +225,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial RHS subtracted by a
+    /*! \brief Simplification of a Polynomial RHS subtracted by a
       Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const SubtractOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
@@ -235,7 +235,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial LHS added to a
+    /*! \brief Simplification of a Polynomial LHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> > & f)
@@ -245,7 +245,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial RHS added to a
+    /*! \brief Simplification of a Polynomial RHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const AddOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> > & f)
@@ -255,7 +255,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial LHS subtracted from a
+    /*! \brief Simplification of a Polynomial LHS subtracted from a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> >& f)
@@ -265,7 +265,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial RHS subtracted from a
+    /*! \brief Simplification of a Polynomial RHS subtracted from a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const SubtractOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> >& f)
@@ -275,7 +275,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial LHS multiplied by a
+    /*! \brief Simplification of a Polynomial LHS multiplied by a
       PowerOp of a Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<Order+POrder, Real, Letter> simplify(const MultiplyOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> >& f)
@@ -285,7 +285,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial RHS multiplied by a
+    /*! \brief Simplification of a Polynomial RHS multiplied by a
       PowerOp of a Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<Order+POrder, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> >& f)
@@ -295,7 +295,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial LHS added to a
+    /*! \brief Simplification of a Polynomial LHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, UnitySymbol> & f)
@@ -305,7 +305,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial RHS added to a
+    /*! \brief Simplification of a Polynomial RHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order, Real, Letter> simplify(const AddOp<UnitySymbol, Polynomial<Order, Real, Letter> > & f)
@@ -315,7 +315,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial LHS subtracted by a
+    /*! \brief Simplification of a Polynomial LHS subtracted by a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, UnitySymbol> & f)
@@ -325,7 +325,7 @@ namespace stator {
       return retval;
     }
 
-    /*! \brief Optimisation of a Polynomial RHS subtracted by a
+    /*! \brief Simplification of a Polynomial RHS subtracted by a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real>
     Polynomial<Order, Real, Letter> simplify(const SubtractOp<UnitySymbol, Polynomial<Order, Real, Letter> > & f)

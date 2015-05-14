@@ -20,30 +20,13 @@
 #pragma once
 
 // stator
-#include "stator/constants.hpp"
-#include "stator/geometry/sphere.hpp"
-#include "stator/geometry/point.hpp"
+#include "stator/geometry/indicator.hpp"
 
 namespace stator {
   namespace geometry {
-    /*! \brief Test if a point intersects with a ball volume.*/
-    template<typename Scalar, size_t D>
-    bool intersects(const Ball<Scalar, D>& b1, const Point<Scalar, D>& b2) {
-      return (b1.center() - b2.center()).squaredNorm() <= std::pow(b1.radius(), 2);
+    template<typename Obj1, typename Obj2>
+    bool intersects(const Obj1& b1, const Obj2& b2) {
+      return indicator(b1, b2, stator::symbolic::NullSymbol()) < 0;
     }
-
-    /*! \brief Test if a point intersects with a ball volume.*/
-    template<typename Scalar, size_t D>
-    bool intersects(const Point<Scalar, D>& b1, const Ball<Scalar, D>& b2) {
-      return intersects(b2, b1);
-    }
-
-    /*! \brief Test if two ball volumes intersect.*/
-    template<typename Scalar, size_t D>
-    bool intersects(const Ball<Scalar, D>& b1, const Ball<Scalar, D>& b2) {
-      return (b1.center() - b2.center()).squaredNorm() <= std::pow(b1.radius() + b2.radius(), 2);
-    }
-    
-
   } // namespace geometry
 } // namespace stator

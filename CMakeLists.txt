@@ -123,6 +123,7 @@ endfunction(stator_test)
 
 
 stator_test(orphan_static_list)
+stator_test(stack_vector)
 
 if(CXX11_TEMPLATE_TYPEDEFS)
   stator_test(geometry_shapes)

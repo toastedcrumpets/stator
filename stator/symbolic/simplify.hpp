@@ -190,7 +190,7 @@ namespace stator {
     Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
     {
       Polynomial<Order+1, Real, Letter> retval;
-      retval[0] = 0;
+      retval[0] = empty_sum(retval[0]);
       std::copy(f._l.begin(), f._l.end(), retval.begin() + 1);
       return retval;
     }

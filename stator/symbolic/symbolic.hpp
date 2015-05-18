@@ -376,15 +376,15 @@ namespace stator {
       allowing simplification of symbolic expressions.
      */
     template<size_t i> struct Factorial {
-      static size_t eval() { return i * Factorial<i-1>::eval(); }
+      typedef ratio<i * Factorial<i - 1>::value::num, 1> value;
     };
     
     template<> struct Factorial<1> {
-      static UnitySymbol eval() { return UnitySymbol(); }
+      typedef ratio<1, 1> value;
     };
 
     template<> struct Factorial<0> {
-      static UnitySymbol eval() { return UnitySymbol(); }
+      typedef ratio<1, 1> value;
     };
 
     /*! \brief Symbolic Inverse factorial function.
@@ -393,15 +393,7 @@ namespace stator {
       allowing simplification of symbolic expressions.
      */
     template<size_t i> struct InvFactorial {
-      static double eval() { return 1.0 / Factorial<i>::eval(); }
-    };
-    
-    template<> struct InvFactorial<1> {
-      static UnitySymbol eval() { return UnitySymbol(); }
-    };
-
-    template<> struct InvFactorial<0> {
-      static UnitySymbol eval() { return UnitySymbol(); }
+      typedef ratio<Factorial<i>::value::den, Factorial<i>::value::num> value;
     };
   }
 }
@@ -421,17 +413,17 @@ namespace stator {
 	{ return NullSymbol(); }
         
 	template<class F, class Real>
-	static auto eval(const F& f, const Real& a) -> decltype(InvFactorial<State>::eval() * substitution(f, Variable<Letter>() == a) + (Variable<Letter>() - a) * TaylorSeriesWorker<State+1, max_Order, Letter>::eval(derivative(f, Variable<Letter>()), a))
+	static auto eval(const F& f, const Real& a) -> decltype(typename InvFactorial<State>::value() * substitution(f, Variable<Letter>() == a) + (Variable<Letter>() - a) * TaylorSeriesWorker<State+1, max_Order, Letter>::eval(derivative(f, Variable<Letter>()), a))
 	{
-	  return InvFactorial<State>::eval() * substitution(f, Variable<Letter>() == a) + (Variable<Letter>()-a) * TaylorSeriesWorker<State+1, max_Order, Letter>::eval(derivative(f, Variable<Letter>()), a);
+	  return typename InvFactorial<State>::value() * substitution(f, Variable<Letter>() == a) + (Variable<Letter>()-a) * TaylorSeriesWorker<State+1, max_Order, Letter>::eval(derivative(f, Variable<Letter>()), a);
 	}
       };
 
       template<size_t max_Order, char Letter>
       struct TaylorSeriesWorker<max_Order,max_Order,Letter> {
 	template<class F, class Real>
-	static auto eval(const F& f, const Real& a) -> decltype(InvFactorial<max_Order>::eval() * substitution(f, Variable<Letter>() == a))
-	{ return InvFactorial<max_Order>::eval() * substitution(f, Variable<Letter>() == a); }
+	static auto eval(const F& f, const Real& a) -> decltype(typename InvFactorial<max_Order>::value() * substitution(f, Variable<Letter>() == a))
+	{ return typename InvFactorial<max_Order>::value() * substitution(f, Variable<Letter>() == a); }
 
 	template<class Real>
 	static NullSymbol eval(const NullSymbol& f, const Real& a)

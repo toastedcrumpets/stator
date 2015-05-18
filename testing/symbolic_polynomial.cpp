@@ -115,6 +115,12 @@ BOOST_AUTO_TEST_CASE( poly_multiplication )
   BOOST_CHECK_EQUAL(poly3[0], -4);
   BOOST_CHECK_EQUAL(poly3[1], +2);
   BOOST_CHECK_EQUAL(poly3[2], -2);
+
+  static_assert(std::is_same<decltype(NullSymbol() * Polynomial<2>{1,2,3}), NullSymbol>::value, "NullSymbol multiply is not cancelling the polynomial");
+  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * NullSymbol()), NullSymbol>::value, "NullSymbol multiply is not cancelling the polynomial");
+
+  static_assert(std::is_same<decltype(UnitySymbol() * Polynomial<2>{1,2,3}), const Polynomial<2>&>::value, "UnitySymbol multiply is not cancelling the polynomial");
+  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * UnitySymbol()), const Polynomial<2>&>::value, "UnitySymbol multiply is not cancelling the polynomial");
 }
 
 BOOST_AUTO_TEST_CASE( poly_division )
@@ -126,6 +132,8 @@ BOOST_AUTO_TEST_CASE( poly_division )
   BOOST_CHECK_EQUAL(poly2[0], 4);
   BOOST_CHECK_EQUAL(poly2[1], -2);
   BOOST_CHECK_EQUAL(poly2[2], 2);
+
+  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} / UnitySymbol()), const Polynomial<2>&>::value, "UnitySymbol division is not returning the polynomial");
 }
 
 BOOST_AUTO_TEST_CASE( poly_vector )

@@ -296,10 +296,17 @@ BOOST_AUTO_TEST_CASE( reorder_operations )
   BOOST_CHECK(compare_expression(derivative(2 * sin(x), Variable<'x'>()), 2 * cos(x)));
 }
 
-BOOST_AUTO_TEST_CASE( polynomial_substitution_function )
+BOOST_AUTO_TEST_CASE( Factorial_test )
 {
-  //Test substitution and expansion of a Polynomial 
-  BOOST_CHECK(compare_expression(eval(x * x - 3 * x + 2, Variable<'x'>() == x+1), x * x - x));
+  static_assert(Factorial<0>::value::num == 1, "0! != 1");
+  static_assert(Factorial<1>::value::num == 1, "1! != 1");
+  static_assert(Factorial<3>::value::num == 6, "3! != 6");
+  static_assert(Factorial<3>::value::den == 1, "Base isn't 1!");
+
+  static_assert(InvFactorial<0>::value::den == 1, "0! != 1");
+  static_assert(InvFactorial<1>::value::den == 1, "1! != 1");
+  static_assert(InvFactorial<3>::value::den == 6, "3! != 6");
+  static_assert(InvFactorial<3>::value::num == 1, "Num isn't 1!");
 }
 
 BOOST_AUTO_TEST_CASE( taylor_series_test )
@@ -310,10 +317,10 @@ BOOST_AUTO_TEST_CASE( taylor_series_test )
   BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, NullSymbol(), Variable<'x'>()), y*y*y));
   
   ////Simplifying PowerOp expressions into Polynomial
-  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, NullSymbol(), y), Polynomial<3,int,'y'>{0,0,0,1}));
+  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, NullSymbol(), y), y*y*y));
   
-  //Test truncation of PowerOp expressions when the order is too high
-  BOOST_CHECK(compare_expression(taylor_series<2>(y*y*y, NullSymbol(), y), NullSymbol()));
+  //Test truncation of PowerOp expressions when the original order is too high
+  static_assert(std::is_same<std::decay<decltype(taylor_series<2>(y*y*y, NullSymbol(), y))>::type, NullSymbol>::value, "Truncation not working on taylor_series");
   
   //Partially truncate a Polynomial through expansion
   BOOST_CHECK(compare_expression(taylor_series<2>(Polynomial<3,int,'y'>{1,2,3,4}, NullSymbol(), y), Polynomial<2,int,'y'>{1,2,3}));

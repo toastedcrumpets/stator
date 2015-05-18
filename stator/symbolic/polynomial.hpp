@@ -79,6 +79,13 @@ namespace stator {
 //      };
     }// namespace detail
 
+    namespace { template<size_t T> struct dependent_false: std::false_type {}; }
+
+    template<size_t Order, std::intmax_t num, std::intmax_t denom, char Letter>
+    class Polynomial<Order, ratio<num, denom>, Letter> {
+      static_assert(dependent_false<Order>::value,  "Cannot use ratio types as the coefficients of a polynomial");
+    };
+
     /*! \brief Representation of Polynomial with basic algebra operations.
 
       This class allows basic computer algebra to be performed with
@@ -241,7 +248,11 @@ namespace stator {
       Sturm chains.
      */
     template<class Real, size_t Order, char Letter, class Real2,
-	     typename = typename std::enable_if<std::is_arithmetic<Real2>::value>::type>
+	     typename = typename std::enable_if<std::is_arithmetic<Real2>::value
+                                                //Avoid this case if its a Vector expression
+                                                && !std::is_base_of<Eigen::EigenBase<Real>, Real>::value
+                                                && !std::is_base_of<Eigen::EigenBase<Real2>, Real2>::value
+                                                >::type>
     STORETYPE(Real() * Real2()) substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
     {
       //Handle the case where this is actually a constant and not a
@@ -256,7 +267,7 @@ namespace stator {
 	//Look through the Polynomial to find the highest order term
 	//with a non-zero coefficient.
 	for(size_t i = Order; i > 0; --i)
-	  if (f[i] != 0) {
+	  if (f[i] != empty_sum(f[0])) {
 	    //Determine if this is an odd or even function of x
 	    if (Order % 2)
 	      //This is an odd function of x.
@@ -315,7 +326,10 @@ namespace stator {
       method.
      */
     template<class Real, size_t Order, char Letter, class Real2,
-	     typename = typename std::enable_if<!std::is_arithmetic<Real2>::value>::type>
+	     typename = typename std::enable_if<!std::is_arithmetic<Real2>::value
+                                                || (std::is_base_of<Eigen::EigenBase<Real2>, Real2>::value && std::is_arithmetic<Real2>::value)
+                                                || (std::is_base_of<Eigen::EigenBase<Real>, Real>::value && std::is_arithmetic<Real2>::value)
+                                                >::type>
     auto substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container) -> decltype(detail::PolySubWorker<Order>::eval(f, x_container._val))
     { return detail::PolySubWorker<Order>::eval(f, x_container._val); }
 
@@ -413,6 +427,60 @@ namespace stator {
 
       return RetType(f * (1.0 / g[0]), Polynomial<0, Real, Letter>{empty_sum(Real())});
     }
+
+    /*! \brief left-handed addition of NullSymbol on a Polynomial.
+    */
+    template<size_t Order, class Real, char Letter>
+    const Polynomial<Order, Real, Letter>& operator+(const NullSymbol& r, const Polynomial<Order, Real, Letter>& poly)
+    { return poly; }
+
+    /*! \brief Right-handed addition of NullSymbol on a Polynomial.
+    */
+    template<size_t Order, class Real, char Letter>
+    const Polynomial<Order, Real, Letter>& operator+(const Polynomial<Order, Real, Letter>& poly, const NullSymbol& r)
+    { return poly; }
+
+    /*! \brief left-handed subtraction of NullSymbol on a Polynomial.
+    */
+    template<size_t Order, class Real, char Letter>
+    Polynomial<Order, Real, Letter> operator-(const NullSymbol& r, const Polynomial<Order, Real, Letter>& poly)
+    { return -poly; }
+
+    /*! \brief Right-handed subtraction of NullSymbol on a Polynomial.
+    */
+    template<size_t Order, class Real, char Letter>
+    const Polynomial<Order, Real, Letter>& operator-(const Polynomial<Order, Real, Letter>& poly, const NullSymbol& r)
+    { return poly; }
+
+    /*! \brief left-handed multiplication of NullSymbol on a Polynomial.
+    */
+    template<size_t Order, class Real, char Letter>
+    NullSymbol operator*(const NullSymbol& r, const Polynomial<Order, Real, Letter>& poly)
+    { return NullSymbol(); }
+
+    /*! \brief Right-handed multiplication of NullSymbol on a Polynomial.
+    */
+    template<size_t Order, class Real, char Letter>
+    NullSymbol operator*(const Polynomial<Order, Real, Letter>& poly, const NullSymbol& r)
+    { return NullSymbol(); }
+
+    /*! \brief left-handed multiplication of UnitySymbol on a Polynomial.
+    */
+    template<size_t Order, class Real, char Letter>
+    const Polynomial<Order, Real, Letter>& operator*(const UnitySymbol& r, const Polynomial<Order, Real, Letter>& poly)
+    { return poly; }
+
+    /*! \brief Right-handed multiplication of UnitySymbol on a Polynomial.
+    */
+    template<size_t Order, class Real, char Letter>
+    const Polynomial<Order, Real, Letter>& operator*(const Polynomial<Order, Real, Letter>& poly, const UnitySymbol& r)
+    { return poly; }
+
+    /*! \brief Right-handed division of a Polynomial by UnitySymbol.
+    */
+    template<size_t Order, class Real, char Letter>
+    const Polynomial<Order, Real, Letter>& operator/(const Polynomial<Order, Real, Letter>& poly, const UnitySymbol& r)
+    { return poly; }
 
     /*! \brief Right-handed addition operation on a Polynomial.
       

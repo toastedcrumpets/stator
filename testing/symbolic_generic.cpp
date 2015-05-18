@@ -76,56 +76,26 @@ BOOST_AUTO_TEST_CASE( symbolic_ratio )
   BOOST_CHECK(compare_expression(cos(ratio<5,2>()*pi()), NullSymbol()));
 }
 
-
 BOOST_AUTO_TEST_CASE( Substitution_of_variables )
 {
   Variable<'x'> x;
   Variable<'y'> y;
   
-  BOOST_CHECK(compare_expression(substitution(x, x==y), "y"));
-}
+  BOOST_CHECK(compare_expression(substitution(x, x==y), y));
+}  
 
-BOOST_AUTO_TEST_CASE( simplify_tests )
-{
-  //Test that simplify does nothing when it has nothing to do
-  auto poly1 = try_simplify(2 * x * x);
-  BOOST_CHECK_EQUAL(poly1[0], 0);
-  BOOST_CHECK_EQUAL(poly1[1], 0);
-  BOOST_CHECK_EQUAL(poly1[2], 2);
-
-  Variable<'y'> y;
-
-  //Check that expansions exist for these functions
-  simplify(y+y);
-  simplify(y+y+y);
-  //simplify(y*y*y);
-  simplify(y*y*2);
-}
-  
-BOOST_AUTO_TEST_CASE( simplify_polynomials )
-{
-  //Test addition and simplification of Polynomials
-  auto poly1 = 2 * x * x + x;
-  //This should become a Polynomial class, with its coefficients
-  //accessible by the array operator.
-  BOOST_CHECK_EQUAL(poly1[0], 0);
-  BOOST_CHECK_EQUAL(poly1[1], 1);
-  BOOST_CHECK_EQUAL(poly1[2], 2);
-}
-  
-BOOST_AUTO_TEST_CASE( polynomials_derivative_addition )
+BOOST_AUTO_TEST_CASE( derivative_addition )
 {
   //Test Polynomial derivatives on addition Operation types
-  auto poly1 = derivative(add(2 * x * x,  x, detail::select_overload{}), Variable<'x'>());
-  //derivative will automatically combine polynomials
-  BOOST_CHECK_EQUAL(poly1[0], 1);
-  BOOST_CHECK_EQUAL(poly1[1], 4);
+  Variable<'x'> x;
+
+  BOOST_CHECK(compare_expression(derivative(2 * x * x + x, x), (2*x)*ratio<2>()+1)); 
 }
 
 BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
 {
   //Test Polynomial derivatives on subtraction Operation types
-  auto poly1 = derivative(subtract(2 * x * x,  x, detail::select_overload{}), Variable<'x'>());
+  auto poly1 = derivative(2*x*x - x, Variable<'x'>());
   //derivative will automatically combine polynomials
   BOOST_CHECK_EQUAL(poly1[0], -1);
   BOOST_CHECK_EQUAL(poly1[1], 4);
@@ -134,9 +104,7 @@ BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
 BOOST_AUTO_TEST_CASE( polynomials_multiply_expansion )
 {
   //Test Polynomial simplification on multiplication Operation types
-  auto poly1 = (x + 1) *  (x + 3);
-
-  //derivative will automatically combine polynomials
+  auto poly1 = (x + 1)*(x + 3);
   BOOST_CHECK_EQUAL(poly1[0], 3);
   BOOST_CHECK_EQUAL(poly1[1], 4);
   BOOST_CHECK_EQUAL(poly1[2], 1);

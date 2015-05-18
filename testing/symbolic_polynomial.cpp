@@ -167,6 +167,24 @@ BOOST_AUTO_TEST_CASE( poly_lower_order )
   BOOST_CHECK_EQUAL(eval(poly3, 123), eval(poly4, 123));
 }
 
+BOOST_AUTO_TEST_CASE( poly_simplify )
+{
+  using namespace stator::symbolic;
+  Variable<'x'> x;
+  //Test that simplify creates polynomials from Variables
+  auto poly1 = simplify(2 * x * x);
+  BOOST_CHECK_EQUAL(poly1[0], 0);
+  BOOST_CHECK_EQUAL(poly1[1], 0);
+  BOOST_CHECK_EQUAL(poly1[2], 2);
+
+  Variable<'y'> y;
+  //Check that Polynomial simplifications exist for these functions
+  simplify(y+y);
+  simplify(y+y+y);
+  simplify(y*y*2);
+  simplify(y*y*2+1+2*x+2-12*x*x);
+}
+
 BOOST_AUTO_TEST_CASE( poly_eval_limits )
 {
   using namespace stator::symbolic;

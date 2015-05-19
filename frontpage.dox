@@ -55,22 +55,22 @@ namespace stator {
     \endcode
     
     The power of the library arises from the cancellation of
-    terms. Any term multiplied by zero (\ref Null "C<0>"), which has a convenient
-    typedef of \ref Null) is cancelled to zero:
+    terms. Any term multiplied by zero (\ref Null "C<0>", AKA \ref
+    Null) is cancelled to zero:
 
     \code{.cpp}
-    assert(std::is_same<decltype(sin(x) * x), Null>::value);
+    assert(std::is_same<decltype(sin(x) * C<0>()), C<0> >::value);
     \endcode
 
     Equally, any term multiplied by one (\ref Unity "C<1>", which has a
     convenient typedef of \ref Unity), is left unchanged:
 
     \code{.cpp}
-    assert(std::is_same<decltype(C<1>() * x), Variable<'x'>>::value);
+    assert(std::is_same<decltype(C<1>() * Variable<'x'>()), Variable<'x'> >::value);
     \endcode
     
     The simplification rules are not that advanced by default. They
-    tend to preserve the input form of the equation:
+    almost always preserve the input form of the equation:
 
     \code{.cpp}
     auto f = x * x * (1.5 + 2 * x) - 3 * x;
@@ -78,8 +78,13 @@ namespace stator {
     //output: (((x)^2) × ((1.5) + ((2) × (x)))) - ((3) × (x))
     \endcode
     
-    There is a simplify function, which *may* perform run-time
-    calculation to simplify the expression:
+    Here you'll see that expressions can be written out to std::cout,
+    and that the order of operations is preserved from the original
+    input.
+
+    There is a \ref simplify function which allows rearrangement and
+    calculations (such as combination of compile-time and run-time
+    constants) to simplify the expression:
     
     \code{.cpp}
     auto simplef = simplify(f);
@@ -90,32 +95,50 @@ namespace stator {
     In this particular case, the expression has now become a
     Polynomial type, as denoted by the enclosing P(..) on the
     output. The Polynomial class represents a polynomial in one
-    variable as an array of coefficients.
+    variable as an array of coefficients. This form is required if we
+    need to perform analysis such as root finding:
     
     \code{.cpp}
-    //We can do simple things like substitutions to either evaluate the
-    //function
+    std::cout << solve_real_roots(simplef) << std::endl;
+    //output: StackVector{ -1.65587 0 0.905869 }
+    \endcode
+
+    Here there are three real roots, and they are returned in a \ref
+    StackVector, which behaves like a std::vector but it has a fixed
+    size and is allocated on the stack. The library is capable of
+    solving for the real roots of arbitrary polynomials, but relies on
+    numerical schemes for greater than third order polynomials.
+    
+    We have seen how to analyse polynomials, but not how to evaluate
+    them. We evaluate expressions by substituting the variable for a
+    value or even another expression:
+    
+    \code{.cpp}    
+    //Evaluation/substitution at a point x=2
     std::cout << substitution(simplef, x == 2) << std::endl;
     //output: 16
 
-    //Or perform a symbolic substitution
+    //A symbolic substitution, replacing x with x+2:
     std::cout << simplify(substitution(simplef, x == x + 2)) << std::endl;
     //output: 2 × x³ + 13.5 × x² + 27 × x + 16
+    \endcode
 
-    //And even perform analysis of the function to determine the real
-    //roots:
-    std::cout << solve_real_roots(simplef) << std::endl;
-    //output: StackVector{ -1.65587 0 0.905869 }
+    These are the basics of the library, but there is growing support
+    for complex functions. For example, \ref sin and \ref cos
+    functions are supported. Here is the derivative of a complex function:
 
-    //The analysis is not limited to root finding of real polynomials,
-    //we can take derivatives
+    \code{.cpp}
     std::cout << simplify(derivative(4 * x * cos(2*x+2), x)) << std::endl;
     //output: ((4) × (cos(2 × x + 2))) + ((-8 × x) × (sin(2 × x + 2)))
-  
-    //We can perform a 5th order Taylor expansion about zero in x
+    \endcode
+
+    We can also take Taylor expansions of complex expressions to
+    extract an approximate Polynomial form:
+
+    \code{.cpp}
+    //5th order Taylor expansion about zero in x
     std::cout << taylor_series<5>(4 * x * cos(2*x+2), 0.0, x) << std::endl;
     //output: -1.10972 × x^5 + 4.84959 × x^4 + 3.32917 × x³ + -7.27438 × x² + -1.66459 × x
-    }
     \endcode
 */
   }

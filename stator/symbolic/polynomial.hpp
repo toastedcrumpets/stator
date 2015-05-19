@@ -710,6 +710,7 @@ namespace stator {
       std::ostringstream oss;
       oss.precision(os.precision());
       size_t terms = 0;
+      oss << "P(";
       for (size_t i(N); i != 0; --i) {
 	if (poly[i] == empty_sum(poly[i])) continue;
 	if (terms != 0)
@@ -730,7 +731,7 @@ namespace stator {
 	++terms;
 	detail::print_coeff(oss, poly[0]);
       }
-      os << oss.str();
+      os << oss.str() << ")";
       return os;
     }
     /*! \} */

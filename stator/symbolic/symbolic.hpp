@@ -1,3 +1,6 @@
+/*! \file symbolic.hpp
+  \brief Main header for the stator::symbolic library.
+*/
 /*
   Copyright (C) 2015 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
@@ -33,41 +36,58 @@
 
 namespace stator {
   namespace symbolic {
+
+
     using stator::orphan::StackVector;
-    template<std::size_t I = 0, typename... Tp>
-    inline typename std::enable_if<I == sizeof...(Tp), void>::type
-    tuple_print(const std::tuple<Tp...>& t, std::ostream& os)
-    { }
     
-    template<std::size_t I = 0, typename... Tp>
-    inline typename std::enable_if<I < sizeof...(Tp), void>::type
-    tuple_print(const std::tuple<Tp...>& t, std::ostream& os)
-    {
-      os << std::get<I>(t) << " ";
-      tuple_print<I + 1, Tp...>(t, os);
-    }
-      
+    namespace detail {
+      template<std::size_t I = 0, typename... Tp>
+      inline typename std::enable_if<I == sizeof...(Tp), void>::type
+      tuple_print(const std::tuple<Tp...>& t, std::ostream& os)
+      { }
+
+      template<std::size_t I = 0, typename... Tp>
+      inline typename std::enable_if<I < sizeof...(Tp), void>::type
+      tuple_print(const std::tuple<Tp...>& t, std::ostream& os)
+      {
+        os << std::get<I>(t) << " ";
+        tuple_print<I + 1, Tp...>(t, os);
+      }
+    } // namespace detail
+
     template<size_t Nmax, typename... Tp>
     std::ostream& operator<<(std::ostream& os, const StackVector<std::tuple<Tp...>,Nmax>&s) 
     {
       os << "StackVector{ ";
       for (const auto& val : s) {
 	os << "[";
-	tuple_print(val, os);
+        detail::tuple_print(val, os);
 	os << "] ";
       }
       os << "}";
       return os;
     }
+    
+    /*! \brief A class representing a compile-time constant.
 
-    /////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////    Compile time constants         /////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////
-    //These are implemented using std::ratio. We use inheritance to create
-    //this as a new C type in the stator::symbolic namespace to ensure
-    //operator lookups consider this namespace.
+      These are implemented using std::ratio. The only reason this
+      type exists as a separate type from std::ratio (and inherits
+      from from std::ratio) is to ensure operator lookups consider
+      this namespace. Many additional options are enabled (such as
+      ratio-float multipliation).
+     */
     template<std::intmax_t Num, std::intmax_t Denom = 1>
-    struct C : std::ratio<Num, Denom> {};
+    struct C: std::ratio<Num, Denom> 
+    {};
+
+    /*! \brief Conversion operator from std::ratio to C.*/
+    template<class stdratio>
+    using C_wrap = C<stdratio::num, stdratio::den>;
+    
+    template<class T> struct is_C { static const bool value = false; };
+
+    template<std::intmax_t N, std::intmax_t D> 
+    struct is_C<C<N,D> > { static const bool value = true; };
 
     /*! \brief A symbolic representation of zero. */
     typedef C<0> Null;
@@ -75,10 +95,10 @@ namespace stator {
     typedef C<1> Unity;
     
     /*! \brief A symbolic/compile-time rational approximation of \f$\pi\f$. */
-    typedef C<constant_ratio::pi::num, constant_ratio::pi::den> pi; 
+    typedef C_wrap<constant_ratio::pi> pi;
 
     /*! \brief A symbolic/compile-time rational approximation of \f$\mathrm{e}\f$. */
-    typedef C<constant_ratio::e::num, constant_ratio::e::den> e; 
+    typedef C_wrap<constant_ratio::e> e;
 
     /*! \brief Output operator for std::ratio types */
     template<std::intmax_t Num, std::intmax_t Denom>
@@ -303,8 +323,6 @@ namespace stator {
       return os;
     }
     
-    /*! \} */
-  
     /*! \brief Determine the derivative of a symbolic expression.
       
       This default implementation gives all consants

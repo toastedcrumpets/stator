@@ -22,9 +22,6 @@
 namespace stator {
   namespace symbolic {
 
-    template<class T> struct is_C { static const bool value = false; };
-    template<std::intmax_t N, std::intmax_t D> struct is_C<C<N,D> > { static const bool value = true; };
-
     //The implementations below perform basic simplification of expressions
     //
     //These simplify expressions dramatically, so they have the highest priority
@@ -71,10 +68,6 @@ namespace stator {
     template<char Letter, size_t Order>
     PowerOp<Variable<Letter>, Order+1> multiply(const Variable<Letter>&, const PowerOp<Variable<Letter>, Order>&, detail::choice<0>)
     { return PowerOp<Variable<Letter>, Order+1>(Variable<Letter>()); }
-
-
-    template<class stdratio>
-    using C_wrap = C<stdratio::num, stdratio::den>;
 
     //Ratio operators (these are lower priority than above
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>

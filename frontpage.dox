@@ -10,10 +10,116 @@
   \endcode
 
   The library uses a range of advanced techniques to provide
-  interesting mathematical capability. For example, here is an
-  introduction to the stator::symbolic functionality :
+  interesting mathematical capability. For more information have a
+  look at the documentation for each namespace:
+
+    - stator::symbolic: Math library (\ref symbolic_guide "guide here")
+  
 */
 
+namespace stator {
+  namespace symbolic {
+/*!
+  \page symbolic_guide Guide to stator::symbolic
+
+    First, include the library and access the symbolic namespace.
+    
+    \code{.cpp}
+    #include <stator/symbolic/symbolic.hpp>
+  
+    int main() {
+    using namespace stator::symbolic;
+    \endcode
+    
+    The power of this library is in the ability of the compiler to
+    simplify and analyse mathematical expressions. To enable this,
+    mathematical expressions must be encoded as a type. The first type
+    is the compile time constants:
+    
+    \code{.cpp}
+    //We can define whole number constants, but note the value is actually the type:
+    C<0> zero;
+    C<1> one;
+    C<2> two;
+    //Fractional constants are possible as well as C inherits from std::ratio
+    C<1, 4> quarter;
+    \endcode
+    
+    You may have a large number of different variables too, and these
+    are identified by a number/character in their type:
+
+    \code{.cpp}
+    Variable<'x'> x;
+    Variable<'y'> y;
+    Variable<0> var0;
+    \endcode
+    
+    The power of the library arises from the cancellation of
+    terms. Any term multiplied by zero (\ref Null "C<0>"), which has a convenient
+    typedef of \ref Null) is cancelled to zero:
+
+    \code{.cpp}
+    assert(std::is_same<decltype(sin(x) * x), Null>::value);
+    \endcode
+
+    Equally, any term multiplied by one (\ref Unity "C<1>", which has a
+    convenient typedef of \ref Unity), is left unchanged:
+
+    \code{.cpp}
+    assert(std::is_same<decltype(C<1>() * x), Variable<'x'>>::value);
+    \endcode
+    
+    The simplification rules are not that advanced by default. They
+    tend to preserve the input form of the equation:
+
+    \code{.cpp}
+    auto f = x * x * (1.5 + 2 * x) - 3 * x;
+    std::cout << f << std::endl;
+    //output: (((x)^2) × ((1.5) + ((2) × (x)))) - ((3) × (x))
+    \endcode
+    
+    There is a simplify function, which *may* perform run-time
+    calculation to simplify the expression:
+    
+    \code{.cpp}
+    auto simplef = simplify(f);
+    std::cout << simplef << std::endl;
+    //output: P(2 × x³ + 1.5 × x² + -3 × x)
+    \endcode
+    
+    In this particular case, the expression has now become a
+    Polynomial type, as denoted by the enclosing P(..) on the
+    output. The Polynomial class represents a polynomial in one
+    variable as an array of coefficients.
+    
+    \code{.cpp}
+    //We can do simple things like substitutions to either evaluate the
+    //function
+    std::cout << substitution(simplef, x == 2) << std::endl;
+    //output: 16
+
+    //Or perform a symbolic substitution
+    std::cout << simplify(substitution(simplef, x == x + 2)) << std::endl;
+    //output: 2 × x³ + 13.5 × x² + 27 × x + 16
+
+    //And even perform analysis of the function to determine the real
+    //roots:
+    std::cout << solve_real_roots(simplef) << std::endl;
+    //output: StackVector{ -1.65587 0 0.905869 }
+
+    //The analysis is not limited to root finding of real polynomials,
+    //we can take derivatives
+    std::cout << simplify(derivative(4 * x * cos(2*x+2), x)) << std::endl;
+    //output: ((4) × (cos(2 × x + 2))) + ((-8 × x) × (sin(2 × x + 2)))
+  
+    //We can perform a 5th order Taylor expansion about zero in x
+    std::cout << taylor_series<5>(4 * x * cos(2*x+2), 0.0, x) << std::endl;
+    //output: -1.10972 × x^5 + 4.84959 × x^4 + 3.32917 × x³ + -7.27438 × x² + -1.66459 × x
+    }
+    \endcode
+*/
+  }
+}
 /*! \brief The stator library namespace.
 
   Although the \ref stator namespace is used for shared functionality
@@ -64,51 +170,7 @@
     This namespace encapsulates the symbolic math functionality of
     stator. This library allows you to perform compile-time operations
     on mathematical expressions, as well as perform run-time
-    calculations.
-
-    For example:
-    // \code{.cpp}
-    #include <stator/symbolic/symbolic.hpp>
-  
-    int main() {
-    using namespace stator::symbolic;
-    //We can create mathematical expressions using Variables
-    Variable<'x'> x;
-    auto f = x * x * (1.5 + 2 * x) - 3 * x;
-  
-    //We can print these statements
-    std::cout << f << std::endl;
-    //output: (((x)^2) × ((1.5) + ((2) × (x)))) - ((3) × (x))
-
-    //Simplification finds better/more efficient representations 
-    auto simplef = simplify(f);
-    std::cout << simplef << std::endl;
-    //output: 2 × x³ + 1.5 × x² + -3 × x
-
-    //We can do simple things like substitutions to either evaluate the
-    //function
-    std::cout << substitution(simplef, x == 2) << std::endl;
-    //output: 16
-
-    //Or perform a symbolic substitution
-    std::cout << simplify(substitution(simplef, x == x + 2)) << std::endl;
-    //output: 2 × x³ + 13.5 × x² + 27 × x + 16
-
-    //And even perform analysis of the function to determine the real
-    //roots:
-    std::cout << solve_real_roots(simplef) << std::endl;
-    //output: StackVector{ -1.65587 0 0.905869 }
-
-    //The analysis is not limited to root finding of real polynomials,
-    //we can take derivatives
-    std::cout << simplify(derivative(4 * x * cos(2*x+2), x)) << std::endl;
-    //output: ((4) × (cos(2 × x + 2))) + ((-8 × x) × (sin(2 × x + 2)))
-  
-    //We can perform a 5th order Taylor expansion about zero in x
-    std::cout << taylor_series<5>(4 * x * cos(2*x+2), 0.0, x) << std::endl;
-    //output: -1.10972 × x^5 + 4.84959 × x^4 + 3.32917 × x³ + -7.27438 × x² + -1.66459 × x
-    }
-    \endcode
+    calculations, such as root finding on polynomials.    
   */
   namespace symbolic {
   } // namespace symbolic

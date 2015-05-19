@@ -22,43 +22,43 @@
 namespace stator {
   namespace symbolic {
 
-    template<class T> struct is_ratio { static const bool value = false; };
-    template<std::intmax_t N, std::intmax_t D> struct is_ratio<ratio<N,D> > { static const bool value = true; };
+    template<class T> struct is_C { static const bool value = false; };
+    template<std::intmax_t N, std::intmax_t D> struct is_C<C<N,D> > { static const bool value = true; };
 
     //The implementations below perform basic simplification of expressions
     //
     //These simplify expressions dramatically, so they have the highest priority
     template<class RHS>
-    typename std::enable_if<!is_ratio<RHS>::value, NullSymbol>::type 
-    multiply(const NullSymbol&, const RHS&, detail::choice<0>) { return NullSymbol(); }
+    typename std::enable_if<!is_C<RHS>::value, Null>::type 
+    multiply(const Null&, const RHS&, detail::choice<0>) { return Null(); }
     
     template<class LHS>
-    typename std::enable_if<!is_ratio<LHS>::value, NullSymbol>::type 
-    multiply(const LHS&, const NullSymbol&, detail::choice<0>) { return NullSymbol(); }
+    typename std::enable_if<!is_C<LHS>::value, Null>::type 
+    multiply(const LHS&, const Null&, detail::choice<0>) { return Null(); }
 
     template<class LHS>
-    typename std::enable_if<!is_ratio<LHS>::value, LHS>::type 
-    multiply(const LHS& l, const UnitySymbol& r, detail::choice<0>) { return l; }
+    typename std::enable_if<!is_C<LHS>::value, LHS>::type 
+    multiply(const LHS& l, const Unity& r, detail::choice<0>) { return l; }
     template<class RHS> 
-    typename std::enable_if<!is_ratio<RHS>::value, RHS>::type 
-    multiply(const UnitySymbol& l, const RHS& r, detail::choice<0>) { return r; }
+    typename std::enable_if<!is_C<RHS>::value, RHS>::type 
+    multiply(const Unity& l, const RHS& r, detail::choice<0>) { return r; }
     
 
     template<class LHS> 
-    typename std::enable_if<!is_ratio<LHS>::value, LHS>::type 
-    add(const LHS& l, const NullSymbol& r, detail::choice<0>) { return l; }
+    typename std::enable_if<!is_C<LHS>::value, LHS>::type 
+    add(const LHS& l, const Null& r, detail::choice<0>) { return l; }
     template<class RHS> 
-    typename std::enable_if<!is_ratio<RHS>::value, RHS>::type
-    add(const NullSymbol& l, const RHS& r, detail::choice<0>) { return r; }
+    typename std::enable_if<!is_C<RHS>::value, RHS>::type
+    add(const Null& l, const RHS& r, detail::choice<0>) { return r; }
 
     template<class LHS> 
-    typename std::enable_if<!is_ratio<LHS>::value, LHS>::type 
-    subtract(const LHS& l, const NullSymbol&, detail::choice<0>) { return l; }
+    typename std::enable_if<!is_C<LHS>::value, LHS>::type 
+    subtract(const LHS& l, const Null&, detail::choice<0>) { return l; }
     template<class RHS> 
-    auto subtract(const NullSymbol&, const RHS& r, detail::choice<0>) -> typename std::enable_if<!is_ratio<RHS>::value, decltype(-r)>::type { return -r; }
+    auto subtract(const Null&, const RHS& r, detail::choice<0>) -> typename std::enable_if<!is_C<RHS>::value, decltype(-r)>::type { return -r; }
     
-    template<class LHS> LHS divide(const LHS& l, const UnitySymbol&, detail::choice<0>) { return l; }
-    template<char Letter> UnitySymbol divide(const Variable<Letter>& l, const Variable<Letter>&, detail::choice<0>) { return UnitySymbol(); }
+    template<class LHS> LHS divide(const LHS& l, const Unity&, detail::choice<0>) { return l; }
+    template<char Letter> Unity divide(const Variable<Letter>& l, const Variable<Letter>&, detail::choice<0>) { return Unity(); }
 
     template<char Letter>
     PowerOp<Variable<Letter>, 2> multiply(const Variable<Letter>&, const Variable<Letter>&, detail::choice<0>)
@@ -74,58 +74,58 @@ namespace stator {
 
 
     template<class stdratio>
-    using ratio_wrap = ratio<stdratio::num, stdratio::den>;
+    using C_wrap = C<stdratio::num, stdratio::den>;
 
     //Ratio operators (these are lower priority than above
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    ratio_wrap<std::ratio_multiply<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
-    multiply(const ratio<Num1, Denom1>&, const ratio<Num2, Denom2>&, detail::choice<1>)
+    C_wrap<std::ratio_multiply<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
+    multiply(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
     { return {};}
 
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    ratio_wrap<std::ratio_add<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
-    add(const ratio<Num1, Denom1>&, const ratio<Num2, Denom2>&, detail::choice<1>)
+    C_wrap<std::ratio_add<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
+    add(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
     { return {};}
 
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    ratio_wrap<std::ratio_divide<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
-    divide(const ratio<Num1, Denom1>&, const ratio<Num2, Denom2>&, detail::choice<1>)
+    C_wrap<std::ratio_divide<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
+    divide(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
     { return {};}
 
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    ratio_wrap<std::ratio_subtract<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
-    subtract(const ratio<Num1, Denom1>&, const ratio<Num2, Denom2>&, detail::choice<1>)
+    C_wrap<std::ratio_subtract<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
+    subtract(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
     { return {};}
 
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    constexpr bool operator==(const ratio<Num1, Denom1>&, const ratio<Num2, Denom2>&)
-    { return std::ratio_equal<ratio<Num1, Denom1>, ratio<Num2, Denom2> >::value; }
+    constexpr bool operator==(const C<Num1, Denom1>&, const C<Num2, Denom2>&)
+    { return std::ratio_equal<C<Num1, Denom1>, C<Num2, Denom2> >::value; }
 
-    template<class ratio_arg, class factor, class offset = std::ratio<0> >
+    template<class C_arg, class factor, class offset = std::ratio<0> >
     struct is_whole_factor {
-      static const bool value = (std::ratio_divide<std::ratio_subtract<ratio_arg, offset>, factor>::den == 1);
+      static const bool value = (std::ratio_divide<std::ratio_subtract<C_arg, offset>, factor>::den == 1);
     };
 
     //Specialisations of sine cosine for whole multiples of pi/2
     template<std::intmax_t num, std::intmax_t den,
 	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
-    constexpr NullSymbol sin(const ratio<num, den>&) { return NullSymbol(); }
+    constexpr Null sin(const C<num, den>&) { return Null(); }
 
     template<std::intmax_t num, std::intmax_t den,
-	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/ratio<2>())>::value>::type>
-    constexpr UnitySymbol sin(const ratio<num, den>&) { return UnitySymbol(); }
+	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
+    constexpr Unity sin(const C<num, den>&) { return Unity(); }
 
     template<std::intmax_t num, std::intmax_t den,
-	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/ratio<2>())>::value>::type>
-    constexpr NullSymbol cos(const ratio<num, den>&) { return NullSymbol(); }
+	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
+    constexpr Null cos(const C<num, den>&) { return Null(); }
 
     template<std::intmax_t num, std::intmax_t den,
 	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi >::value>::type>
-    constexpr UnitySymbol cos(const ratio<num, den>&) { return UnitySymbol(); }
+    constexpr Unity cos(const C<num, den>&) { return Unity(); }
 
     //Removal of sign via abs on compile-time constants!
     template<std::intmax_t num, std::intmax_t den>
-    constexpr ratio<(num >= 0) ? num : -num, den> abs(const ratio<num, den>&) { return ratio<(num >= 0) ? num : -num, den>(); }
+    constexpr C<(num >= 0) ? num : -num, den> abs(const C<num, den>&) { return C<(num >= 0) ? num : -num, den>(); }
     
     namespace detail {
       template<class T>
@@ -298,7 +298,7 @@ namespace stator {
     /*! \brief Simplification of a Polynomial LHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
-    Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, UnitySymbol> & f)
+    Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Unity> & f)
     {
       Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> retval(f._l);
       retval[0] += 1;
@@ -308,7 +308,7 @@ namespace stator {
     /*! \brief Simplification of a Polynomial RHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real>
-    Polynomial<Order, Real, Letter> simplify(const AddOp<UnitySymbol, Polynomial<Order, Real, Letter> > & f)
+    Polynomial<Order, Real, Letter> simplify(const AddOp<Unity, Polynomial<Order, Real, Letter> > & f)
     {
       Polynomial<Order, Real, Letter> retval(f._r);
       retval[0] += 1;
@@ -318,7 +318,7 @@ namespace stator {
     /*! \brief Simplification of a Polynomial LHS subtracted by a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real>
-    Polynomial<Order, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, UnitySymbol> & f)
+    Polynomial<Order, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Unity> & f)
     {
       Polynomial<Order, Real, Letter> retval(f._l);
       retval[0] -= 1;
@@ -328,7 +328,7 @@ namespace stator {
     /*! \brief Simplification of a Polynomial RHS subtracted by a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real>
-    Polynomial<Order, Real, Letter> simplify(const SubtractOp<UnitySymbol, Polynomial<Order, Real, Letter> > & f)
+    Polynomial<Order, Real, Letter> simplify(const SubtractOp<Unity, Polynomial<Order, Real, Letter> > & f)
     {
       Polynomial<Order, Real, Letter> retval(-f._r);
       retval[0] += 1;

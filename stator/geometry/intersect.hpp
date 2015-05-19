@@ -26,7 +26,7 @@ namespace stator {
   namespace geometry {
     template<typename Obj1, typename Obj2>
     bool intersects(const Obj1& b1, const Obj2& b2) {
-      return indicator(b1, b2, stator::symbolic::NullSymbol()) < 0;
+      return indicator(b1, b2, stator::symbolic::Null()) < 0;
     }
   } // namespace geometry
 } // namespace stator

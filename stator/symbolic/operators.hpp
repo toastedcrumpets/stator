@@ -72,7 +72,7 @@ namespace stator {
     };
 
     template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2> 
-    struct Reorder<ratio<n1,d1>, ratio<n2,d2> > {
+    struct Reorder<C<n1,d1>, C<n2,d2> > {
       static const bool value = true;
     };
 
@@ -129,32 +129,32 @@ namespace stator {
     template<class LHS, class RHS>					\
     auto simplify(const CLASSNAME<LHS, RHS>& f) ->decltype(simplify_##HELPERNAME##_impl(f, detail::select_overload{})) \
     { return simplify_##HELPERNAME##_impl(f, detail::select_overload{}); }		\
-									\
+    /*THESE HELPERS ARE OVERLOAD LEVEL 1, TO ALLOW CANCELLATION AT LEVEL 0*/ \
     /*! \brief Helper function which reorders (A*B)*C to (B*C)*A operations. */	\
     template<class T1, class T2, class T3,				\
 	     typename = typename std::enable_if<Reorder<T2, T3>::value && !Reorder<T1, T2>::value>::type>	\
-      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<0>) \
+      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<1>) \
       -> CLASSNAME<decltype((l._r) OP (r)), T1>				\
     { return HELPERNAME((l._r) OP (r), l._l, detail::select_overload{}); } \
 									\
     /*! \brief Helper function which reorders (A*B)*C to (A*C)*B operations. */	\
     template<class T1, class T2, class T3,				\
 	     typename = typename std::enable_if<Reorder<T1, T3>::value && !Reorder<T1, T2>::value && !Reorder<T2, T3>::value>::type>	\
-      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<0>)		\
+      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<1>)		\
       -> CLASSNAME<decltype((l._l) OP (r)), T2>				\
     { return HELPERNAME((l._l) OP (r), l._r, detail::select_overload{}); } \
     									\
     /*! \brief Helper function which reorders A*(B*C) to (A*B)*C operations. */	\
     template<class T1, class T2, class T3,				\
 	     typename = typename std::enable_if<Reorder<T1, T2>::value && !Reorder<T2, T3>::value>::type> \
-      auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<0>) \
+      auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<1>) \
       -> CLASSNAME<decltype((l) OP (r._l)), T3>				\
     { return HELPERNAME((l) OP (r._l), r._r, detail::select_overload{}); } \
 									\
     /*! \brief Helper function which reorders A*(B*C) to (A*C)*B operations. */	\
     template<class T1, class T2, class T3,				\
 	     typename = typename std::enable_if<Reorder<T1, T3>::value  && !Reorder<T1, T2>::value  && !Reorder<T2, T3>::value>::type> \
-      auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<0>) \
+      auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<1>) \
       -> CLASSNAME<decltype((l) OP (r._r)), T2>				\
     { return HELPERNAME((l) OP (r._r), r._l, detail::select_overload{}); } \
 									\
@@ -264,8 +264,8 @@ namespace stator {
       template<>
       struct PowerOpSubstitution<0> {
 	template<class Arg_t>
-	static UnitySymbol eval(Arg_t x) {
-	  return UnitySymbol();
+	static Unity eval(Arg_t x) {
+	  return Unity();
 	}
       };
     }
@@ -349,20 +349,20 @@ namespace stator {
     /*! \brief Derivatives of PowerOp operations.
      */
     template<char dVariable, class Arg, size_t Power>
-    auto derivative(const PowerOp<Arg, Power>& f, Variable<dVariable>) -> decltype(ratio<Power>() * derivative(f._arg, Variable<dVariable>()) * PowerOp<Arg, Power-1>(f._arg))
-    { return ratio<Power>() * derivative(f._arg, Variable<dVariable>()) * PowerOp<Arg, Power-1>(f._arg); }
+    auto derivative(const PowerOp<Arg, Power>& f, Variable<dVariable>) -> decltype(C<Power>() * derivative(f._arg, Variable<dVariable>()) * PowerOp<Arg, Power-1>(f._arg))
+    { return C<Power>() * derivative(f._arg, Variable<dVariable>()) * PowerOp<Arg, Power-1>(f._arg); }
 
     template<char dVariable, class Arg>
-    NullSymbol derivative(const PowerOp<Arg, 0>& f, Variable<dVariable>)
-    { return NullSymbol(); }
+    Null derivative(const PowerOp<Arg, 0>& f, Variable<dVariable>)
+    { return Null(); }
 
     template<char dVariable, class Arg>
     auto derivative(const PowerOp<Arg, 1>& f, Variable<dVariable>) -> decltype(derivative(f._arg, Variable<dVariable>()))
     { return derivative(f._arg, Variable<dVariable>()); }
 
     template<char dVariable, class Arg>
-    auto derivative(const PowerOp<Arg, 2>& f, Variable<dVariable>) -> decltype(ratio<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg)
-    { return ratio<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg; }
+    auto derivative(const PowerOp<Arg, 2>& f, Variable<dVariable>) -> decltype(C<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg)
+    { return C<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg; }
     /*! \}*/
   }
 }

@@ -82,8 +82,8 @@ namespace stator {
     namespace { template<size_t T> struct dependent_false: std::false_type {}; }
 
     template<size_t Order, std::intmax_t num, std::intmax_t denom, char Letter>
-    class Polynomial<Order, ratio<num, denom>, Letter> {
-      static_assert(dependent_false<Order>::value,  "Cannot use ratio types as the coefficients of a polynomial");
+    class Polynomial<Order, C<num, denom>, Letter> {
+      static_assert(dependent_false<Order>::value,  "Cannot use C types as the coefficients of a polynomial");
     };
 
     /*! \brief Representation of Polynomial with basic algebra operations.
@@ -233,10 +233,10 @@ namespace stator {
     Polynomial<Order, Real, Var2> substitution(const Polynomial<Order, Real, Var1>& f, const VariableSubstitution<Var1, Variable<Var2> >& x_container)
     { return Polynomial<Order, Real, Var2>(f.begin(), f.end()); }
 
-    /*! \brief Optimised Polynomial substitution for NullSymbol insertions.
+    /*! \brief Optimised Polynomial substitution for Null insertions.
      */
     template<size_t Order, class Real, char Letter>
-    Real substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, NullSymbol>&)
+    Real substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Null>&)
     { return f[0]; }
 
     /*! \brief Numerically Evaluates a Polynomial expression at a given point.
@@ -428,58 +428,58 @@ namespace stator {
       return RetType(f * (1.0 / g[0]), Polynomial<0, Real, Letter>{empty_sum(Real())});
     }
 
-    /*! \brief left-handed addition of NullSymbol on a Polynomial.
+    /*! \brief left-handed addition of Null on a Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator+(const NullSymbol& r, const Polynomial<Order, Real, Letter>& poly)
+    const Polynomial<Order, Real, Letter>& operator+(const Null& r, const Polynomial<Order, Real, Letter>& poly)
     { return poly; }
 
-    /*! \brief Right-handed addition of NullSymbol on a Polynomial.
+    /*! \brief Right-handed addition of Null on a Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator+(const Polynomial<Order, Real, Letter>& poly, const NullSymbol& r)
+    const Polynomial<Order, Real, Letter>& operator+(const Polynomial<Order, Real, Letter>& poly, const Null& r)
     { return poly; }
 
-    /*! \brief left-handed subtraction of NullSymbol on a Polynomial.
+    /*! \brief left-handed subtraction of Null on a Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    Polynomial<Order, Real, Letter> operator-(const NullSymbol& r, const Polynomial<Order, Real, Letter>& poly)
+    Polynomial<Order, Real, Letter> operator-(const Null& r, const Polynomial<Order, Real, Letter>& poly)
     { return -poly; }
 
-    /*! \brief Right-handed subtraction of NullSymbol on a Polynomial.
+    /*! \brief Right-handed subtraction of Null on a Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator-(const Polynomial<Order, Real, Letter>& poly, const NullSymbol& r)
+    const Polynomial<Order, Real, Letter>& operator-(const Polynomial<Order, Real, Letter>& poly, const Null& r)
     { return poly; }
 
-    /*! \brief left-handed multiplication of NullSymbol on a Polynomial.
+    /*! \brief left-handed multiplication of Null on a Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    NullSymbol operator*(const NullSymbol& r, const Polynomial<Order, Real, Letter>& poly)
-    { return NullSymbol(); }
+    Null operator*(const Null& r, const Polynomial<Order, Real, Letter>& poly)
+    { return Null(); }
 
-    /*! \brief Right-handed multiplication of NullSymbol on a Polynomial.
+    /*! \brief Right-handed multiplication of Null on a Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    NullSymbol operator*(const Polynomial<Order, Real, Letter>& poly, const NullSymbol& r)
-    { return NullSymbol(); }
+    Null operator*(const Polynomial<Order, Real, Letter>& poly, const Null& r)
+    { return Null(); }
 
-    /*! \brief left-handed multiplication of UnitySymbol on a Polynomial.
+    /*! \brief left-handed multiplication of Unity on a Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator*(const UnitySymbol& r, const Polynomial<Order, Real, Letter>& poly)
+    const Polynomial<Order, Real, Letter>& operator*(const Unity& r, const Polynomial<Order, Real, Letter>& poly)
     { return poly; }
 
-    /*! \brief Right-handed multiplication of UnitySymbol on a Polynomial.
+    /*! \brief Right-handed multiplication of Unity on a Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator*(const Polynomial<Order, Real, Letter>& poly, const UnitySymbol& r)
+    const Polynomial<Order, Real, Letter>& operator*(const Polynomial<Order, Real, Letter>& poly, const Unity& r)
     { return poly; }
 
-    /*! \brief Right-handed division of a Polynomial by UnitySymbol.
+    /*! \brief Right-handed division of a Polynomial by Unity.
     */
     template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator/(const Polynomial<Order, Real, Letter>& poly, const UnitySymbol& r)
+    const Polynomial<Order, Real, Letter>& operator/(const Polynomial<Order, Real, Letter>& poly, const Unity& r)
     { return poly; }
 
     /*! \brief Right-handed addition operation on a Polynomial.
@@ -667,8 +667,8 @@ namespace stator {
      */
     template<char Letter, class Real, size_t N, char dLetter,
 	     typename = typename std::enable_if<(Letter!=dLetter) || (N==0)>::type>
-      NullSymbol derivative(const Polynomial<N, Real, Letter>& f, Variable<dLetter>) 
-    { return NullSymbol(); }
+      Null derivative(const Polynomial<N, Real, Letter>& f, Variable<dLetter>) 
+    { return Null(); }
 
     /*! \endcond \} */
 
@@ -796,7 +796,7 @@ namespace stator {
       implementation details.
      */
     template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order, Real, Letter> shift_function(const Polynomial<Order, Real, Letter>& f, UnitySymbol) {
+    inline Polynomial<Order, Real, Letter> shift_function(const Polynomial<Order, Real, Letter>& f, Unity) {
       Polynomial<Order, Real, Letter> retval;
       retval.fill(empty_sum(Real()));
       retval[0] = f[Order];
@@ -980,7 +980,7 @@ namespace stator {
     template<size_t Order, class Real, char Letter>
     inline Polynomial<Order-1, Real, Letter> deflate_polynomial(const Polynomial<Order, Real, Letter>& a, const double root) {
       if (root == Real())
-	return deflate_polynomial(a, NullSymbol());
+	return deflate_polynomial(a, Null());
       
       Polynomial<Order-1, Real, Letter> b;
       //Calculate the highest and lowest order coefficients using
@@ -1011,7 +1011,7 @@ namespace stator {
 	becomes a simple shifted copy.
     */
     template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order-1, Real, Letter> deflate_polynomial(const Polynomial<Order, Real, Letter>& a, NullSymbol) {
+    inline Polynomial<Order-1, Real, Letter> deflate_polynomial(const Polynomial<Order, Real, Letter>& a, Null) {
       Polynomial<Order-1, Real, Letter> b;
       std::copy(a.begin()+1, a.end(), b.begin());
       return b;
@@ -1660,7 +1660,7 @@ namespace stator {
 	//p2(x) = 2^Order f(x/2 + 0.5) 
 	//
 	//in terms of the original function, f(x).
-	const Polynomial<Order, Real, Letter> p2 = shift_function(p1, UnitySymbol());
+	const Polynomial<Order, Real, Letter> p2 = shift_function(p1, Unity());
 
 	//Now that we have two scaled and shifted polynomials where
 	//the roots in f in the range x=[0,0.5] are in p1 over the
@@ -1862,7 +1862,7 @@ namespace stator {
 	StackVector<std::pair<Real,Real>, Order> retval;
 	if (f[0] == 0) {
 	  retval.push_back(std::make_pair(M.eval(0), M.eval(0)));
-	  f = deflate_polynomial(f, NullSymbol());
+	  f = deflate_polynomial(f, Null());
 	}
 
 	//Create and solve the polynomial for [0, 1]
@@ -1874,7 +1874,7 @@ namespace stator {
 	  retval.push_back(bound);
 	
 	//Create and solve the polynomial for [1, \infty]
-	Polynomial<Order, Real, Letter> p1inf = shift_function(f, UnitySymbol());
+	Polynomial<Order, Real, Letter> p1inf = shift_function(f, Unity());
 	auto M1inf = M;
 	M1inf.shift(1);
 	auto second_range = VAS_real_root_bounds_worker(p1inf, M1inf);
@@ -2153,7 +2153,7 @@ namespace stator {
       //Handle special cases 
       //The constant coefficient is zero: deflate the polynomial
       if (f[0] == Real())
-	return solve_real_roots(deflate_polynomial(f, NullSymbol()));
+	return solve_real_roots(deflate_polynomial(f, Null()));
       
       //The highest order coefficient is zero: drop to lower order
       //solvers

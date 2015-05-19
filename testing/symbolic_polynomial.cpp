@@ -30,7 +30,16 @@
 #define BOOST_TEST_MODULE Polynomial_test
 #include <boost/test/included/unit_test.hpp>
 
+std::mt19937 RNG;
+std::normal_distribution<double> normal_dist(0, 1);
+std::uniform_real_distribution<double> angle_dist(0, std::atan(1)*4);
+
 typedef Eigen::Matrix<double, 3, 1, Eigen::DontAlign> Vector;
+
+Vector random_unit_vec() {
+  Vector vec{normal_dist(RNG), normal_dist(RNG), normal_dist(RNG)};
+  return vec.normalized();
+}
 
 bool err(double val, double expected)
 {
@@ -50,6 +59,8 @@ bool compare_expression(const T1& f, const T2& g) {
     std::cerr << f << " != " << g << std::endl;
   return f_str == g_str;
 }
+
+#define CHECK_TYPE(EXPRESSION, TYPE) static_assert(std::is_same<std::decay<decltype(EXPRESSION)>::type, TYPE>::value, "Type is wrong")
 
 template<class T1, class T2, class Func>
 void compare_roots(T1 roots, T2 actual_roots, Func f){
@@ -116,11 +127,11 @@ BOOST_AUTO_TEST_CASE( poly_multiplication )
   BOOST_CHECK_EQUAL(poly3[1], +2);
   BOOST_CHECK_EQUAL(poly3[2], -2);
 
-  static_assert(std::is_same<decltype(NullSymbol() * Polynomial<2>{1,2,3}), NullSymbol>::value, "NullSymbol multiply is not cancelling the polynomial");
-  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * NullSymbol()), NullSymbol>::value, "NullSymbol multiply is not cancelling the polynomial");
+  static_assert(std::is_same<decltype(Null() * Polynomial<2>{1,2,3}), Null>::value, "Null multiply is not cancelling the polynomial");
+  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Null()), Null>::value, "Null multiply is not cancelling the polynomial");
 
-  static_assert(std::is_same<decltype(UnitySymbol() * Polynomial<2>{1,2,3}), const Polynomial<2>&>::value, "UnitySymbol multiply is not cancelling the polynomial");
-  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * UnitySymbol()), const Polynomial<2>&>::value, "UnitySymbol multiply is not cancelling the polynomial");
+  static_assert(std::is_same<decltype(Unity() * Polynomial<2>{1,2,3}), const Polynomial<2>&>::value, "Unity multiply is not cancelling the polynomial");
+  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Unity()), const Polynomial<2>&>::value, "Unity multiply is not cancelling the polynomial");
 }
 
 BOOST_AUTO_TEST_CASE( poly_division )
@@ -133,7 +144,7 @@ BOOST_AUTO_TEST_CASE( poly_division )
   BOOST_CHECK_EQUAL(poly2[1], -2);
   BOOST_CHECK_EQUAL(poly2[2], 2);
 
-  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} / UnitySymbol()), const Polynomial<2>&>::value, "UnitySymbol division is not returning the polynomial");
+  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} / Unity()), const Polynomial<2>&>::value, "Unity division is not returning the polynomial");
 }
 
 BOOST_AUTO_TEST_CASE( poly_vector )
@@ -183,6 +194,12 @@ BOOST_AUTO_TEST_CASE( poly_simplify )
   simplify(y+y+y);
   simplify(y*y*2);
   simplify(y*y*2+1+2*x+2-12*x*x);
+
+  //Check expansion
+  {
+    Polynomial<1> x{0,1};
+    BOOST_CHECK(compare_expression(simplify_powerop_impl(pow<3>(x+2), detail::select_overload{}), (x+2) * (x+2) * (x+2)));;
+  }
 }
 
 BOOST_AUTO_TEST_CASE( poly_eval_limits )
@@ -221,6 +238,7 @@ BOOST_AUTO_TEST_CASE( poly_derivative )
 {
   using namespace stator::symbolic;
   Polynomial<1> x{0, 1};
+
   auto poly1 = x + x*x + x*x*x + x*x*x*x;
   auto poly2 = derivative(poly1, Variable<'x'>());
   BOOST_CHECK_EQUAL(poly2[0], 1);
@@ -236,6 +254,8 @@ BOOST_AUTO_TEST_CASE( poly_derivative )
   BOOST_CHECK_EQUAL(poly4[1], 4);
   BOOST_CHECK_EQUAL(eval(poly4, 0), -1);
   BOOST_CHECK_EQUAL(eval(poly4, 1), 3);
+
+  BOOST_CHECK(compare_expression(derivative(pow<2>(x), Variable<'x'>()), Polynomial<1>{0,1} * C<2>()));
 }
 
 BOOST_AUTO_TEST_CASE( poly_zero_derivative)
@@ -246,7 +266,7 @@ BOOST_AUTO_TEST_CASE( poly_zero_derivative)
   BOOST_CHECK_EQUAL(poly1[0], 1);
 
   const auto poly2 = derivative(poly1, Variable<'x'>());
-  BOOST_CHECK(compare_expression(poly2, NullSymbol()));
+  BOOST_CHECK(compare_expression(poly2, Null()));
 }
 
 BOOST_AUTO_TEST_CASE( poly_deflation)
@@ -856,6 +876,127 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 	      }
 }
 
+BOOST_AUTO_TEST_CASE( derivative_addition )
+{
+  using namespace stator::symbolic;
+
+  //Test Polynomial derivatives on addition Operation types
+  Variable<'x'> x;
+
+  BOOST_CHECK(compare_expression(derivative(2 * x * x + x, x), (C<2>()*x)*2+C<1>())); 
+}
+
+BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
+{
+  using namespace stator::symbolic;
+  const Polynomial<1> x{0, 1};
+  //Test Polynomial derivatives on subtraction Operation types
+  auto poly1 = derivative(2*x*x - x, Variable<'x'>());
+  //derivative will automatically combine polynomials
+  BOOST_CHECK_EQUAL(poly1[0], -1);
+  BOOST_CHECK_EQUAL(poly1[1], 4);
+}
+
+BOOST_AUTO_TEST_CASE( polynomials_multiply_expansion )
+{
+  using namespace stator::symbolic;
+  const Polynomial<1> x{0, 1};
+  //Test Polynomial simplification on multiplication Operation types
+  auto poly1 = (x + 1)*(x + 3);
+  BOOST_CHECK_EQUAL(poly1[0], 3);
+  BOOST_CHECK_EQUAL(poly1[1], 4);
+  BOOST_CHECK_EQUAL(poly1[2], 1);
+}
+
+BOOST_AUTO_TEST_CASE( function_poly_derivatives_special )
+{ 
+  using namespace stator::symbolic;
+
+  //Check special case derivatives of Functions with constant
+  //arguments.
+  BOOST_CHECK(compare_expression(derivative(sin(Polynomial<0>{1}), Variable<'x'>()), Null()));
+  BOOST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Variable<'x'>()), Null()));
+}
+
+BOOST_AUTO_TEST_CASE( poly_taylor )
+{ 
+  using namespace stator::symbolic;
+  Variable<'y'> y;
+
+  //Simplifying in the wrong variable
+  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Variable<'x'>()), y*y*y));
+  
+  ////Simplifying PowerOp expressions into Polynomial
+  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), y), y*y*y));
+  
+  //Test truncation of PowerOp expressions when the original order is too high
+  CHECK_TYPE(taylor_series<2>(y*y*y, Null(), y), Null);
+  
+  //Test simple Taylor expansion of sine 
+  BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), simplify((1.0/120) * y*y*y*y*y - (1.0/6) * y*y*y + y)));
+  BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), simplify(- (1.0/6) * y*y*y*y*y*y + y*y)));
+  
+  //Test Taylor expansion of a complex expression at zero
+  Variable<'x'> x;
+  auto f = sin(cos(x)+2*x*x - x + 3);
+  auto ffinal = simplify((3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0));
+  
+  BOOST_CHECK(compare_expression(taylor_series<3>(f, Null(), x), ffinal));
+
+  //Test Taylor expansion again at a non-zero location
+  BOOST_CHECK(compare_expression(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x), simplify(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
+
+  //Partially truncate a Polynomial through expansion
+  BOOST_CHECK(compare_expression(taylor_series<2>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y), Polynomial<2,int,'y'>{1,2,3}));
+  
+  //Keep the order the same
+  BOOST_CHECK(compare_expression(taylor_series<3>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y), Polynomial<3,int,'y'>{1,2,3,4}));
+  
+  //Taylor simplify at a higher order
+  BOOST_CHECK(compare_expression(taylor_series<4>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y), Polynomial<3,int,'y'>{1,2,3,4})); 
+}
+
+BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
+{
+  using namespace stator::symbolic;
+
+  static_assert(stator::symbolic::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
+  
+  BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<'x'>()), Null()));
+  BOOST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
+  BOOST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
+
+  const Polynomial<1> x{0, 1};
+
+  const size_t testcount = 100;
+  const double errlvl = 1e-10;
+
+  Vector test1 = substitution(Vector{0,1,2} * Variable<'x'>(), Variable<'x'>() == 2);
+  BOOST_CHECK(test1[0] == 0);
+  BOOST_CHECK(test1[1] == 2);
+  BOOST_CHECK(test1[2] == 4);
+
+  //A tough test is to implement the Rodriugues formula symbolically.
+  RNG.seed();
+  for (size_t i(0); i < testcount; ++i)
+    {
+      double angle = angle_dist(RNG);
+      Vector axis = random_unit_vec().normalized();
+      Vector start = random_unit_vec();
+      Vector end = Eigen::AngleAxis<double>(angle, axis) * start;
+      
+      Vector r = axis * axis.dot(start);
+      auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
+      Vector err = end - eval(f, angle);
+      
+      BOOST_CHECK(std::abs(err[0]) < errlvl);
+      BOOST_CHECK(std::abs(err[1]) < errlvl);
+      BOOST_CHECK(std::abs(err[2]) < errlvl);
+    }
+
+  BOOST_CHECK(toArithmetic(Vector{1,2,3}) == (Vector{1,2,3}));
+  BOOST_CHECK(dot(Vector{1,2,3} , Vector{4,5,6}, stator::symbolic::detail::select_overload{}) == 32);
+}
 
 //BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 //{

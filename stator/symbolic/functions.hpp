@@ -75,7 +75,7 @@ namespace stator {
     CREATE_FUNCTION(sin, std::sin(x), cos(f._arg), "sin(" << f._arg << ")", 0)
     CREATE_FUNCTION(cos, std::cos(x), -sin(f._arg), "cos(" << f._arg << ")", 1)
     CREATE_FUNCTION(abs, std::abs(x), f._arg / f, "|" << f._arg << "|", 2)
-    CREATE_FUNCTION(arbsign, arbsign(std::abs(x)), arbsign(UnitySymbol()), "±|" << f._arg << "|", 3)
+    CREATE_FUNCTION(arbsign, arbsign(std::abs(x)), arbsign(Unity()), "±|" << f._arg << "|", 3)
 
     /////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////         Complex functions         /////////////////////////

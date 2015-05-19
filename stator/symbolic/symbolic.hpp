@@ -64,29 +64,29 @@ namespace stator {
     /////////////////////////    Compile time constants         /////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////
     //These are implemented using std::ratio. We use inheritance to create
-    //this as a new ratio type in the stator::symbolic namespace to ensure
+    //this as a new C type in the stator::symbolic namespace to ensure
     //operator lookups consider this namespace.
     template<std::intmax_t Num, std::intmax_t Denom = 1>
-    struct ratio : std::ratio<Num, Denom> {};
+    struct C : std::ratio<Num, Denom> {};
 
     /*! \brief A symbolic representation of zero. */
-    typedef ratio<0> NullSymbol;
+    typedef C<0> Null;
     /*! \brief A symbolic representation of one. */
-    typedef ratio<1> UnitySymbol;
+    typedef C<1> Unity;
     
     /*! \brief A symbolic/compile-time rational approximation of \f$\pi\f$. */
-    typedef ratio<constant_ratio::pi::num, constant_ratio::pi::den> pi; 
+    typedef C<constant_ratio::pi::num, constant_ratio::pi::den> pi; 
 
     /*! \brief A symbolic/compile-time rational approximation of \f$\mathrm{e}\f$. */
-    typedef ratio<constant_ratio::e::num, constant_ratio::e::den> e; 
+    typedef C<constant_ratio::e::num, constant_ratio::e::den> e; 
 
-    /*! \brief Output operator for ratio types */
+    /*! \brief Output operator for std::ratio types */
     template<std::intmax_t Num, std::intmax_t Denom>
-    inline std::ostream& operator<<(std::ostream& os, const std::ratio<Num, Denom>) {
-      os << Num;
+    inline std::ostream& operator<<(std::ostream& os, const C<Num, Denom>) {
+      os << "C<" << Num;
       if (Denom != 1)
-	os << "/" << Denom ;
-      return os;
+	os << ", " << Denom;
+      return os << ">()";
     }
 
     inline std::ostream& operator<<(std::ostream& os, const pi) { os << "π"; return os; }
@@ -107,7 +107,7 @@ namespace stator {
 	symbolic representation of a constant.
 	
 	This is used to enable the derivative operation to convert
-	these types to NullSymbol types. It is also to apply a
+	these types to Null types. It is also to apply a
 	specialised functions to these types.
       */
       template <class T>
@@ -116,7 +116,7 @@ namespace stator {
       };
 
       template<std::intmax_t Num, std::intmax_t Denom>
-      struct IsSymbolicConstant<ratio<Num, Denom> > {
+      struct IsSymbolicConstant<C<Num, Denom> > {
 	static const bool value = true;
       };
     }
@@ -127,11 +127,11 @@ namespace stator {
     
     template<std::intmax_t n1, std::intmax_t d1,
     	     typename = typename std::enable_if<!(n1 % d1)>::type> 
-    std::intmax_t toArithmetic(ratio<n1,d1> val) { return n1 / d1; }
+    std::intmax_t toArithmetic(C<n1,d1> val) { return n1 / d1; }
     
     template<std::intmax_t n1, std::intmax_t d1, 
     	     typename = typename std::enable_if<n1 % d1>::type>
-    double toArithmetic(ratio<n1,d1> val) { return double(n1) / double(d1); }
+    double toArithmetic(C<n1,d1> val) { return double(n1) / double(d1); }
 
     /*!\brief Compile-time symbolic representation of a variable
       substitution.
@@ -158,7 +158,7 @@ namespace stator {
       /*!\brief Type trait to determine if a certain type is a constant.
 
 	This is used to enable the derivative operation to convert
-	these types to NullSymbol types. It is also to apply a
+	these types to Null types. It is also to apply a
 	specialised functions to these types.
       */
       template<class T>
@@ -312,19 +312,19 @@ namespace stator {
     */
     template<class T, char Letter,
 	     typename = typename std::enable_if<detail::IsConstant<T>::value>::type>
-    NullSymbol derivative(const T&, Variable<Letter>) { return NullSymbol(); }
+    Null derivative(const T&, Variable<Letter>) { return Null(); }
 
     /*! \brief Determine the derivative of a variable.
 
       If the variable is the variable in which a derivative is being
       taken, then this overload should be selected to return
-      UnitySymbol.
+      Unity.
     */
     template<char Letter1, char Letter2,
 	     typename = typename std::enable_if<Letter1 == Letter2>::type>
-    UnitySymbol derivative(Variable<Letter1>, Variable<Letter2>) { return UnitySymbol(); }
+    Unity derivative(Variable<Letter1>, Variable<Letter2>) { return Unity(); }
 
-    inline StackVector<double, 0> solve_real_roots(NullSymbol f) {
+    inline StackVector<double, 0> solve_real_roots(Null f) {
       return StackVector<double, 0>();
     }
 
@@ -332,11 +332,11 @@ namespace stator {
 
       If the variable is NOT the variable in which a derivative is
       being taken, then this overload should be selected to return
-      NullSymbol.
+      Null.
     */
     template<char Letter1, char Letter2,
 	     typename = typename std::enable_if<Letter1 != Letter2>::type>
-    NullSymbol derivative(Variable<Letter1>, Variable<Letter2>) { return NullSymbol(); }
+    Null derivative(Variable<Letter1>, Variable<Letter2>) { return Null(); }
  
     /*! \brief Shift a function forward. It returns \f$g(x)=f(x+a)\f$
 
@@ -372,28 +372,28 @@ namespace stator {
 
     /*! \brief Symbolic Factorial function.
      
-      This template implementation returns UnitySymbol for 0! and 1!,
+      This template implementation returns Unity for 0! and 1!,
       allowing simplification of symbolic expressions.
      */
     template<size_t i> struct Factorial {
-      typedef ratio<i * Factorial<i - 1>::value::num, 1> value;
+      typedef C<i * Factorial<i - 1>::value::num, 1> value;
     };
     
     template<> struct Factorial<1> {
-      typedef ratio<1, 1> value;
+      typedef C<1, 1> value;
     };
 
     template<> struct Factorial<0> {
-      typedef ratio<1, 1> value;
+      typedef C<1, 1> value;
     };
 
     /*! \brief Symbolic Inverse factorial function.
      
-      This template implementation returns UnitySymbol for 1/0! and 1/1!,
+      This template implementation returns Unity for 1/0! and 1/1!,
       allowing simplification of symbolic expressions.
      */
     template<size_t i> struct InvFactorial {
-      typedef ratio<Factorial<i>::value::den, Factorial<i>::value::num> value;
+      typedef C<Factorial<i>::value::den, Factorial<i>::value::num> value;
     };
   }
 }
@@ -409,8 +409,8 @@ namespace stator {
       template<size_t State, size_t max_Order, char Letter>
       struct TaylorSeriesWorker {
 	template<class Real>
-	static NullSymbol eval(const NullSymbol& f, const Real& a)
-	{ return NullSymbol(); }
+	static Null eval(const Null& f, const Real& a)
+	{ return Null(); }
         
 	template<class F, class Real>
 	static auto eval(const F& f, const Real& a) -> decltype(typename InvFactorial<State>::value() * substitution(f, Variable<Letter>() == a) + (Variable<Letter>() - a) * TaylorSeriesWorker<State+1, max_Order, Letter>::eval(derivative(f, Variable<Letter>()), a))
@@ -426,8 +426,8 @@ namespace stator {
 	{ return typename InvFactorial<max_Order>::value() * substitution(f, Variable<Letter>() == a); }
 
 	template<class Real>
-	static NullSymbol eval(const NullSymbol& f, const Real& a)
-	{ return NullSymbol(); }
+	static Null eval(const Null& f, const Real& a)
+	{ return Null(); }
       };
     }
 

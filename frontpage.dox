@@ -80,11 +80,17 @@ namespace stator {
     
     Here you'll see that expressions can be written out to std::cout,
     and that the order of operations is preserved from the original
-    input.
+    input. Here we're using floating-point and integer constants such
+    as 1.5 and 2. The types of these constants are preserved and they
+    remain integers or floats. They are not converted to compile time
+    constants due to limitations of the C++ language. Unfortunately,
+    this limits the amount of simplification that can be done at
+    compile-time so \ref C values should be used wherever possible.
 
-    There is a \ref simplify function which allows rearrangement and
-    calculations (such as combination of compile-time and run-time
-    constants) to simplify the expression:
+    However, there is a \ref simplify function which allows
+    rearrangement and run-time calculations (such as combination of
+    compile-time and run-time constants) to simplify expressions. For
+    example:
     
     \code{.cpp}
     auto simplef = simplify(f);
@@ -95,8 +101,9 @@ namespace stator {
     In this particular case, the expression has now become a
     Polynomial type, as denoted by the enclosing P(..) on the
     output. The Polynomial class represents a polynomial in one
-    variable as an array of coefficients. This form is required if we
-    need to perform analysis such as root finding:
+    variable as an array of integer or floating-point
+    coefficients. This form is required if we need to perform analysis
+    such as root finding:
     
     \code{.cpp}
     std::cout << solve_real_roots(simplef) << std::endl;
@@ -104,14 +111,14 @@ namespace stator {
     \endcode
 
     Here there are three real roots, and they are returned in a \ref
-    StackVector, which behaves like a std::vector but it has a fixed
-    size and is allocated on the stack. The library is capable of
+    stator::orphan::StackVector "StackVector", which behaves like a
+    std::vector with a fixed maximum size. The library is capable of
     solving for the real roots of arbitrary polynomials, but relies on
     numerical schemes for greater than third order polynomials.
     
     We have seen how to analyse polynomials, but not how to evaluate
     them. We evaluate expressions by substituting the variable for a
-    value or even another expression:
+    float or integer value, or even another symbolic expression:
     
     \code{.cpp}    
     //Evaluation/substitution at a point x=2
@@ -124,11 +131,15 @@ namespace stator {
     \endcode
 
     These are the basics of the library, but there is growing support
-    for complex functions. For example, \ref sin and \ref cos
-    functions are supported. Here is the derivative of a complex function:
+    for complex functions. For example, basic trigonometry functions
+    like \ref sin and \ref cos functions are supported. There are also
+    some operators which allow you to manipulate a function. For
+    example, you may take the partial derivative of a function
+    by a variable:
 
     \code{.cpp}
-    std::cout << simplify(derivative(4 * x * cos(2*x+2), x)) << std::endl;
+    auto f2 = 4 * x * cos(2*x+2);
+    std::cout << simplify(derivative(f2, x)) << std::endl;
     //output: ((4) × (cos(2 × x + 2))) + ((-8 × x) × (sin(2 × x + 2)))
     \endcode
 

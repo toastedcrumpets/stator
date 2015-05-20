@@ -27,16 +27,18 @@
 
 namespace stator {
   namespace geometry {
+    using namespace stator::symbolic;
+    
     template<class Scalar, size_t D, class VijFunc>
     auto indicator(const Ball<Scalar, D>& bi,  const Point<Scalar, D>& bj, const VijFunc& vij) 
-      -> STORETYPE(stator::symbolic::try_simplify(stator::symbolic::try_simplify(stator::symbolic::pow<2>(vij * stator::symbolic::Variable<'t'>() + bi.center() - bj.center()) - stator::symbolic::pow<2>(bi.radius())))) {
-      return stator::symbolic::try_simplify(stator::symbolic::try_simplify(stator::symbolic::pow<2>(vij * stator::symbolic::Variable<'t'>() + bi.center() - bj.center()) - stator::symbolic::pow<2>(bi.radius())));
+      -> STORETYPE(pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius())) {
+      return pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - bi.radius()*bi.radius();
     }
 
     template<class Scalar, size_t D, class VijFunc>
     auto indicator(const Ball<Scalar, D>& bi,  const Ball<Scalar, D>& bj, const VijFunc& vij)
-      -> STORETYPE(stator::symbolic::try_simplify(stator::symbolic::pow<2>(stator::symbolic::try_simplify(vij * stator::symbolic::Variable<'t'>() + bi.center() - bj.center())) - stator::symbolic::pow<2>(bi.radius() + bj.radius()))) {
-      return stator::symbolic::try_simplify(stator::symbolic::pow<2>(stator::symbolic::try_simplify(vij * stator::symbolic::Variable<'t'>() + bi.center() - bj.center())) - stator::symbolic::pow<2>(bi.radius() + bj.radius()));
+      -> STORETYPE(pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius() + bj.radius())) {
+      return pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius() + bj.radius());
     }
 
   } // namespace geometry

@@ -1,3 +1,6 @@
+/*! \file config.hpp
+  \brief Fundamental typedef's and macros for stator.
+*/
 /*
   Copyright (C) 2015 Marcus Bannerman <m.bannerman@gmail.com>
 
@@ -21,7 +24,6 @@
 #include <Eigen/Dense>
 
 namespace stator {
-  
   /*! \brief A convenience typedef for a non-aligned Eigen Matrix.*/
   template<typename Scalar, size_t D1, size_t D2> using Matrix = Eigen::Matrix<Scalar, D1, D2, Eigen::DontAlign>;
   

@@ -13,145 +13,142 @@
   interesting mathematical capability. For more information have a
   look at the documentation for each namespace:
 
-    - stator::symbolic: Math library (\ref symbolic_guide "guide here")
+  - stator::symbolic: Math library (\ref symbolic_guide "guide here")
   
 */
 
 namespace stator {
   namespace symbolic {
-/*!
-  \page symbolic_guide Guide to stator::symbolic
+    /*!
+      \page symbolic_guide Guide to stator::symbolic
 
-    First, include the library and access the symbolic namespace.
+      This guide demonstrates the stator::symbolic library through
+      example usage. The exmaple is available in the source file
+      symbolic_example.cpp in the examples folder.
+
+      First, we include the stator::symbolic library header and access
+      the symbolic namespace for convenience:
     
-    \code{.cpp}
-    #include <stator/symbolic/symbolic.hpp>
-  
-    int main() {
-    using namespace stator::symbolic;
-    \endcode
+      \dontinclude symbolic_example.cpp
+      \skipline #include
+      \until using
+      
+      You will only need to ensure you enable C++11 support and add
+      the stator (and Eigen) include paths to your compiler.
+
+      \section sym_guide_const_var Constants and Variables
+
+      The power of this library is in the ability of the compiler to
+      simplify and analyse mathematical expressions. To enable this,
+      mathematical expressions must be encoded as a type. The first
+      type is the compile time constants:
+   
+      \until quarter
     
-    The power of this library is in the ability of the compiler to
-    simplify and analyse mathematical expressions. To enable this,
-    mathematical expressions must be encoded as a type. The first type
-    is the compile time constants:
+      You may have a large number of different variables too, and these
+      are identified by a number in their type:
+
+      \until var2
     
-    \code{.cpp}
-    //We can define whole number constants, but note the value is actually the type:
-    C<0> zero;
-    C<1> one;
-    C<2> two;
-    //Fractional constants are possible as well as C inherits from std::ratio
-    C<1, 4> quarter;
-    \endcode
+      Of course, it is "nicer" to use the fact that single characters
+      are also number types in C++ and use these instead to identify
+      your variables:
+
+      \until Variable<'y'>
+
+      But please note, as 'x' is the decimal number 120 in ASCII the
+      definitions Variable<'x'> and \ref Variable "Variable"<120> are
+      equivalent.
+
+      The power of the library primarily arises from its ability to
+      cancel zero terms. Any term multiplied by zero (\ref Null "C<0>",
+      AKA \ref Null) is cancelled to zero:
+
+      \until assert
+
+      Equally, any term multiplied by one (\ref Unity "C<1>", which has a
+      convenient typedef of \ref Unity), is left unchanged:
+
+      \until assert
     
-    You may have a large number of different variables too, and these
-    are identified by a number/character in their type:
+      The simplification rules are not that advanced by default. They
+      almost always preserve the input form of the equation:
 
-    \code{.cpp}
-    Variable<'x'> x;
-    Variable<'y'> y;
-    Variable<0> var0;
-    \endcode
+      \until output
     
-    The power of the library arises from the cancellation of
-    terms. Any term multiplied by zero (\ref Null "C<0>", AKA \ref
-    Null) is cancelled to zero:
+      Here you'll see that expressions can be written out to std::cout,
+      and that the order of operations is preserved from the original
+      input. Here we're using floating-point and integer constants such
+      as 1.5 and 2. The types of these constants are preserved and they
+      remain integers or floats. They are not converted to compile time
+      constants due to limitations of the C++ language. Unfortunately,
+      this limits the amount of simplification that can be done at
+      compile-time so \ref C values should be used wherever possible.
 
-    \code{.cpp}
-    assert(std::is_same<decltype(sin(x) * C<0>()), C<0> >::value);
-    \endcode
-
-    Equally, any term multiplied by one (\ref Unity "C<1>", which has a
-    convenient typedef of \ref Unity), is left unchanged:
-
-    \code{.cpp}
-    assert(std::is_same<decltype(C<1>() * Variable<'x'>()), Variable<'x'> >::value);
-    \endcode
+      \section sym_guide_poly Polynomial types
+      However, there is a \ref simplify function which allows
+      rearrangement and run-time calculations (such as combination of
+      compile-time and run-time constants) to simplify expressions. For
+      example:
     
-    The simplification rules are not that advanced by default. They
-    almost always preserve the input form of the equation:
+      \until output
 
-    \code{.cpp}
-    auto f = x * x * (1.5 + 2 * x) - 3 * x;
-    std::cout << f << std::endl;
-    //output: (((x)^2) × ((1.5) + ((2) × (x)))) - ((3) × (x))
-    \endcode
+      In this particular case, the expression has now become a
+      Polynomial type, as denoted by the enclosing P(..) on the
+      output. The Polynomial class represents a polynomial in one
+      variable as an array of integer or floating-point
+      coefficients. This form is required if we need to perform analysis
+      such as root finding:
     
-    Here you'll see that expressions can be written out to std::cout,
-    and that the order of operations is preserved from the original
-    input. Here we're using floating-point and integer constants such
-    as 1.5 and 2. The types of these constants are preserved and they
-    remain integers or floats. They are not converted to compile time
-    constants due to limitations of the C++ language. Unfortunately,
-    this limits the amount of simplification that can be done at
-    compile-time so \ref C values should be used wherever possible.
+      \until output
 
-    However, there is a \ref simplify function which allows
-    rearrangement and run-time calculations (such as combination of
-    compile-time and run-time constants) to simplify expressions. For
-    example:
+      Here there are three real roots, and they are returned in a \ref
+      stator::orphan::StackVector "StackVector", which behaves like a
+      std::vector with a fixed maximum size. The library is capable of
+      solving for the real roots of arbitrary polynomials, but relies on
+      numerical schemes for polynomials of any order greater than three.
     
-    \code{.cpp}
-    auto simplef = simplify(f);
-    std::cout << simplef << std::endl;
-    //output: P(2 × x³ + 1.5 × x² + -3 × x)
-    \endcode
+      We have seen how to analyse polynomials, but not how to evaluate
+      them. We evaluate expressions by substituting the variable for a
+      float or integer value, or even another symbolic expression:
     
-    In this particular case, the expression has now become a
-    Polynomial type, as denoted by the enclosing P(..) on the
-    output. The Polynomial class represents a polynomial in one
-    variable as an array of integer or floating-point
-    coefficients. This form is required if we need to perform analysis
-    such as root finding:
+      \until output
+      \until output
+
+      \section sym_guide_adv_functions More complex functions
+
+      These are the basics of the library, but there is growing support
+      for complex functions. For example, basic trigonometry functions
+      like \ref sin and \ref cos functions are supported. There are also
+      some operators which allow you to manipulate a function. For
+      example, you may take the partial derivative of a function
+      by a variable:
+
+      \until output
+
+      We can also take Taylor expansions of complex expressions to
+      extract an approximate Polynomial form:
+
+      \until output
+
+      \section vec_sym_guide Vector expressions
     
-    \code{.cpp}
-    std::cout << solve_real_roots(simplef) << std::endl;
-    //output: StackVector{ -1.65587 0 0.905869 }
-    \endcode
+      The symbolic library also supports Eigen vector/matrix
+      expressions.
+      
+      \until output
+      
+      You have to be careful though. Eigen preserves the row/column
+      nature of the vectors so operations like multiplication may
+      cause compile errors
+      
+      \until fvec * fvec
 
-    Here there are three real roots, and they are returned in a \ref
-    stator::orphan::StackVector "StackVector", which behaves like a
-    std::vector with a fixed maximum size. The library is capable of
-    solving for the real roots of arbitrary polynomials, but relies on
-    numerical schemes for greater than third order polynomials.
-    
-    We have seen how to analyse polynomials, but not how to evaluate
-    them. We evaluate expressions by substituting the variable for a
-    float or integer value, or even another symbolic expression:
-    
-    \code{.cpp}    
-    //Evaluation/substitution at a point x=2
-    std::cout << substitution(simplef, x == 2) << std::endl;
-    //output: 16
-
-    //A symbolic substitution, replacing x with x+2:
-    std::cout << simplify(substitution(simplef, x == x + 2)) << std::endl;
-    //output: 2 × x³ + 13.5 × x² + 27 × x + 16
-    \endcode
-
-    These are the basics of the library, but there is growing support
-    for complex functions. For example, basic trigonometry functions
-    like \ref sin and \ref cos functions are supported. There are also
-    some operators which allow you to manipulate a function. For
-    example, you may take the partial derivative of a function
-    by a variable:
-
-    \code{.cpp}
-    auto f2 = 4 * x * cos(2*x+2);
-    std::cout << simplify(derivative(f2, x)) << std::endl;
-    //output: ((4) × (cos(2 × x + 2))) + ((-8 × x) × (sin(2 × x + 2)))
-    \endcode
-
-    We can also take Taylor expansions of complex expressions to
-    extract an approximate Polynomial form:
-
-    \code{.cpp}
-    //5th order Taylor expansion about zero in x
-    std::cout << taylor_series<5>(4 * x * cos(2*x+2), 0.0, x) << std::endl;
-    //output: -1.10972 × x^5 + 4.84959 × x^4 + 3.32917 × x³ + -7.27438 × x² + -1.66459 × x
-    \endcode
-*/
+      However, taking the square of a vector polynomial expression is
+      well defined as the dot product with itself: 
+      
+      \until output
+    */
   }
 }
 /*! \brief The stator library namespace.
@@ -160,53 +157,59 @@ namespace stator {
   (e.g., \ref stator::Exception), most of the code is implemented
   under the namespaces \ref stator::symbolic, \ref stator::geometry,
   and \ref stator::orphan.  
-  */ namespace stator {
+*/ namespace stator {
    
-  /*! \namespace stator::geometry 
+     /*! \namespace stator::geometry 
 
-    \brief Geometric types and algorithms for calculating properties
-    (e.g., intersection, volume).
-  */
-  namespace geometry {
-    /*! \brief Compute a Hausdorf measure of the interior of an object.
-
-      The measure returned depends on the dimensionality of the
-      object, a circle will return its area but a sphere will return
-      its volume
-    */
-    template<typename Obj> auto volume(const Obj&);
-
-    /*! \brief Compute a Hausdorf measure of the boundary/boundaries
-      of an object.
-      
-      The measure returned depends on the dimensionality object. For
-      example, a Sphere will return its surface area whereas a circle
-      will return its perimeter.
-    */
-    template<typename Obj> auto area(const Obj&);
-
-    /*! \brief Determine if two objects are intersecting.
+       \brief Geometric types and algorithms for calculating properties
+       (e.g., intersection, volume).
      */
-    bool intersects(const Object1&, const Object2&);
-  } // namespace geometry
+     namespace geometry {
+       /*! \brief Compute a Hausdorf measure of the interior of an object.
+
+         The measure returned depends on the dimensionality of the
+         object, a circle will return its area but a sphere will return
+         its volume
+       */
+       template<typename Obj> auto volume(const Obj&);
+
+       /*! \brief Compute a Hausdorf measure of the boundary/boundaries
+         of an object.
+      
+         The measure returned depends on the dimensionality object. For
+         example, a Sphere will return its surface area whereas a circle
+         will return its perimeter.
+       */
+       template<typename Obj> auto area(const Obj&);
+
+       /*! \brief Determine if two objects are intersecting.
+        */
+       bool intersects(const Object1&, const Object2&);
+     } // namespace geometry
   
   
-  /*! \namespace stator::orphan
-    \brief General functionality without a particular grouping.
-  */
-  namespace orphan {
-  } // namespace orphan
+     /*! \namespace stator::orphan
+       \brief General functionality without a particular grouping.
+     */
+     namespace orphan {
+     } // namespace orphan
 
   
-  /*! \namespace stator::symbolic
-    \brief The stator symbolic math library.
+     /*! \namespace stator::symbolic
+       \brief The stator symbolic math library.
     
-    This namespace encapsulates the symbolic math functionality of
-    stator. This library allows you to perform compile-time operations
-    on mathematical expressions, as well as perform run-time
-    calculations, such as root finding on polynomials.    
-  */
-  namespace symbolic {
-  } // namespace symbolic
+       This namespace encapsulates the symbolic math functionality of
+       stator. This library allows you to perform compile-time operations
+       on mathematical expressions, as well as perform run-time
+       calculations, such as root finding on polynomials.    
+     */
+     namespace symbolic {
+  
+       /*! \brief Performs a symbolic derivative on the expression.
+        */
+       template<typename Expression>
+       auto derivative(const Expression&);
+  
+     } // namespace symbolic
 
 } // namespace stator

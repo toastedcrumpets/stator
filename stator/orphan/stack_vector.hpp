@@ -158,5 +158,34 @@ namespace stator {
       os << "}";
       return os;
     }
+
+    namespace detail {
+      template<std::size_t I = 0, typename... Tp>
+      inline typename std::enable_if<I == sizeof...(Tp), void>::type
+      tuple_print(const std::tuple<Tp...>& t, std::ostream& os)
+      { }
+
+      template<std::size_t I = 0, typename... Tp>
+      inline typename std::enable_if<I < sizeof...(Tp), void>::type
+      tuple_print(const std::tuple<Tp...>& t, std::ostream& os)
+      {
+        os << std::get<I>(t) << " ";
+        tuple_print<I + 1, Tp...>(t, os);
+      }
+    }// namespace detail
+
+    /*! Output operator for pretty printing StackVector classes containing tuples. */
+    template<size_t Nmax, typename... Tp>
+    std::ostream& operator<<(std::ostream& os, const StackVector<std::tuple<Tp...>,Nmax>&s) 
+    {
+      os << "StackVector{ ";
+      for (const auto& val : s) {
+	os << "[";
+        detail::tuple_print(val, os);
+	os << "] ";
+      }
+      os << "}";
+      return os;
+    }
   }// namespace orphan
 }// namespace stator

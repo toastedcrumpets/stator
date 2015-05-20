@@ -36,37 +36,13 @@
 
 namespace stator {
   namespace symbolic {
-
-
     using stator::orphan::StackVector;
     
     namespace detail {
-      template<std::size_t I = 0, typename... Tp>
-      inline typename std::enable_if<I == sizeof...(Tp), void>::type
-      tuple_print(const std::tuple<Tp...>& t, std::ostream& os)
-      { }
-
-      template<std::size_t I = 0, typename... Tp>
-      inline typename std::enable_if<I < sizeof...(Tp), void>::type
-      tuple_print(const std::tuple<Tp...>& t, std::ostream& os)
-      {
-        os << std::get<I>(t) << " ";
-        tuple_print<I + 1, Tp...>(t, os);
-      }
+      using stator::detail::choice;
+      using stator::detail::last_choice;
+      using stator::detail::select_overload;
     } // namespace detail
-
-    template<size_t Nmax, typename... Tp>
-    std::ostream& operator<<(std::ostream& os, const StackVector<std::tuple<Tp...>,Nmax>&s) 
-    {
-      os << "StackVector{ ";
-      for (const auto& val : s) {
-	os << "[";
-        detail::tuple_print(val, os);
-	os << "] ";
-      }
-      os << "}";
-      return os;
-    }
     
     /*! \brief A class representing a compile-time constant.
 
@@ -77,17 +53,16 @@ namespace stator {
       ratio-float multipliation).
      */
     template<std::intmax_t Num, std::intmax_t Denom = 1>
-    struct C: std::ratio<Num, Denom> 
-    {};
+    struct C: std::ratio<Num, Denom> {};
 
     /*! \brief Conversion operator from std::ratio to C.*/
     template<class stdratio>
     using C_wrap = C<stdratio::num, stdratio::den>;
     
+    /*! \brief Compile time type-test for compile-time constants \ref C.*/
     template<class T> struct is_C { static const bool value = false; };
 
-    template<std::intmax_t N, std::intmax_t D> 
-    struct is_C<C<N,D> > { static const bool value = true; };
+    template<std::intmax_t N, std::intmax_t D> struct is_C<C<N,D> > { static const bool value = true; };
 
     /*! \brief A symbolic representation of zero. */
     typedef C<0> Null;
@@ -100,7 +75,7 @@ namespace stator {
     /*! \brief A symbolic/compile-time rational approximation of \f$\mathrm{e}\f$. */
     typedef C_wrap<constant_ratio::e> e;
 
-    /*! \brief Output operator for std::ratio types */
+    /*! \brief Output operator for compile-time constant (\ref C types).*/
     template<std::intmax_t Num, std::intmax_t Denom>
     inline std::ostream& operator<<(std::ostream& os, const C<Num, Denom>) {
       os << "C<" << Num;
@@ -108,8 +83,10 @@ namespace stator {
 	os << ", " << Denom;
       return os << ">()";
     }
-
+    
+    /*! \brief Specialized output operator for \f$\pi\f$.*/
     inline std::ostream& operator<<(std::ostream& os, const pi) { os << "π"; return os; }
+    /*! \brief Specialized output operator for \f$\mathrm{e}\f$.*/
     inline std::ostream& operator<<(std::ostream& os, const e) { os << "e"; return os; }
 
     template<class T>
@@ -118,27 +95,7 @@ namespace stator {
 	return (os << c.real());
       if (c.imag() < 0)
 	return (os << "(" <<c.real() << " - " << std::abs(c.imag()) << "i)");
-
       return (os << "(" <<c.real() << " + " << c.imag() << "i)");
-    }
-
-    namespace detail {
-      /*!\brief Type trait to determine if a certain type is a
-	symbolic representation of a constant.
-	
-	This is used to enable the derivative operation to convert
-	these types to Null types. It is also to apply a
-	specialised functions to these types.
-      */
-      template <class T>
-      struct IsSymbolicConstant {
-	static const bool value = false;
-      };
-
-      template<std::intmax_t Num, std::intmax_t Denom>
-      struct IsSymbolicConstant<C<Num, Denom> > {
-	static const bool value = true;
-      };
     }
     
     template<class T,
@@ -183,59 +140,14 @@ namespace stator {
       */
       template<class T>
       struct IsConstant {
-	static const bool value = std::is_arithmetic<T>::value || IsSymbolicConstant<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value;
+	static const bool value = std::is_arithmetic<T>::value || is_C<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value;
       };
 
       template<class T>
       struct IsConstant<std::complex<T> > {
 	static const bool value = IsConstant<T>::value;
       };
-         /*! \brief The preferred implementation of try_eval().
-
-        This takes a higher precedence to the try_eval implementation
-        below due to not requiring a conversion for the second
-        argument (if called as try_eval_imp(a, 0)).
-       */
-      template<class T>
-      auto try_eval_imp(const T& a, int) -> decltype(a.eval()) {
-        return a.eval();
-      }
-
-      /*! \brief The backup implementation of try_eval().
-        
-        This takes a lower precedence to the above try_eval due to the
-        implicit conversion from int->long for the second argument.
-       */
-      template<class T>
-      const T& try_eval_imp(const T& a, long) {
-	return a;
-      }
-
-    } // namespace detail
-    
-    /*!\brief Returns the result of calling the eval() member function
-       (if available) on the passed argument, or the unmodified
-       argument (if not).
-     */
-    template<class T>
-    auto try_eval(const T& a) -> decltype(detail::try_eval_imp(a, 0)) {
-      return detail::try_eval_imp(a, 0);
-    }
-
-/*! Determine the type used to store the result of an expression.
-  
-  This Macro handles everything, including Eigen expressions, and
-  returns an appropriate type to store the results of the expression
-  A. Example usage is:
-  
-  \code{.cpp}
-  STORETYPE(A.dot(B) + C) val = A.dot(B) + C;
-  \endcode
-
-  This macro is often used to determine the coefficient type of a
-  Polynomial class.
-*/
-#define STORETYPE(A) typename std::decay<decltype(stator::symbolic::try_eval(A))>::type
+    }// namespace detail
 
     /*! \brief Returns the empty sum of a type.
       

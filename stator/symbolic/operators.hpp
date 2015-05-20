@@ -30,25 +30,13 @@ namespace stator {
 	RHStype _r;
 	BinaryOp(const LHStype& l, const RHStype& r): _l(l), _r(r) {}
       };
-
-      template<unsigned I>
-      struct choice : choice<I+1>{};
-      
-      // terminate recursive inheritence at a convenient point,
-      // large enough to cover all cases
-      static const int LAST_OVERLOAD_LVL = 10;
-      template<> struct choice<LAST_OVERLOAD_LVL>{};
-      typedef choice<LAST_OVERLOAD_LVL> last_choice;
-
-      // I like it for clarity
-      struct select_overload : choice<0>{};
     }
 
 
     /*! \brief Type trait which enables symbolic operators for
         algebraic operations (*+-). */
     template<class T> struct SymbolicOperators {
-      static const bool value = detail::IsSymbolicConstant<T>::value;
+      static const bool value = is_C<T>::value;
     };
      
     template<char Letter> struct SymbolicOperators<Variable<Letter> > {

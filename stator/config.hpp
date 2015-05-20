@@ -29,4 +29,71 @@ namespace stator {
   
   /*! \brief A convenience typedef for a non-aligned Eigen Vector.*/
   template<typename Scalar, size_t D> using Vector = Matrix<Scalar, D, 1>;
+  
+  namespace detail {
+
+    /*! \brief A class which recursively inherits from itself to allow ambiguous function definition ordering.*/
+    template<unsigned I> struct choice : choice<I+1>{};
+    
+    /*! \brief The lowest-priority overload level.*/
+    static const int LAST_OVERLOAD_LVL = 10;
+
+    /*! \brief The lowest-priority overload level (closing the recursion)*/
+    template<> struct choice<LAST_OVERLOAD_LVL> {};
+
+    typedef choice<LAST_OVERLOAD_LVL> last_choice;
+
+    /*! \brief A class used to start the ambiguous function definition ordering calculation. */
+    struct select_overload : choice<0>{};
+
+    /*! \brief The preferred implementation of try_eval().
+    
+      This takes a higher precedence to the try_eval implementation
+      below due to not requiring a conversion for the second
+      argument (when called as try_eval_imp(a, 0)).
+    */
+    template<class T>
+    auto try_eval_imp(const T& a, choice<0>) -> decltype(a.eval()) {
+      return a.eval();
+    }
+
+    /*! \brief The backup implementation of try_eval().
+        
+      This takes a lower precedence to the above try_eval due to the
+      implicit conversion from int->long for the second argument.
+    */
+    template<class T>
+    const T& try_eval_imp(const T& a, choice<1>) {
+      return a;
+    }
+
+    /*!\brief Returns the result of calling the eval() member function
+      (if available) on the passed argument, or the unmodified
+      argument (if not).
+    */
+    template<class T>
+    auto try_eval(const T& a) -> decltype(detail::try_eval_imp(a, select_overload{})) {
+      return detail::try_eval_imp(a, select_overload{});
+    }
+  } // namespace detail
 } // namespace stator
+
+
+/*! Determine the type used to store the result of an expression.
+  
+  This Macro handles everything, including Eigen expressions, and
+  returns an appropriate type to store the results of the expression
+  A. Example usage is:
+  
+  \code{.cpp}
+  STORETYPE(A.dot(B) + C) val = A.dot(B) + C;
+  \endcode
+
+  This macro is often used to determine the coefficient type of a
+  Polynomial class.
+*/
+#define STORETYPE(A) typename std::decay<decltype(stator::detail::try_eval(A))>::type
+
+
+#define STATOR_AUTORETURN(EXPR) decltype(EXPR) { return EXPR; }
+#define STATOR_AUTORETURN_BYVALUE(EXPR) STORETYPE(EXPR) { return EXPR; }

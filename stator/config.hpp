@@ -94,6 +94,35 @@ namespace stator {
 */
 #define STORETYPE(A) typename std::decay<decltype(stator::detail::try_eval(A))>::type
 
+/*! \brief A convenience Macro for defining auto return type functions.
 
+  A fully generic addition function is written like so
+
+  \code{.cpp}
+  template<typename T1, typename T2>
+  auto add(const T1& a, const T2& b) -> decltype(a+b)
+  { return a+b; }
+  \endcode
+
+  This requires repetiting the actual expression twice, once in the
+  decltype to determine the resulting type of the expression and once
+  again in the return statement to actually calculate it. This macro
+  permits a simpler definition:
+
+  \code{.cpp}
+  template<typename T1, typename T2>
+  auto add(const T1& a, const T2& b) -> STATOR_AUTORETURN(a+b)
+  \endcode  
+
+  This reduces the amount of code that has to be written and ensures
+  consistency between the two definitions.
+*/
 #define STATOR_AUTORETURN(EXPR) decltype(EXPR) { return EXPR; }
+
+/*! \brief A convenience Macro for defining auto by-value return type functions.
+
+  This macro is identical to STATOR_AUTORETURN, except it ensures the
+  return values are by reference. It does this by using the STORETYPE
+  macro to calculate the return type.
+*/
 #define STATOR_AUTORETURN_BYVALUE(EXPR) STORETYPE(EXPR) { return EXPR; }

@@ -60,8 +60,7 @@ namespace stator {
 									\
     template<char Letter, class Arg1, class Arg2>			\
     auto substitution(const Function<Arg1, ID>& f, const VariableSubstitution<Letter, Arg2>& x) \
-      -> decltype(HELPERNAME(substitution(f._arg, x)))			\
-    { return HELPERNAME(substitution(f._arg, x)); }			\
+      -> STATOR_AUTORETURN(HELPERNAME(substitution(f._arg, x)))         \
 									\
     template<class A>							\
     inline std::ostream& operator<<(std::ostream& os, const Function<A, ID>& f) \
@@ -69,8 +68,7 @@ namespace stator {
 									\
     template<char dVariable, class A>					\
     auto derivative(const HELPERNAME##F<A>& f, Variable<dVariable>)	\
-      -> decltype(derivative(f._arg, Variable<dVariable>()) * (ARG_DERIVATIVE)) \
-    { return derivative(f._arg, Variable<dVariable>()) * (ARG_DERIVATIVE); }
+      -> STATOR_AUTORETURN(derivative(f._arg, Variable<dVariable>()) * (ARG_DERIVATIVE)) \
     
     CREATE_FUNCTION(sin, std::sin(x), cos(f._arg), "sin(" << f._arg << ")", 0)
     CREATE_FUNCTION(cos, std::cos(x), -sin(f._arg), "cos(" << f._arg << ")", 1)
@@ -79,8 +77,6 @@ namespace stator {
 
     /////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////         Complex functions         /////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////
-
-    
+    /////////////////////////////////////////////////////////////////////////////////////    
   }
 }

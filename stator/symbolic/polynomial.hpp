@@ -233,26 +233,25 @@ namespace stator {
     Polynomial<Order, Real, Var2> substitution(const Polynomial<Order, Real, Var1>& f, const VariableSubstitution<Var1, Variable<Var2> >& x_container)
     { return Polynomial<Order, Real, Var2>(f.begin(), f.end()); }
 
-    /*! \brief Optimised Polynomial substitution for Null insertions.
-     */
+    /*! \brief Optimised Polynomial substitution for Null
+        insertions. */
     template<size_t Order, class Real, char Letter>
     Real substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Null>&)
     { return f[0]; }
 
-    /*! \brief Numerically Evaluates a Polynomial expression at a given point.
+    /*! \brief Numerically Evaluates a Polynomial expression at a
+        given point.
 
       This function also specially handles the cases where
       \f$x=+\infty\f$ or \f$-\infty\f$ and returns the correct sign of
       infinity (if the polynomial has one non-zero coefficients of
       x). This behaviour is crucial as it is used in the evaluation of
       Sturm chains.
-     */
+    */
     template<class Real, size_t Order, char Letter, class Real2,
-	     typename = typename std::enable_if<std::is_arithmetic<Real2>::value
-                                                //Avoid this case if its a Vector expression
-                                                && !std::is_base_of<Eigen::EigenBase<Real>, Real>::value
-                                                && !std::is_base_of<Eigen::EigenBase<Real2>, Real2>::value
-                                                >::type>
+	     typename = typename std::enable_if<(std::is_arithmetic<Real2>::value
+                                                 && !std::is_base_of<Eigen::EigenBase<Real>, Real>::value
+                                                 && !std::is_base_of<Eigen::EigenBase<Real2>, Real2>::value)>::type>
     STORETYPE(Real() * Real2()) substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
     {
       //Handle the case where this is actually a constant and not a
@@ -296,10 +295,8 @@ namespace stator {
       template<size_t Stage>
       struct PolySubWorker {
 	template<size_t Order, char Letter, class Real, class X>
-	static auto eval(const Polynomial<Order, Real, Letter>& f, const X& x) -> decltype(f[Order - Stage] + x * PolySubWorker<Stage - 1>::eval(f, x))
-	{
-	  return f[Order - Stage] + x * PolySubWorker<Stage - 1>::eval(f, x);
-	}
+	static auto eval(const Polynomial<Order, Real, Letter>& f, const X& x) 
+          -> STATOR_AUTORETURN(f[Order - Stage] + x * PolySubWorker<Stage - 1>::eval(f, x));
       };
       
       /*! \brief Worker class for symbolically evaluating a substitution on
@@ -310,9 +307,8 @@ namespace stator {
       template<>
       struct PolySubWorker<0> {
 	template<size_t Order, char Letter, class Real, class X>
-	static auto eval(const Polynomial<Order, Real, Letter>& f, const X& x) -> decltype(f[Order]) {
-	  return f[Order];
-	}
+	static auto eval(const Polynomial<Order, Real, Letter>& f, const X& x) 
+          -> STATOR_AUTORETURN(f[Order]);
       };
     }
     /*! \brief Symbolically evaluates a Polynomial expression.
@@ -330,8 +326,8 @@ namespace stator {
                                                 || (std::is_base_of<Eigen::EigenBase<Real2>, Real2>::value && std::is_arithmetic<Real2>::value)
                                                 || (std::is_base_of<Eigen::EigenBase<Real>, Real>::value && std::is_arithmetic<Real2>::value)
                                                 >::type>
-    auto substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container) -> decltype(detail::PolySubWorker<Order>::eval(f, x_container._val))
-    { return detail::PolySubWorker<Order>::eval(f, x_container._val); }
+    auto substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
+     -> STATOR_AUTORETURN(detail::PolySubWorker<Order>::eval(f, x_container._val))
 
     /*! \brief Fast evaluation of multiple derivatives of a
         polynomial.
@@ -491,8 +487,8 @@ namespace stator {
     */
     template<class Real1, size_t Order, class Real, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    auto operator+(const Real1& r, const Polynomial<Order, Real, Letter>& poly) -> decltype(poly+r)
-    { return poly + r; }
+    auto operator+(const Real1& r, const Polynomial<Order, Real, Letter>& poly)
+      -> STATOR_AUTORETURN(poly+r)
 
     /*!\brief Left-handed addition operator for Polynomials 
 
@@ -529,8 +525,8 @@ namespace stator {
     */
     template<class Real1, class Real2, size_t N, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
-    auto operator-(const Real1& r, const Polynomial<N, Real2, Letter>& poly) -> decltype((-poly) + r)
-    { return (-poly) + r; }
+    auto operator-(const Real1& r, const Polynomial<N, Real2, Letter>& poly) 
+      -> STATOR_AUTORETURN((-poly) + r)
   
     /*! \brief Left-handed subtraction from a Polynomial type.
 
@@ -539,8 +535,8 @@ namespace stator {
     */
     template<class Real1, class Real2, size_t N, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type >
-    auto operator-(const Polynomial<N,Real1,Letter>& poly, const Real2& r) -> decltype(poly + (-r))
-    { return poly + (-r); }
+    auto operator-(const Polynomial<N,Real1,Letter>& poly, const Real2& r) 
+      -> STATOR_AUTORETURN(poly + (-r))
 
     /*! \brief Subtraction between two Polynomial types. 
      */
@@ -1438,7 +1434,7 @@ namespace stator {
       All higher polynomials are evaluated like so:
 
       \f{eqnarray*}{
-      p_n(x) &=& -\mathrm{rem}(p_{n+2}, p_{n+1})
+      p_n(x) &=& -\mathrm{rem}(p_{n-2}, p_{n-1})
       \f}
       
       where \f$\mathrm{rem}(p_{n+2},\,p_{n+1})\f$ returns the

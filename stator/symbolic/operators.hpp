@@ -78,8 +78,7 @@ namespace stator {
 									\
     template<class LHS, class RHS, char Letter, class Arg>		\
     auto substitution(const CLASSNAME<LHS, RHS>& f, const VariableSubstitution<Letter, Arg>& x)	\
-      -> decltype((substitution(f._l, x)) OP (substitution(f._r, x)))	\
-    { return (substitution(f._l, x)) OP (substitution(f._r, x)); }      \
+      -> STATOR_AUTORETURN((substitution(f._l, x)) OP (substitution(f._r, x)))	\
     									\
     template<class LHS, class RHS>					\
     typename std::enable_if<!(detail::IsConstant<LHS>::value && detail::IsConstant<RHS>::value), CLASSNAME<LHS, RHS> >::type \
@@ -87,36 +86,37 @@ namespace stator {
     { return CLASSNAME<LHS, RHS>(l, r); }				\
 									\
     template<class LHS, class RHS>					\
-    auto HELPERNAME(const LHS& l, const RHS& r, detail::last_choice) -> decltype((toArithmetic(l)) OP (toArithmetic(r))) \
-    { return (toArithmetic(l)) OP (toArithmetic(r)); }			\
+    auto HELPERNAME(const LHS& l, const RHS& r, detail::last_choice)    \
+      -> STATOR_AUTORETURN((toArithmetic(l)) OP (toArithmetic(r)))      \
     									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<0>) -> decltype((simplify(simplify(f._l)) OP (simplify(f._r)))) \
-    { return (simplify(simplify(f._l)) OP (simplify(f._r))); }          \
+      auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<0>) \
+    -> STATOR_AUTORETURN((simplify(simplify(f._l)) OP (simplify(f._r)))) \
+                                                                        \
+    template<class LHS, class RHS>					\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<1>) \
+    -> STATOR_AUTORETURN(simplify((f._l) OP (simplify(f._r))))          \
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<1>) -> decltype(simplify((f._l) OP (simplify(f._r)))) \
-    { return simplify((f._l) OP (simplify(f._r))); }                    \
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<2>) \
+    -> STATOR_AUTORETURN(simplify((simplify(f._l)) OP (f._r)))          \
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<2>) -> decltype(simplify((simplify(f._l)) OP (f._r))) \
-    { return simplify((simplify(f._l)) OP (f._r)); }                    \
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<3>) \
+    -> STATOR_AUTORETURN((simplify(f._l)) OP (simplify(f._r)))          \
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<3>) -> decltype((simplify(f._l)) OP (simplify(f._r))) \
-    { return (simplify(f._l)) OP (simplify(f._r)); }			\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<4>) \
+    -> STATOR_AUTORETURN((f._l) OP (simplify(f._r)))                    \
+                                                                        \
+    template<class LHS, class RHS>					\
+    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<5>) \
+    -> STATOR_AUTORETURN((simplify(f._l)) OP (f._r))                    \
 									\
     template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<4>) -> decltype((f._l) OP (simplify(f._r))) \
-    { return (f._l) OP (simplify(f._r)); }                              \
-									\
-    template<class LHS, class RHS>					\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<5>) -> decltype((simplify(f._l)) OP (f._r)) \
-    { return (simplify(f._l)) OP (f._r); }                              \
-									\
-    template<class LHS, class RHS>					\
-    auto simplify(const CLASSNAME<LHS, RHS>& f) ->decltype(simplify_##HELPERNAME##_impl(f, detail::select_overload{})) \
-    { return simplify_##HELPERNAME##_impl(f, detail::select_overload{}); }		\
+    auto simplify(const CLASSNAME<LHS, RHS>& f)\
+    -> STATOR_AUTORETURN(simplify_##HELPERNAME##_impl(f, detail::select_overload{})) \
+                                                                        \
     /*THESE HELPERS ARE OVERLOAD LEVEL 1, TO ALLOW CANCELLATION AT LEVEL 0*/ \
     /*! \brief Helper function which reorders (A*B)*C to (B*C)*A operations. */	\
     template<class T1, class T2, class T3,				\
@@ -178,50 +178,49 @@ namespace stator {
     /*! \brief Symbolic unary negation operator. */
     template<class Arg,
 	     typename = typename std::enable_if<SymbolicOperators<Arg>::value>::type>
-    auto operator-(const Arg& l) -> decltype(-1 * l)
-    { return -1 * l; }
+    auto operator-(const Arg& l) -> STATOR_AUTORETURN(-1 * l)
 
     /*! \brief Symbolic addition operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator+(const LHS& l, const RHS& r) -> decltype(add(l, r, detail::select_overload{}))
-    { return add(l,r, detail::select_overload{}); }
+    auto operator+(const LHS& l, const RHS& r) 
+      -> STATOR_AUTORETURN(add(l, r, detail::select_overload{}))
 
     /*! \brief Symbolic multiplication operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator*(const LHS& l, const RHS& r) -> decltype(multiply(l, r, detail::select_overload{}))
-    { return multiply(l,r, detail::select_overload{}); }
+    auto operator*(const LHS& l, const RHS& r) 
+      -> STATOR_AUTORETURN(multiply(l, r, detail::select_overload{}))
 
     /*! \brief Symbolic subtraction operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator-(const LHS& l, const RHS& r) -> decltype(subtract(l, r, detail::select_overload{}))
-    { return subtract(l,r, detail::select_overload{}); }
+    auto operator-(const LHS& l, const RHS& r) 
+    -> STATOR_AUTORETURN(subtract(l, r, detail::select_overload{}))
 
     /*! \brief Symbolic divide operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator/(const LHS& l, const RHS& r) -> decltype(divide(l, r, detail::select_overload{}))
-    { return divide(l,r, detail::select_overload{}); }
+    auto operator/(const LHS& l, const RHS& r) 
+    -> STATOR_AUTORETURN(divide(l, r, detail::select_overload{}))
 
     /*! \brief Derivatives of AddOp operations.
      */
     template<char dVariable, class LHS, class RHS>
-    auto derivative(const AddOp<LHS, RHS>& f, Variable<dVariable>) -> decltype(derivative(f._l, Variable<dVariable>()) + derivative(f._r, Variable<dVariable>()))
-    { return derivative(f._l, Variable<dVariable>()) + derivative(f._r, Variable<dVariable>()); }
+    auto derivative(const AddOp<LHS, RHS>& f, Variable<dVariable>) 
+      -> STATOR_AUTORETURN(derivative(f._l, Variable<dVariable>()) + derivative(f._r, Variable<dVariable>()))
 
     /*! \brief Derivatives of SubtractOp operations.
      */
     template<char dVariable, class LHS, class RHS>
-    auto derivative(const SubtractOp<LHS, RHS>& f, Variable<dVariable>) -> decltype(derivative(f._l, Variable<dVariable>()) - derivative(f._r, Variable<dVariable>()))
-    { return derivative(f._l, Variable<dVariable>()) - derivative(f._r, Variable<dVariable>()); }
+    auto derivative(const SubtractOp<LHS, RHS>& f, Variable<dVariable>) 
+      -> STATOR_AUTORETURN(derivative(f._l, Variable<dVariable>()) - derivative(f._r, Variable<dVariable>()))
 
     /*! \brief Derivatives of MultiplyOp operations.
      */
     template<char dVariable, class LHS, class RHS>
-    auto derivative(const MultiplyOp<LHS, RHS>& f, Variable<dVariable>) -> decltype(derivative(f._l, Variable<dVariable>()) * f._r + f._l * derivative(f._r, Variable<dVariable>()))
-    { return derivative(f._l, Variable<dVariable>()) * f._r + f._l * derivative(f._r, Variable<dVariable>()); }
+    auto derivative(const MultiplyOp<LHS, RHS>& f, Variable<dVariable>) 
+    -> STATOR_AUTORETURN(derivative(f._l, Variable<dVariable>()) * f._r + f._l * derivative(f._r, Variable<dVariable>()))
 
     /*! \} */
 
@@ -236,25 +235,18 @@ namespace stator {
       template<size_t Power>
       struct PowerOpSubstitution {
 	template<class Arg_t>
-	static auto eval(Arg_t x) -> decltype(PowerOpSubstitution<Power-1>::eval(x) * x) {
-	  return PowerOpSubstitution<Power-1>::eval(x) * x;
-	}
+	static auto eval(Arg_t x) 
+          -> STATOR_AUTORETURN(PowerOpSubstitution<Power-1>::eval(x) * x)
       };
 
       template<>
       struct PowerOpSubstitution<1> {
-	template<class Arg_t>
-	static Arg_t eval(Arg_t x) {
-	  return x;
-	}
+	template<class Arg_t> static Arg_t eval(Arg_t x) { return x; }
       };
 
       template<>
       struct PowerOpSubstitution<0> {
-	template<class Arg_t>
-	static Unity eval(Arg_t x) {
-	  return Unity();
-	}
+	template<class Arg_t> static Unity eval(Arg_t x) { return Unity(); }
       };
     }
 
@@ -301,14 +293,14 @@ namespace stator {
     /*! \brief Helper function for immediately evaluating powers of constants. */
     template<size_t Power, class Arg,
              typename = typename std::enable_if<detail::IsConstant<Arg>::value && !std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
-    auto pow(const Arg& f) -> decltype(PowerOpSubstitution<Power>::eval(f))
-    { return PowerOpSubstitution<Power>::eval(f); }
+    auto pow(const Arg& f) 
+      -> STATOR_AUTORETURN(PowerOpSubstitution<Power>::eval(f))
 
     /*! \brief Specialisation for squares of matrix expressions. */
     template<size_t Power, class Arg,
              typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
-      auto pow(const Arg& f) -> STORETYPE(f.dot(f))
-    { return f.dot(f); }
+      auto pow(const Arg& f) 
+      -> STATOR_AUTORETURN_BYVALUE(f.dot(f))
 
     /*! \} */
 
@@ -337,20 +329,20 @@ namespace stator {
     /*! \brief Derivatives of PowerOp operations.
      */
     template<char dVariable, class Arg, size_t Power>
-    auto derivative(const PowerOp<Arg, Power>& f, Variable<dVariable>) -> decltype(C<Power>() * derivative(f._arg, Variable<dVariable>()) * PowerOp<Arg, Power-1>(f._arg))
-    { return C<Power>() * derivative(f._arg, Variable<dVariable>()) * PowerOp<Arg, Power-1>(f._arg); }
+    auto derivative(const PowerOp<Arg, Power>& f, Variable<dVariable>) 
+      -> STATOR_AUTORETURN((C<Power>() * derivative(f._arg, Variable<dVariable>()) * PowerOp<Arg, Power-1>(f._arg)))
 
     template<char dVariable, class Arg>
     Null derivative(const PowerOp<Arg, 0>& f, Variable<dVariable>)
     { return Null(); }
 
     template<char dVariable, class Arg>
-    auto derivative(const PowerOp<Arg, 1>& f, Variable<dVariable>) -> decltype(derivative(f._arg, Variable<dVariable>()))
-    { return derivative(f._arg, Variable<dVariable>()); }
+    auto derivative(const PowerOp<Arg, 1>& f, Variable<dVariable>) 
+      -> STATOR_AUTORETURN(derivative(f._arg, Variable<dVariable>()))
 
     template<char dVariable, class Arg>
-    auto derivative(const PowerOp<Arg, 2>& f, Variable<dVariable>) -> decltype(C<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg)
-    { return C<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg; }
+    auto derivative(const PowerOp<Arg, 2>& f, Variable<dVariable>) 
+      -> STATOR_AUTORETURN(C<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg)
     /*! \}*/
   }
 }

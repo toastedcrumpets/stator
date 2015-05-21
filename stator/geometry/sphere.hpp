@@ -22,7 +22,6 @@
 // stator
 #include "stator/config.hpp"
 #include "stator/constants.hpp"
-#include "stator/geometry/inverse.hpp"
 
 namespace stator {
   namespace geometry {
@@ -58,16 +57,22 @@ namespace stator {
       /*! \brief Get function for the ball center. */
       const Vector<Scalar, D>& center() const { return center_; }
 
-      Inverse<Ball> inverse() const {
-        return Inverse<Ball>(*this);
-      }
-
     protected:
       /*! \brief Radius of the ball. */
       Scalar radius_;
 
       /*! \brief Center of the ball. */
       Vector<Scalar, D> center_;
+    };
+
+    /*! \brief An inverse n-ball (an n-sphere including its exterior volume).
+      
+      \see Ball
+     */
+    template<typename Scalar, size_t D>
+    class InverseBall: public Ball<Scalar, D> {
+    public:
+      using Ball<Scalar, D>::Ball;
     };
 
     namespace detail {

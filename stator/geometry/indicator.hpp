@@ -20,7 +20,7 @@
 #pragma once
 
 // stator
-#include "stator/constants.hpp"
+#include "stator/config.hpp"
 #include "stator/geometry/sphere.hpp"
 #include "stator/geometry/point.hpp"
 #include "stator/symbolic/symbolic.hpp"
@@ -31,15 +31,19 @@ namespace stator {
     
     template<class Scalar, size_t D, class VijFunc>
     auto indicator(const Ball<Scalar, D>& bi,  const Point<Scalar, D>& bj, const VijFunc& vij) 
-      -> STORETYPE(pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius())) {
-      return pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - bi.radius()*bi.radius();
-    }
+      -> STATOR_AUTORETURN_BYVALUE(pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius()))
 
     template<class Scalar, size_t D, class VijFunc>
     auto indicator(const Ball<Scalar, D>& bi,  const Ball<Scalar, D>& bj, const VijFunc& vij)
-      -> STORETYPE(pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius() + bj.radius())) {
-      return pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius() + bj.radius());
-    }
+      -> STATOR_AUTORETURN_BYVALUE(pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius() + bj.radius()))
+
+
+    /*! \brief Generic implementation of an intersection test for
+     shapes with indicator functions defined.
+     */
+    template<typename Obj1, typename Obj2>
+    auto intersects(const Obj1& b1,  const Obj2& b2)
+    -> STATOR_AUTORETURN(indicator(b1, b2, Null()) < 0)
 
   } // namespace geometry
 } // namespace stator

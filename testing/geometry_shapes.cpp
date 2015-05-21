@@ -23,7 +23,6 @@
 //stator
 #include <stator/geometry/sphere.hpp>
 #include <stator/geometry/box.hpp>
-#include <stator/geometry/intersect.hpp>
 #include <stator/geometry/indicator.hpp>
 
 //boost
@@ -33,7 +32,7 @@
 using namespace stator::geometry;
 using namespace stator;
 
-BOOST_AUTO_TEST_CASE( Ball_Sphere_test )
+BOOST_AUTO_TEST_CASE( Ball_test )
 {
   BOOST_CHECK_EQUAL(volume(Ball<double, 0>(1.0)), 1);
   BOOST_CHECK_EQUAL(volume(Ball<double, 1>(1.0)), 2);

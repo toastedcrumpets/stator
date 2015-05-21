@@ -22,7 +22,6 @@
 // stator
 #include "stator/constants.hpp"
 #include "stator/config.hpp"
-#include "stator/geometry/inverse.hpp"
 
 namespace stator {
   namespace geometry {

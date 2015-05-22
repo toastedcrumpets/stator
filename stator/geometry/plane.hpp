@@ -21,8 +21,6 @@
 
 // stator
 #include "stator/constants.hpp"
-#include "stator/geometry/object.hpp"
-#include "stator/geometry/inverse.hpp"
 
 namespace stator {
   namespace geometry {
@@ -42,17 +40,13 @@ namespace stator {
     template<typename Scalar, size_t D>
     class HalfSpace {
     public:
-      HalfSpace(const Vector<Scalar, D>& origin, const Vector<Scalar, D>& normal):
-	origin_(origin), normal_(normal)
+      HalfSpace(const Vector<Scalar, D>& center, const Vector<Scalar, D>& normal):
+	center_(center), normal_(normal)
       {}
       
-      const Vector<Scalar, D>& center() const { return origin_; }
+      const Vector<Scalar, D>& center() const { return center_; }
       const Vector<Scalar, D>& normal() const { return normal_; }
 
-      HalfSpace inverse() const {
-        return HalfSpace(origin, -normal);
-      }
-        
       protected:
       Vector<Scalar, D> center_;
       Vector<Scalar, D> normal_;
@@ -68,17 +62,13 @@ namespace stator {
     template<typename Scalar, size_t D>
     class Plane {
     public:
-      Plane(const Vector<Scalar, D>& origin, const Vector<Scalar, D>& normal, const Scalar thickness = Scalar(0)):
-	origin_(origin), normal_(normal), thickness_(thickness)
+      Plane(const Vector<Scalar, D>& center, const Vector<Scalar, D>& normal, const Scalar thickness = Scalar(0)):
+	center_(center), normal_(normal), thickness_(thickness)
       {}
       
-      const Vector<Scalar, D>& center() const { return origin_; }
+      const Vector<Scalar, D>& center() const { return center_; }
       const Vector<Scalar, D>& normal() const { return normal_; }
       const Vector<Scalar, D>& thickness() const { return thickness_; }
-
-      Inverse<Ball> inverse() const {
-        return Inverse<Plane>(*this);
-      }
 
       protected:
       Vector<Scalar, D> center_;

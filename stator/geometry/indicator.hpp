@@ -23,26 +23,43 @@
 #include "stator/config.hpp"
 #include "stator/geometry/sphere.hpp"
 #include "stator/geometry/point.hpp"
+#include "stator/geometry/plane.hpp"
 #include "stator/symbolic/symbolic.hpp"
 
 namespace stator {
   namespace geometry {
     using namespace stator::symbolic;
     
-    template<class Scalar, size_t D, class VijFunc>
-    auto indicator(const Ball<Scalar, D>& bi,  const Point<Scalar, D>& bj, const VijFunc& vij) 
-      -> STATOR_AUTORETURN_BYVALUE(pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius()))
+    /*! \brief Ball-Point indicator function.*/
+    template<class Scalar, size_t D, class DeltaRijFunc>
+    auto indicator(const Ball<Scalar, D>& bi,  const Point<Scalar, D>& bj, const DeltaRijFunc& deltarij) 
+      -> STATOR_AUTORETURN_BYVALUE(pow<2>(try_simplify(deltarij + bi.center() - bj.center())) - pow<2>(bi.radius()));
+    
+    /*! \brief Point-Ball indicator function.*/
+    template<class Scalar, size_t D, class DeltaRijFunc>
+    auto indicator(const Point<Scalar, D>& bi, const Ball<Scalar, D>& bj, const DeltaRijFunc& deltarij) 
+      -> STATOR_AUTORETURN_BYVALUE(indicator(bj, bi, -deltarij));
 
-    template<class Scalar, size_t D, class VijFunc>
-    auto indicator(const Ball<Scalar, D>& bi,  const Ball<Scalar, D>& bj, const VijFunc& vij)
-      -> STATOR_AUTORETURN_BYVALUE(pow<2>(try_simplify(vij * Variable<'t'>() + bi.center() - bj.center())) - pow<2>(bi.radius() + bj.radius()))
+    /*! \brief Ball-Ball indicator function.*/
+    template<class Scalar, size_t D, class DeltaRijFunc>
+    auto indicator(const Ball<Scalar, D>& bi,  const Ball<Scalar, D>& bj, const DeltaRijFunc& deltarij)
+      -> STATOR_AUTORETURN_BYVALUE(pow<2>(try_simplify(deltarij + bi.center() - bj.center())) - pow<2>(bi.radius() + bj.radius()));
 
+    /*! \brief Ball-HalfSpace indicator function.*/
+    template<class Scalar, size_t D, class DeltaRijFunc>
+    auto indicator(const Ball<Scalar, D>& bi, const HalfSpace<Scalar, D>& bj, const DeltaRijFunc& deltarij)
+      -> STATOR_AUTORETURN_BYVALUE(try_simplify(dot(bj.normal(), deltarij + bi.center() - bj.center()) - bi.radius()));
+
+    /*! \brief HalfSpace-Ball indicator function.*/
+    template<class Scalar, size_t D, class DeltaRijFunc>
+    auto indicator(const HalfSpace<Scalar, D>& bi, const Ball<Scalar, D>& bj, const DeltaRijFunc& deltarij)
+      -> STATOR_AUTORETURN_BYVALUE(indicator(bj, bi, -deltarij));
 
     /*! \brief Generic implementation of an intersection test for
      shapes with indicator functions defined.
      */
     template<typename Obj1, typename Obj2>
-    auto intersects(const Obj1& b1,  const Obj2& b2)
+    auto intersects(const Obj1& b1, const Obj2& b2)
     -> STATOR_AUTORETURN(indicator(b1, b2, Null()) < 0)
 
   } // namespace geometry

@@ -332,6 +332,7 @@ namespace stator {
 #include "stator/symbolic/functions.hpp"
 #include "stator/symbolic/polynomial.hpp"
 #include "stator/symbolic/simplify.hpp"
+#include "stator/symbolic/integrate.hpp"
 
 namespace stator {
   namespace symbolic {

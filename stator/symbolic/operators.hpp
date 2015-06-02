@@ -256,6 +256,7 @@ namespace stator {
     struct PowerOp {
       Arg _arg;
       PowerOp(Arg a): _arg(a) {}
+      PowerOp(): _arg() {}
     };
     
     /*! \brief Evaluate PowerOp symbol at a value of x.

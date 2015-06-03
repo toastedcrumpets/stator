@@ -53,14 +53,17 @@ BOOST_AUTO_TEST_CASE( symbolic_integration_variable )
 { 
   using namespace stator::symbolic;  
 
+  Variable<'x'> x;
+  Variable<'y'> y;
   //Check basic integration of constants
-  CHECK_TYPE(integrate(Unity(), Variable<'x'>()), Variable<'x'>);
-  CHECK_TYPE(integrate(Null(), Variable<'x'>()), Null);
+  CHECK_TYPE(integrate(Unity(), x), Variable<'x'>);
+  CHECK_TYPE(integrate(Null(), x), Null);
 
   //Check integration of Variables
-  BOOST_CHECK(compare_expression(integrate(Variable<'x'>(), Variable<'x'>()), C<1,2>() * PowerOp<Variable<'x'>, 2>()));
-
-  BOOST_CHECK(compare_expression(integrate(Variable<'y'>(), Variable<'x'>()), Variable<'y'>() * Variable<'x'>()));
-
-  BOOST_CHECK(compare_expression(integrate(Variable<'y'>(), Variable<'x'>()), Variable<'y'>() * Variable<'x'>()));
+  BOOST_CHECK(compare_expression(integrate(x, x), C<1,2>() * pow<2>(x)));
+  BOOST_CHECK(compare_expression(integrate(pow<3>(x), x), C<1,4>() * pow<4>(x)));
+  BOOST_CHECK(compare_expression(integrate(3 * pow<3>(x), x), 3 * (C<1,4>() * pow<4>(x))));
+  BOOST_CHECK(compare_expression(C<3>() * integrate(pow<3>(x), x), C<3,4>() * pow<4>(x)));
+  BOOST_CHECK(compare_expression(integrate(y, x), y * x));
+  BOOST_CHECK(compare_expression(integrate(pow<2>(y), x), pow<2>(y) * x));
 }

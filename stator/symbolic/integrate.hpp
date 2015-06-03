@@ -30,28 +30,49 @@
 namespace stator {
   namespace symbolic {
     
-    /*! \brief Integration of \$C\$.*/
-    template<char letter, class T,
-             typename = typename std::enable_if<detail::IsConstant<T>::value>::type>
+#define IS_CONSTANT(f, letter) std::is_same<STORETYPE(derivative(f, Variable<letter>())), Null>::value
+
+    /*! \brief Integration of any constant/independent expression.
+      
+      We test if an expression is independant by checking that its
+      derivative is nullary zero.
+    */
+    template<char letter, class T>
     auto integrate(const T& a, Variable<letter>)
-      -> STATOR_AUTORETURN(a * Variable<letter>());
+      -> typename std::enable_if<IS_CONSTANT(a, letter), STORETYPE(a * Variable<letter>())>::type
+    { return a * Variable<letter>(); }
+
+    /*! \brief Distributive integration over addition. */
+    template<char Letter, class LHS, class RHS>
+    auto integrate(const AddOp<LHS, RHS>& a, Variable<Letter> x)
+      -> STATOR_AUTORETURN(integrate(a._l, x) + integrate(a._r, x));
+
+    /*! \brief Distributive integration over subtraction. */
+    template<char Letter, class LHS, class RHS>
+    auto integrate(const SubtractOp<LHS, RHS>& a, Variable<Letter> x)
+      -> STATOR_AUTORETURN(integrate(a._l, x) - integrate(a._r, x));
+
+    /*! \brief distribute integration through LHS constant multiplication. */
+    template<char Letter, class LHS, class RHS>
+    auto integrate(const MultiplyOp<LHS, RHS>& a, Variable<Letter> x)
+      -> typename std::enable_if<IS_CONSTANT(a._l, Letter), STORETYPE(a._l * integrate(a._r, x))>::type
+    { return a._l * integrate(a._r, x); }
+
+    /*! \brief distribute integration through RHS constant multiplication. */
+    template<char Letter, class LHS, class RHS>
+    auto integrate(const MultiplyOp<LHS, RHS>& a, Variable<Letter> x)
+      -> typename std::enable_if<IS_CONSTANT(a._r, Letter), STORETYPE(integrate(a._l, x) * a._r)>::type
+    { return integrate(a._l, x) * a._r; }
     
     /*! \brief Integration of \$x\$ by \$x\$.*/
     template<char letter>
     auto integrate(Variable<letter>, Variable<letter>)
       -> STATOR_AUTORETURN((C<1,2>() * pow<2>(Variable<letter>())));
     
-    /*! \brief Integration of \$x\$ by \$y\$.*/
-    template<char letter1, char letter2,
-             typename = typename std::enable_if<letter1!= letter2>::type>
-    auto integrate(Variable<letter1>, Variable<letter2>)
-      -> STATOR_AUTORETURN(Variable<letter1>() * Variable<letter2>());
-
     /*! \brief Integration of \$x^n\$ by \$x\$.*/
     template<char letter, size_t power>
     auto integrate(const PowerOp<Variable<letter>, power>& a, Variable<letter>)
-      -> STATOR_AUTORETURN(C<1, power+1>() * PowerOp<Variable<letter>, power+1>());
-    
+      -> STATOR_AUTORETURN((C<1, power+1>() * PowerOp<Variable<letter>, power+1>()));
     
   } // namespace symbolic
 } // namespace stator

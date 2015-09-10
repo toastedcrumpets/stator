@@ -25,6 +25,7 @@
 #include "stator/exception.hpp"
 
 // C++
+#include <iostream>
 #include <type_traits>
 
 using namespace stator::orphan;
@@ -90,11 +91,9 @@ BOOST_AUTO_TEST_CASE(StaticListTest) {
   }
 
   {
-    typedef static_list<int, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9> list;
-
-    static_foreach<list>()([](const int& i) {
-        if(i % 2)
+    static_foreach<list>()([](const int& i, int mod) {
+        if(i % mod)
           std::cout << "-> " << i << std::endl;
-      });
+      }, 3);
   }
 }

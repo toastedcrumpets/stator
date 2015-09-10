@@ -303,7 +303,7 @@ namespace stator {
       template<typename F, typename...Args>
       void operator()(F f, Args&&... args) {
         detail::static_foreach_helper<0, static_list_size<List>::value,
-          List>()(f);
+          List>()(f, args...);
       }
     };
 

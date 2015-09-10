@@ -265,6 +265,48 @@ namespace stator {
         Index == 0>::second second;
     };
 
+    namespace detail {
+
+      template<size_t Index, size_t End, typename List>
+      struct static_foreach_helper;
+
+      template<size_t Index, size_t End, typename T, T... ListItems>
+      struct static_foreach_helper<Index, End, static_list<T, ListItems...>> {
+        using List = static_list<T, ListItems...>;
+
+        template<typename F, typename...Args>
+        void operator()(F f, Args&&... args) {
+          f(get_static_list_item<List, Index>::value, args...);
+          static_foreach_helper<Index + 1, End, List>()(f, args...);
+        }
+      };
+
+      template<size_t End, typename T, T... ListItems>
+      struct static_foreach_helper<End, End, static_list<T, ListItems...>> {
+
+        template<typename F, typename...Args>
+        void operator()(F f, Args&&... args) {
+        }
+      };
+
+    } // namespace detail
+
+    /*! \brief Call functor for each element in a static list.
+    */
+    template<typename List>
+    struct static_foreach;
+
+    template<typename T, T... ListItems>
+    struct static_foreach<static_list<T, ListItems...>> {
+      using List = static_list<T, ListItems...>;
+
+      template<typename F, typename...Args>
+      void operator()(F f, Args&&... args) {
+        detail::static_foreach_helper<0, static_list_size<List>::value,
+          List>()(f);
+      }
+    };
+
   } // namespace orphan
 
 } // namespace stator

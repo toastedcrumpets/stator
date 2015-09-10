@@ -22,6 +22,7 @@
 
 // stator
 #include "stator/orphan/static_list.hpp"
+#include "stator/exception.hpp"
 
 // C++
 #include <type_traits>
@@ -86,5 +87,14 @@ BOOST_AUTO_TEST_CASE(StaticListTest) {
     typedef append_static_list_item<char, char_list, 'd'>::type char_list;
     static_assert(get_static_list_item<char_list, 3>::value == 'd',
       "Failed to append item to static_list<char>!");
+  }
+
+  {
+    typedef static_list<int, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9> list;
+
+    static_foreach<list>()([](const int& i) {
+        if(i % 2)
+          std::cout << "-> " << i << std::endl;
+      });
   }
 }

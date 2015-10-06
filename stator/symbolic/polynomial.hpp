@@ -1055,12 +1055,12 @@ namespace stator {
       if (f[2] == 0) 
 	return solve_real_roots(change_order<1>(f));
       
-      //Scale the constant of x^2 to 1
-      f = f / f[2];
-
       if (f[0] == 0)
 	//There is no constant term, so we actually have x^2 + f[1] * x = 0
-	return StackVector<double, 2>{-f[1]};
+	return StackVector<double, 2>{std::min(-f[1], 0.0), std::max(-f[1], 0.0)};
+
+      //Scale the constant of x^2 to 1
+      f = f / f[2];
       
       static const double maxSqrt = std::sqrt(std::numeric_limits<double>::max());
       if ((f[1] > maxSqrt) || (f[1] < -maxSqrt)) {

@@ -84,12 +84,11 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
       BOOST_MESSAGE("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);
       return;
     }
-    if (j < roots.size())
+    if ((i < actual_roots.size()) && (j < roots.size()))
       BOOST_MESSAGE("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);	
   }
 }
 
-double cubic_rootvals[] = {-1e6, -1e3, -100, -1, 0, 1, +100, 1e3, 1e6};
 
 BOOST_AUTO_TEST_CASE( poly_variables )
 {
@@ -326,7 +325,7 @@ BOOST_AUTO_TEST_CASE( poly_shift)
       }
 }
 
-BOOST_AUTO_TEST_CASE( poly_quadratic_roots)
+BOOST_AUTO_TEST_CASE( poly_quadratic_roots_simple)
 {
   using namespace stator::symbolic;
   Polynomial<1> x{0, 1};
@@ -398,6 +397,40 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_special_cases)
     BOOST_CHECK_CLOSE(roots[0], -1.157920892373162e78, 1e-10);
     BOOST_CHECK_CLOSE(roots[1], 1.157920892373162e78, 1e-10);
   }
+}
+
+double cubic_rootvals[] = {-1e6, -1e3, -100, -1, 0, 1, +100, 1e3, 1e6};
+
+BOOST_AUTO_TEST_CASE( poly_linear_roots_full )
+{
+  using namespace stator::symbolic;
+  const Polynomial<1> x{0, 1};
+
+  for (double root1 : cubic_rootvals)
+    for (double factor : cubic_rootvals)
+	{
+	  auto f = factor * (x - root1);
+	  auto roots = solve_real_roots(f);
+	  decltype(roots) actual_roots = {root1};
+          //std::cout << actual_roots << "==" << roots << std::endl;
+	  compare_roots(roots, actual_roots, f);
+	}
+}
+
+BOOST_AUTO_TEST_CASE( poly_quadratic_roots_full )
+{
+  using namespace stator::symbolic;
+  const Polynomial<1> x{0, 1};
+
+  for (double root1 : cubic_rootvals)
+    for (double root2 : cubic_rootvals)
+      for (double factor : cubic_rootvals)
+	{
+	  auto f = factor * (x - root1) * (x - root2);
+	  auto roots = solve_real_roots(f);
+	  decltype(roots) actual_roots = {root1,root2};
+	  compare_roots(roots, actual_roots, f);
+	}
 }
 
 BOOST_AUTO_TEST_CASE( poly_cubic_triple_roots )

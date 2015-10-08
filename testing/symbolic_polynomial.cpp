@@ -67,25 +67,38 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
   std::sort(roots.begin(), roots.end());
   std::sort(actual_roots.begin(), actual_roots.end());  
   
-  
   if (roots.size() > actual_roots.size()) {
-    BOOST_MESSAGE("Too many roots detected\n f=" << f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);
+    BOOST_ERROR("Too many roots detected\n f=" << f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);
   } else {
     size_t j(0);
     size_t i(0);
-    for (; (i < actual_roots.size()) && (j < roots.size());) {
+    while ((i < actual_roots.size()) && (j < roots.size())) {
       const double root_error =std::abs((roots[j] - actual_roots[i]) / (actual_roots[i] + (actual_roots[i] == 0)));
       //Check if the roots match
-      if (root_error < 0.001) { ++j; ++i; continue;}
+      if (root_error < 1e-9) { ++j; ++i; continue;}
       //The roots do not match, if this is a repeated actual root, try skipping to the next one
       if ((i > 0) && (actual_roots[i] == actual_roots[i-1])) { ++i; continue; }
-      
+      if ((j > 0) && (roots[j] == roots[j-1])) { ++j; continue; }
+
       //The roots don't match, and its not a repeated root, time to fail
-      BOOST_MESSAGE("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);
+      BOOST_ERROR("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);
       return;
     }
-    if ((i < actual_roots.size()) && (j < roots.size()))
-      BOOST_MESSAGE("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);	
+    if (i < actual_roots.size()) {
+      bool repeated = (i > 0);
+      for (;(i < actual_roots.size()) && (i > 0); ++i)
+	if (actual_roots[i] != actual_roots[i-1]) { repeated = false; break; }
+      if (!repeated)
+	BOOST_ERROR("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);	
+    }
+      
+    if (j < roots.size()) {
+      bool repeated = (j > 0);
+      for (; (j < roots.size()) && (j > 0); ++j)
+	if (roots[j] != roots[j-1]) { repeated = false; break; }
+      if (!repeated)
+	BOOST_ERROR("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots); 
+    }
   }
 }
 
@@ -412,7 +425,7 @@ BOOST_AUTO_TEST_CASE( poly_linear_roots_full )
 	  auto f = factor * (x - root1);
 	  auto roots = solve_real_roots(f);
 	  decltype(roots) actual_roots = {root1};
-          //std::cout << actual_roots << "==" << roots << std::endl;
+          std::cout << actual_roots << "==" << roots << std::endl;
 	  compare_roots(roots, actual_roots, f);
 	}
 }

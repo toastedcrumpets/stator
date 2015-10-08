@@ -62,43 +62,69 @@ bool compare_expression(const T1& f, const T2& g) {
 
 #define CHECK_TYPE(EXPRESSION, TYPE) static_assert(std::is_same<std::decay<decltype(EXPRESSION)>::type, TYPE>::value, "Type is wrong")
 
+struct RootData {
+  RootData() : multiplicity(0) {}
+  std::vector<double> matched_roots;
+  size_t multiplicity;
+};
+
+template<class Real1, class Real2, size_t N, char Letter>
+stator::symbolic::Polynomial<N, Real1, Letter> convert_poly(const stator::symbolic::Polynomial<N, Real2, Letter>& p) {
+  stator::symbolic::Polynomial<N, Real1, Letter> f;
+  for (size_t i(0); i <= N; ++i)
+    f[i] = Real1(p[i]);
+  return f;
+}
+
 template<class T1, class T2, class Func>
 void compare_roots(T1 roots, T2 actual_roots, Func f){
   std::sort(roots.begin(), roots.end());
-  std::sort(actual_roots.begin(), actual_roots.end());  
-  
-  if (roots.size() > actual_roots.size()) {
-    BOOST_ERROR("Too many roots detected\n f=" << f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);
-  } else {
-    size_t j(0);
-    size_t i(0);
-    while ((i < actual_roots.size()) && (j < roots.size())) {
-      const double root_error =std::abs((roots[j] - actual_roots[i]) / (actual_roots[i] + (actual_roots[i] == 0)));
-      //Check if the roots match
-      if (root_error < 1e-9) { ++j; ++i; continue;}
-      //The roots do not match, if this is a repeated actual root, try skipping to the next one
-      if ((i > 0) && (actual_roots[i] == actual_roots[i-1])) { ++i; continue; }
-      if ((j > 0) && (roots[j] == roots[j-1])) { ++j; continue; }
+  std::sort(actual_roots.begin(), actual_roots.end());
 
-      //The roots don't match, and its not a repeated root, time to fail
-      BOOST_ERROR("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);
-      return;
+  //Push all real roots on to a map
+  std::map<double, RootData> root_data;
+  for (auto root: actual_roots)
+    root_data[root].multiplicity += 1;
+
+  bool extra_root = false;
+  for (auto root: roots) {
+    bool found = false;
+    for (auto& test_root: root_data) {
+      const double root_error = std::abs((root - test_root.first) / (test_root.first + (test_root.first == 0)));
+      if (root_error < 0.00124) {
+	found = true;
+	test_root.second.matched_roots.push_back(root);
+	break;
+      }
     }
-    if (i < actual_roots.size()) {
-      bool repeated = (i > 0);
-      for (;(i < actual_roots.size()) && (i > 0); ++i)
-	if (actual_roots[i] != actual_roots[i-1]) { repeated = false; break; }
-      if (!repeated)
-	BOOST_ERROR("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots);	
-    }
-      
-    if (j < roots.size()) {
-      bool repeated = (j > 0);
-      for (; (j < roots.size()) && (j > 0); ++j)
-	if (roots[j] != roots[j-1]) { repeated = false; break; }
-      if (!repeated)
-	BOOST_ERROR("Roots mismatch\n f="<<  f << " roots("<< roots.size() << ")="<< roots << ", actual_roots(" << actual_roots.size() << ")=" << actual_roots); 
-    }
+    if (!found) extra_root = true;
+  }
+
+  //Check all roots of odd multiplicity have been detected
+  bool missed_root = false;
+  for (auto test_root: root_data)
+    if (test_root.second.multiplicity % 2)
+      if (test_root.second.matched_roots.empty()) {
+	missed_root = true;
+	break;
+      }
+
+  if (extra_root || missed_root) {
+    std::ostringstream os;
+    os.precision(10);
+    os << "\n";
+    if (extra_root)
+      os << "Unmatched root, ";
+    if (missed_root)
+      os << "Missing root";
+
+    os << "\n f     = " << f;
+    os << "\n actual_roots = " << actual_roots;
+    os << "\n detected_roots = " << roots;
+    os << "\n Matching data:";
+    for (auto test_root: root_data)
+      os << "\n   " << test_root.first << ", multiplicity=" << test_root.second.multiplicity << ", matches=" <<  test_root.second.matched_roots.size();
+    BOOST_ERROR(os.str());
   }
 }
 
@@ -422,10 +448,10 @@ BOOST_AUTO_TEST_CASE( poly_linear_roots_full )
   for (double root1 : cubic_rootvals)
     for (double factor : cubic_rootvals)
 	{
+          if (factor == 0) continue;
 	  auto f = factor * (x - root1);
 	  auto roots = solve_real_roots(f);
 	  decltype(roots) actual_roots = {root1};
-          std::cout << actual_roots << "==" << roots << std::endl;
 	  compare_roots(roots, actual_roots, f);
 	}
 }
@@ -437,9 +463,10 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_roots_full )
 
   for (double root1 : cubic_rootvals)
     for (double root2 : cubic_rootvals)
-      for (double factor : cubic_rootvals)
+      //for (double factor : cubic_rootvals)
 	{
-	  auto f = factor * (x - root1) * (x - root2);
+          //if (factor == 0) continue;
+	  auto f = (x - root1) * (x - root2);
 	  auto roots = solve_real_roots(f);
 	  decltype(roots) actual_roots = {root1,root2};
 	  compare_roots(roots, actual_roots, f);
@@ -883,8 +910,9 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 {
   using namespace stator::symbolic;
   const Polynomial<1> x{0, 1};
+  const Polynomial<1, long double> x_hp{0, 1};
 
-  std::vector<double> roots{-1e5, -0.14159265, 3.14159265, -0.0001,0.1, 0.3333, 0.6, 1.001, 2.0, 3.14159265, 1e7};
+  std::vector<double> roots{-0.14159265, -3.14159265, -0.0001,0.1, 0.3333, 0.6, 1.001, 2.0, 3.14159265};
 
   for (auto it1 = roots.begin(); it1 != roots.end(); ++it1)
     for (auto it2 = it1; it2 != roots.end(); ++it2)
@@ -896,13 +924,19 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 		StackVector<double, 5> test_roots{*it1, *it2, *it3, *it4, *it5};
 
 		//Test where all 5 roots of a 5th order Polynomial are real
-		auto f1 = sign * (x - *it1) * (x - *it2) * (x - *it3) * (x - *it4) * (x - *it5);
+		auto f1_hp = sign * (x_hp - *it1) * (x_hp - *it2) * (x_hp - *it3) * (x_hp - *it4) * (x_hp - *it5);
 		//Test where 5 roots of a 7th order Polynomial are real
-		auto f2 = f1 * (x * x - 3 * x + 4);
-
+		auto f2_hp = f1_hp * (x_hp * x_hp - 3 * x_hp + 4);
 		//Test where 5 roots of a 9th order Polynomial are real
-		auto f3 = f1 * (x * x - 3 * x + 4) * (x * x - 3 * x + 30);
+		auto f3_hp = f1_hp * (x_hp * x_hp - 3 * x_hp + 4) * (x_hp * x_hp - 3 * x_hp + 30);
 
+		//long double precision is used to calculate the
+		//coefficients of the polynomial, as loss of precision
+		//is significant here.
+		Polynomial<5> f1 = convert_poly<double>(f1_hp);
+		Polynomial<7> f2 = convert_poly<double>(f2_hp);
+		Polynomial<9> f3 = convert_poly<double>(f3_hp);
+		
 		//Test the default implementation
 		compare_roots(solve_real_roots(f1), test_roots, f1);
 		compare_roots(solve_real_roots(f2), test_roots, f2);

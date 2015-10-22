@@ -78,7 +78,7 @@ if(NOT CXX11_TYPE_MANGLING)
   message(WARNING "Although the compiler advertises support for C++0x/C++11, this support is limited (e.g., gcc-4.7 or lower). You can only test a reduced section of stator (no symbolic math).")
 endif()
 
-if(NOT CXX11_decltype_works)
+if(HAS_SYSTEM_EIGEN AND NOT CXX11_decltype_works)
   message(WARNING "Although the compiler advertises support for C++0x/11, this support contains bugs (e.g., gcc-4.8.2). You can only test a reduced section of stator (no symbolic math).")
 endif()
 
@@ -106,10 +106,12 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 ######################################################################
 ######### DOCUMENTATION TARGET
 ######################################################################
-find_package(Doxygen)
+find_package(Doxygen QUIET)
 if(DOXYGEN_FOUND)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
   add_custom_target(doc ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generating API documentation with Doxygen" VERBATIM)
+else()
+  message(WARNING "Cannot find doxygen, disabling documentation output build target.")
 endif(DOXYGEN_FOUND)
 
 ######################################################################

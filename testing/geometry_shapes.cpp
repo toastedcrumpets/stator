@@ -43,6 +43,7 @@ BOOST_AUTO_TEST_CASE( Ball_test )
   BOOST_CHECK_CLOSE(area(Ball<double, 2>(1.0)), 2 * M_PI, 1e-11);
   BOOST_CHECK_CLOSE(area(Ball<double, 3>(2.0)), 4.0 * M_PI * 2 * 2, 1e-11);
 
+  indicator(Ball<double, 3>(0.5, Vector<double, 3>{0, 0, 0}), Ball<double, 3>(0.5, Vector<double, 3>{0.5, -0.5, 0.5}), Null());
   BOOST_CHECK(intersects(Ball<double, 3>(0.5, Vector<double, 3>{0,0,0}), Ball<double, 3>(0.5, Vector<double, 3>{0.5, -0.5, 0.5})));
 }
 

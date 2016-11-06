@@ -118,7 +118,7 @@ namespace stator {
 
     //Removal of sign via abs on compile-time constants!
     template<std::intmax_t num, std::intmax_t den>
-    constexpr C<(num >= 0) ? num : -num, den> abs(const C<num, den>&) { return C<(num >= 0) ? num : -num, den>(); }
+    constexpr C<((num >= 0) ? num : -num), den> abs(const C<num, den>&) { return C<((num >= 0) ? num : -num), den>(); }
     
     namespace detail {
       template<class T>
@@ -231,9 +231,9 @@ namespace stator {
     /*! \brief Simplification of a Polynomial LHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
-    Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> > & f)
+    Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> > & f)
     {
-      Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> retval(f._l);
+      Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._l);
       retval[POrder] += 1;
       return retval;
     }
@@ -241,9 +241,9 @@ namespace stator {
     /*! \brief Simplification of a Polynomial RHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
-    Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const AddOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> > & f)
+    Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> > & f)
     {
-      Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> retval(f._r);
+      Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._r);
       retval[POrder] += 1;
       return retval;
     }
@@ -251,9 +251,9 @@ namespace stator {
     /*! \brief Simplification of a Polynomial LHS subtracted from a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
-    Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> >& f)
+    Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> >& f)
     {
-      Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> retval(f._r);
+      Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._r);
       retval[POrder] -= 1;
       return retval;
     }
@@ -261,9 +261,9 @@ namespace stator {
     /*! \brief Simplification of a Polynomial RHS subtracted from a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
-    Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const SubtractOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> >& f)
+    Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const SubtractOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> >& f)
     {
-      Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> retval(-f._r);
+      Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(-f._r);
       retval[POrder] += Real(1);
       return retval;
     }
@@ -291,9 +291,9 @@ namespace stator {
     /*! \brief Simplification of a Polynomial LHS added to a
       PowerOp of the Variable. */
     template<char Letter, size_t Order, class Real, size_t POrder>
-    Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Unity> & f)
+    Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Unity> & f)
     {
-      Polynomial<(Order > POrder) ? Order : POrder, Real, Letter> retval(f._l);
+      Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._l);
       retval[0] += 1;
       return retval;
     }

@@ -1,0 +1,49 @@
+sudo: required
+language: cpp
+dist: trusty
+
+matrix:
+  include:
+    - compiler: gcc
+      os: linux
+      env:
+        - COMPILER=g++-5
+        - COMPILER_PACKAGE=g++-5
+        - COMPILER_NAME=gcc-5
+    - compiler: gcc
+      os: linux
+      addons:
+      env:
+        - COMPILER=g++-6
+        - COMPILER_PACKAGE=g++-6
+        - COMPILER_NAME=gcc-6
+    - compiler: clang
+      os: linux
+      compiler: clang
+      env:
+        - COMPILER=clang++
+        - COMPILER_PACKAGE=clang
+        - COMPILER_NAME=clang
+    - os: osx
+      compiler: clang
+      env:
+        - COMPILER=clang++
+        - COMPILER_PACKAGE=clang
+        - COMPILER_NAME=clang
+
+install:
+  - "export CXX=$COMPILER"
+  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; fi"
+  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get update -q; fi"
+  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get install -y --force-yes libboost-all-dev cmake cmake-data $COMPILER_PACKAGE; fi"
+  - "git submodule init"
+  - "git submodule update"
+
+script:
+  - "mkdir build"
+  - "cd build"
+  - "if [ $TRAVIS_OS_NAME = 'osx' ]; then cmake .. -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_OSX_ARCHITECTURES=x86_64; fi"
+  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then cmake .. -DCMAKE_PREFIX_PATH=$INSTPRF -DCMAKE_BUILD_TYPE=${CONFIG}; fi"
+  - "cmake --build . --config ${CONFIG}"
+  - "CTEST_OUTPUT_ON_FAILURE=1 ctest --build-config ${CONFIG}"
+  - "cd .."

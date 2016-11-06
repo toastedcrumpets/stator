@@ -9,10 +9,23 @@ project(stator) #Project name
 enable_testing() #Enable build of test executables and 'make test' command
 include(CTest)
 
+
 ##########   RELEASE MODE
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+if(MSVC)
+  #MSVC has crazy warnings for -Wall, we'll build up support to the higher warning levels
+  add_compile_options(-W1)
+  #Enable the math defines (like M_PI!)
+  add_definitions(-D_USE_MATH_DEFINES)
+  #MSVC Crazily has "min" and "max" (yes, lowercase!) Macros defined
+  #which conflict with the C++ standard algorithms! This define
+  #instructs the compiler to not be an idiot and define those macros
+  add_definitions(-DNOMINMAX)
+else()
+  add_compile_options(-Wall)
+endif()
+
 ##########   DEBUG MODE
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -g -DEIGEN_INTERNAL_DEBUGGING")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DEIGEN_INTERNAL_DEBUGGING")
 
 function(add_include include)
   if(CMAKE_REQUIRED_INCLUDES)

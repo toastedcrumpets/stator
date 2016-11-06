@@ -30,6 +30,8 @@
 #define BOOST_TEST_MODULE Polynomial_test
 #include <boost/test/included/unit_test.hpp>
 
+#include <random>
+
 std::mt19937 RNG;
 std::normal_distribution<double> normal_dist(0, 1);
 std::uniform_real_distribution<double> angle_dist(0, std::atan(1)*4);

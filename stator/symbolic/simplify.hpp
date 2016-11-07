@@ -69,31 +69,6 @@ namespace stator {
     PowerOp<Variable<Letter>, Order+1> multiply(const Variable<Letter>&, const PowerOp<Variable<Letter>, Order>&, detail::choice<0>)
     { return PowerOp<Variable<Letter>, Order+1>(Variable<Letter>()); }
 
-    //Ratio operators (these are lower priority than above
-    template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    typename C_wrap<std::ratio_multiply<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >::type
-    multiply(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
-    { return {};}
-
-    template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    typename C_wrap<std::ratio_add<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >::type
-    add(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
-    { return {};}
-
-    template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    typename C_wrap<std::ratio_divide<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >::type
-    divide(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
-    { return {};}
-
-    template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    typename C_wrap<std::ratio_subtract<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >::type
-    subtract(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
-    { return {};}
-
-    template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    constexpr bool operator==(const C<Num1, Denom1>&, const C<Num2, Denom2>&)
-    { return std::ratio_equal<C<Num1, Denom1>, C<Num2, Denom2> >::value; }
-
     template<class C_arg, class factor, class offset = std::ratio<0> >
     struct is_whole_factor {
       static const bool value = (std::ratio_divide<std::ratio_subtract<C_arg, offset>, factor>::den == 1);
@@ -127,7 +102,7 @@ namespace stator {
       }
       
       template<class T>
-      const T& try_simplify_imp(const T& a, long) {
+      T try_simplify_imp(const T& a, long) {
 	return a;
       }
     }

@@ -34,6 +34,8 @@
 #include <complex>
 #include <ratio>
 
+#include "stator/symbolic/constants.hpp"
+
 namespace stator {
   namespace symbolic {
     using stator::orphan::StackVector;
@@ -44,68 +46,17 @@ namespace stator {
       using stator::detail::select_overload;
     } // namespace detail
 
+    /*! \brief A type trait to denote symbolic terms (i.e., one that
+        is not yet immediately evaluable to a "normal" type)*/
     struct SymbolicOperator {};
+
     template<class T>
     struct IsSymbolic {
       static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
     };
-    
-    /*! \brief A class representing a compile-time constant.
 
-      These are implemented using std::ratio. The only reason this
-      type exists as a separate type from std::ratio (and inherits
-      from from std::ratio) is to ensure operator lookups consider
-      this namespace. Many additional options are enabled (such as
-      ratio-float multipliation).
+    /*! \brief A converter to arithmetic types
      */
-    template<std::intmax_t Num, std::intmax_t Denom = 1>
-    struct C: std::ratio<Num, Denom>, SymbolicOperator {};
-
-    /*! \brief Conversion operator from std::ratio to C.*/
-    template<class stdratio>
-    struct C_wrap {
-      typedef C<stdratio::num, stdratio::den> type;
-    };
-    
-    /*! \brief Compile time type-test for compile-time constants \ref C.*/
-    template<class T> struct is_C { static const bool value = false; };
-
-    template<std::intmax_t N, std::intmax_t D> struct is_C<C<N,D> > { static const bool value = true; };
-
-    /*! \brief A symbolic representation of zero. */
-    typedef C<0> Null;
-    /*! \brief A symbolic representation of one. */
-    typedef C<1> Unity;
-    
-    /*! \brief A symbolic/compile-time rational approximation of \f$\pi\f$. */
-    typedef C_wrap<constant_ratio::pi>::type pi;
-
-    /*! \brief A symbolic/compile-time rational approximation of \f$\mathrm{e}\f$. */
-    typedef C_wrap<constant_ratio::e>::type e;
-
-    /*! \brief Output operator for compile-time constant (\ref C types).*/
-    template<std::intmax_t Num, std::intmax_t Denom>
-    inline std::ostream& operator<<(std::ostream& os, const C<Num, Denom>) {
-      os << "C<" << Num;
-      if (Denom != 1)
-	os << ", " << Denom;
-      return os << ">()";
-    }
-    
-    /*! \brief Specialized output operator for \f$\pi\f$.*/
-    inline std::ostream& operator<<(std::ostream& os, const pi) { os << "π"; return os; }
-    /*! \brief Specialized output operator for \f$\mathrm{e}\f$.*/
-    inline std::ostream& operator<<(std::ostream& os, const e) { os << "e"; return os; }
-
-    template<class T>
-    inline std::ostream& operator<<(std::ostream& os, const std::complex<T>& c) {
-      if (c.imag() == 0)
-	return (os << c.real());
-      if (c.imag() < 0)
-	return (os << "(" <<c.real() << " - " << std::abs(c.imag()) << "i)");
-      return (os << "(" <<c.real() << " + " << c.imag() << "i)");
-    }
-    
     template<class T,
 	     typename = typename std::enable_if<std::is_arithmetic<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
     const T& toArithmetic(const T& val) { return val; }
@@ -307,32 +258,6 @@ namespace stator {
     }
 
     template<size_t Order, class Real = double, char Letter = 'x'> class Polynomial;
-
-    /*! \brief Symbolic Factorial function.
-     
-      This template implementation returns Unity for 0! and 1!,
-      allowing simplification of symbolic expressions.
-     */
-    template<size_t i> struct Factorial {
-      typedef C<i * Factorial<i - 1>::value::num, 1> value;
-    };
-    
-    template<> struct Factorial<1> {
-      typedef C<1, 1> value;
-    };
-
-    template<> struct Factorial<0> {
-      typedef C<1, 1> value;
-    };
-
-    /*! \brief Symbolic Inverse factorial function.
-     
-      This template implementation returns Unity for 1/0! and 1/1!,
-      allowing simplification of symbolic expressions.
-     */
-    template<size_t i> struct InvFactorial {
-      typedef C<Factorial<i>::value::den, Factorial<i>::value::num> value;
-    };
   }
 }
 

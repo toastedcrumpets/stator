@@ -29,6 +29,7 @@
 //boost
 #define BOOST_TEST_MODULE Polynomial_test
 #include <boost/test/included/unit_test.hpp>
+#include <boost/mpl/assert.hpp>
 
 #include <random>
 
@@ -62,7 +63,8 @@ bool compare_expression(const T1& f, const T2& g) {
   return f_str == g_str;
 }
 
-#define CHECK_TYPE(EXPRESSION, TYPE) static_assert(std::is_same<std::decay<decltype(EXPRESSION)>::type, TYPE>::value, "Type is wrong")
+#define CHECK_TYPE(EXPRESSION, TYPE) \
+  BOOST_MPL_ASSERT_MSG((std::is_same<decltype(EXPRESSION), TYPE>::value), TYPE_COMPARE, (decltype(EXPRESSION), TYPE));
 
 struct RootData {
   RootData() : multiplicity(0) {}
@@ -147,11 +149,11 @@ BOOST_AUTO_TEST_CASE( poly_addition )
   using namespace stator::symbolic;
   Polynomial<1> x{0, 2.5};
   Polynomial<0> C{0.3};
-  auto poly1 = x+C;
+  auto poly1 = simplify(x+C);
   BOOST_CHECK_EQUAL(poly1[0], 0.3);
   BOOST_CHECK_EQUAL(poly1[1], 2.5);
 
-  auto poly2 = x + 0.3;
+  auto poly2 = simplify(x + 0.3);
   BOOST_CHECK_EQUAL(poly2[0], 0.3);
   BOOST_CHECK_EQUAL(poly2[1], 2.5);
 }
@@ -162,16 +164,19 @@ BOOST_AUTO_TEST_CASE( poly_multiplication )
   Polynomial<1> x{0, 1};
   auto poly1 = -2.0;
   auto poly2 = 2.0 - x + x * x;
-  auto poly3 = poly2 * poly1;
+  auto poly3 = simplify(poly2 * poly1);
   BOOST_CHECK_EQUAL(poly3[0], -4);
   BOOST_CHECK_EQUAL(poly3[1], +2);
   BOOST_CHECK_EQUAL(poly3[2], -2);
 
+  CHECK_TYPE((Null() * Polynomial<2>{1,2,3}), Null);
+  CHECK_TYPE((Polynomial<2>{1,2,3}) * Null(), Null);
+
   static_assert(std::is_same<decltype(Null() * Polynomial<2>{1,2,3}), Null>::value, "Null multiply is not cancelling the polynomial");
   static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Null()), Null>::value, "Null multiply is not cancelling the polynomial");
 
-  static_assert(std::is_same<decltype(Unity() * Polynomial<2>{1,2,3}), const Polynomial<2>&>::value, "Unity multiply is not cancelling the polynomial");
-  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Unity()), const Polynomial<2>&>::value, "Unity multiply is not cancelling the polynomial");
+  CHECK_TYPE((Unity() * Polynomial<2>{1,2,3}), Polynomial<2>);
+  CHECK_TYPE((Polynomial<2>{1,2,3} * Unity()), Polynomial<2>);
 }
 
 BOOST_AUTO_TEST_CASE( poly_division )
@@ -179,12 +184,12 @@ BOOST_AUTO_TEST_CASE( poly_division )
   using namespace stator::symbolic;
   Polynomial<1> x{0, 1};
   auto poly1 = 2.0 - x + x * x;
-  auto poly2 = poly1 / 0.5;
+  auto poly2 = simplify(poly1 / 0.5);
   BOOST_CHECK_EQUAL(poly2[0], 4);
   BOOST_CHECK_EQUAL(poly2[1], -2);
   BOOST_CHECK_EQUAL(poly2[2], 2);
 
-  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} / Unity()), const Polynomial<2>&>::value, "Unity division is not returning the polynomial");
+  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} / Unity()), Polynomial<2>>::value, "Unity division is not returning the polynomial");
 }
 
 BOOST_AUTO_TEST_CASE( poly_vector )
@@ -192,11 +197,11 @@ BOOST_AUTO_TEST_CASE( poly_vector )
   using namespace stator::symbolic;
   Polynomial<1, Vector> x{Vector{0,0,0}, Vector{1,2,3}};
   Polynomial<0, Vector> C{Vector{3,2,1}};
-  auto poly1 = x+C;
+  auto poly1 = simplify(x+C);
   BOOST_CHECK_EQUAL(poly1[0], (Vector{3,2,1}));
   BOOST_CHECK_EQUAL(poly1[1], (Vector{1,2,3}));
   
-  auto poly2 = pow<2>(poly1);
+  auto poly2 = simplify(pow<2>(poly1));
   BOOST_CHECK_EQUAL(poly2[0], 14);
   BOOST_CHECK_EQUAL(poly2[1], 20);
   BOOST_CHECK_EQUAL(poly2[2], 14);
@@ -206,8 +211,8 @@ BOOST_AUTO_TEST_CASE( poly_lower_order )
 {
   using namespace stator::symbolic;
   Polynomial<1> x{0, 1};
-  Polynomial<2> poly2 = 2.0 - x + x * x;
-  Polynomial<3> poly3 = poly2 + 0 * x * x * x;
+  Polynomial<2> poly2 = simplify(2.0 - x + x * x);
+  Polynomial<3> poly3 = simplify(poly2 + 0 * x * x * x);
   //Try to cast down one level as the highest order coefficient is zero
   BOOST_CHECK(poly3[3] == 0);
   Polynomial<2> poly4(change_order<2>(poly3));
@@ -279,7 +284,7 @@ BOOST_AUTO_TEST_CASE( poly_derivative )
   using namespace stator::symbolic;
   Polynomial<1> x{0, 1};
 
-  auto poly1 = x + x*x + x*x*x + x*x*x*x;
+  auto poly1 = simplify(x + x*x + x*x*x + x*x*x*x);
   auto poly2 = derivative(poly1, Variable<'x'>());
   BOOST_CHECK_EQUAL(poly2[0], 1);
   BOOST_CHECK_EQUAL(poly2[1], 2);
@@ -288,13 +293,16 @@ BOOST_AUTO_TEST_CASE( poly_derivative )
 
   BOOST_CHECK_CLOSE(eval(poly2, 3.14159), eval_derivatives<1>(poly1, 3.14159)[1], 1e-10);
 
-  auto poly3 = 2.0 - x + 2 * x * x;
+  auto poly3 = simplify(2.0 - x + 2 * x * x);
   auto poly4 = derivative(poly3, Variable<'x'>());
   BOOST_CHECK_EQUAL(poly4[0], -1);
   BOOST_CHECK_EQUAL(poly4[1], 4);
   BOOST_CHECK_EQUAL(eval(poly4, 0), -1);
   BOOST_CHECK_EQUAL(eval(poly4, 1), 3);
 
+  C<2>() * derivative(x, Variable<'x'>()) * PowerOp<decltype(x), 1>(x);
+  //derivative(pow<2>(x), Variable<'x'>());
+  
   BOOST_CHECK(compare_expression(derivative(pow<2>(x), Variable<'x'>()), Polynomial<1>{0,1} * C<2>()));
 }
 
@@ -318,10 +326,10 @@ BOOST_AUTO_TEST_CASE( poly_deflation)
   for (double root1: roots)
     for (double root2: roots)
       for (double root3: roots) {
-	auto poly = (x - root1) * (x - root2) * (x-root3);
+	auto poly = simplify((x - root1) * (x - root2) * (x-root3));
 	
 	auto deflated = deflate_polynomial(poly, root1);
-	auto exact = (x - root2) * (x-root3);
+	auto exact = simplify((x - root2) * (x-root3));
 	for (size_t i(0); i < 3; ++i)
 	  if (exact[i] != 0)
 	    BOOST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
@@ -329,7 +337,7 @@ BOOST_AUTO_TEST_CASE( poly_deflation)
 	    BOOST_CHECK_SMALL(deflated[i], 1e-10);
 	
 	deflated = deflate_polynomial(poly, root2);
-	exact = (x - root1) * (x-root3);
+	exact = simplify((x - root1) * (x-root3));
 	for (size_t i(0); i < 3; ++i)
 	  if (exact[i] != 0)
 	    BOOST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
@@ -337,7 +345,7 @@ BOOST_AUTO_TEST_CASE( poly_deflation)
 	    BOOST_CHECK_SMALL(deflated[i], 1e-10);
 
 	deflated = deflate_polynomial(poly, root3);
-	exact = (x - root1) * (x-root2);
+	exact = simplify((x - root1) * (x-root2));
 	for (size_t i(0); i < 3; ++i)
 	  if (exact[i] != 0)
 	    BOOST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
@@ -355,7 +363,7 @@ BOOST_AUTO_TEST_CASE( poly_shift)
   for (double root1: roots)
     for (double root2: roots)
       for (double root3: roots) {
-	auto f = (x - root1) * (x - root2) * (x-root3);
+	auto f = simplify((x - root1) * (x - root2) * (x-root3));
 
 	for (double shift : {-1.0, 2.0, 1e3, 3.14159265, -1e5}) {
 	  auto g = shift_function(f, shift);
@@ -366,19 +374,19 @@ BOOST_AUTO_TEST_CASE( poly_shift)
       }
 }
 
-BOOST_AUTO_TEST_CASE( poly_quadratic_roots_simple)
+BOOST_AUTO_TEST_CASE(poly_quadratic_roots_simple)
 {
   using namespace stator::symbolic;
   Polynomial<1> x{0, 1};
   
   {//Quadratic with no roots
-    auto poly = x * x - 3 * x + 4;
+    auto poly = simplify(x * x - 3 * x + 4);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 0);
   }
   
   {//Quadratic with one root
-    auto poly = -4 * x * x + 12 * x - 9;
+    auto poly = simplify(-4 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 1);
     if (roots.size() == 1)
@@ -386,7 +394,7 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_roots_simple)
   }
   
   {//quadratic but linear function with one root
-    auto poly =  0 * x * x + 12 * x - 9;
+    auto poly =  simplify(0 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 1);
     if (roots.size() == 1)
@@ -394,7 +402,7 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_roots_simple)
   }
 
   {//constant function, with no roots
-    auto poly =  0 * x * x + 0 * x - 9;
+    auto poly =  simplify(0 * x * x + 0 * x - 9);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 0);
   }
@@ -406,7 +414,7 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_special_cases)
   Polynomial<1> x{0, 1};
   
   {//Quadratic with catastrophic cancellation of error
-    auto poly = x * x + 712345.12 * x + 1.25;  
+    auto poly = simplify(x * x + 712345.12 * x + 1.25);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 2);
     BOOST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
@@ -416,7 +424,7 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_special_cases)
   const double maxsqrt = std::sqrt(std::numeric_limits<double>::max());
   const double largeterm = maxsqrt * 100;
   {//Large linear coefficient
-    auto poly = x * x + largeterm * x + 1.25;
+    auto poly = simplify(x * x + largeterm * x + 1.25);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 2);
     //Mathematica value
@@ -425,12 +433,12 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_special_cases)
   }
 
   {//Large (+ve) constant coefficient
-    auto poly = x * x + x + largeterm;
+    auto poly = simplify(x * x + x + largeterm);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 0);
   }
   {//Large (-ve) constant coefficient
-    auto poly = x * x + x - largeterm;
+    auto poly = simplify(x * x + x - largeterm);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 2);
 
@@ -451,7 +459,7 @@ BOOST_AUTO_TEST_CASE( poly_linear_roots_full )
     for (double factor : cubic_rootvals)
 	{
           if (factor == 0) continue;
-	  auto f = factor * (x - root1);
+	  auto f = simplify(factor * (x - root1));
 	  auto roots = solve_real_roots(f);
 	  decltype(roots) actual_roots = {root1};
 	  compare_roots(roots, actual_roots, f);
@@ -468,7 +476,7 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_roots_full )
       //for (double factor : cubic_rootvals)
 	{
           //if (factor == 0) continue;
-	  auto f = (x - root1) * (x - root2);
+	  auto f = simplify((x - root1) * (x - root2));
 	  auto roots = solve_real_roots(f);
 	  decltype(roots) actual_roots = {root1,root2};
 	  compare_roots(roots, actual_roots, f);
@@ -484,7 +492,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_triple_roots )
     for (double root2 : cubic_rootvals)
       for (double root3 : cubic_rootvals)
 	{
-	  auto f = (x - root1) * (x - root2) * (x - root3);
+	  auto f = simplify((x - root1) * (x - root2) * (x - root3));
 	  auto roots = solve_real_roots(f);
 	  decltype(roots) actual_roots = {root1,root2, root3};
 	  compare_roots(roots, actual_roots, f);
@@ -508,7 +516,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_single_roots )
 	    root2val(root2real, root2im),
 	    root3val(root2real, -root2im);
 	  
-	  auto poly_c = (x - root1val) * (x - root2val) * (x - root3val);
+	  auto poly_c = simplify((x - root1val) * (x - root2val) * (x - root3val));
 	  
 	  Polynomial<3, double> f = {poly_c[0].real(), poly_c[1].real(), poly_c[2].real(), poly_c[3].real()};
 
@@ -524,7 +532,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
   const Polynomial<1> x{0, 1};
 
   {//Zero constant term with three roots
-    auto poly = (x * x + 712345.12 * x + 1.25) * x;
+    auto poly = simplify((x * x + 712345.12 * x + 1.25) * x);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 3);
     BOOST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
@@ -533,19 +541,19 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
   }
 
   {//Zero constant term with one root
-    auto poly = (x * x - 3 * x + 4) * x;
+    auto poly = simplify((x * x - 3 * x + 4) * x);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 1);
     BOOST_CHECK_CLOSE(roots[0], 0, 1e-10);
   }
 
   {//Special case where f(x) = a * x^3 + d
-    auto poly = x * x * x + 1e3;
+    auto poly = simplify(x * x * x + 1e3);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 1);
     BOOST_CHECK_CLOSE(roots[0], -10, 1e-10);
 
-    poly = x * x * x - 1e3;
+    poly = simplify(x * x * x - 1e3);
     roots = solve_real_roots(poly);
     BOOST_CHECK(roots.size() == 1);
     BOOST_CHECK_CLOSE(roots[0], 10, 1e-10);
@@ -555,7 +563,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
   const double largeterm = maxsqrt * 100;
 
   {//Large x^2 term
-    auto poly = x * x * x - largeterm * x * x + 1.25;
+    auto poly = simplify(x * x * x - largeterm * x * x + 1.25);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK_EQUAL(roots.size(), 3);
     BOOST_CHECK_CLOSE(roots[0], -9.655529977168658e-79, 1e-10);
@@ -564,7 +572,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
   }
 
   {//Large x term
-    auto poly = x * x * x - x * x - largeterm * x + 1.25;
+    auto poly = simplify(x * x * x - x * x - largeterm * x + 1.25);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK_EQUAL(roots.size(), 3);
     BOOST_CHECK_CLOSE(roots[0], -1.1579208923731622e78, 1e-10);
@@ -575,7 +583,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
   const double smallerterm = maxsqrt * 1e-1;
   {
     //Large v term
-    auto poly = x * x * x  - smallerterm * x * x - smallerterm * x + 2;
+    auto poly = simplify(x * x * x  - smallerterm * x * x - smallerterm * x + 2);
     auto roots = solve_real_roots(poly);
     BOOST_CHECK_EQUAL(roots.size(), 3);
     BOOST_CHECK_CLOSE(roots[0], -1.0, 1e-10);
@@ -590,7 +598,7 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
   const Polynomial<1> x{0, 1};
 
   {//Check cubic
-    auto f1 = 4 * (x*x*x) - x * x - 2*x +12;
+    auto f1 = simplify(4 * (x*x*x) - x * x - 2 * x + 12);
     
     auto roots = solve_real_roots(f1);
     BOOST_CHECK(roots.size() == 1);
@@ -603,7 +611,7 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
   }
 
   {//Check quartic
-    auto f1 = 10 * (x*x*x*x) + x*x*x - 30 * x * x -23;
+    auto f1 = simplify(10 * (x*x*x*x) + x*x*x - 30 * x * x -23);
 
     auto roots = solve_real_roots<>(f1);
     BOOST_CHECK_EQUAL(roots.size(), 2);
@@ -641,19 +649,19 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
   const Polynomial<1> x{0, 1};
 
   { //Standard division with remainder
-    auto q = x * x * x + 3 * x - 2;
-    auto g = x * x - 2 * x;
-    auto r = 4 * x - 2;
-    auto f = q * g + r;
+    auto q = simplify(x * x * x + 3 * x - 2);
+    auto g = simplify(x * x - 2 * x);
+    auto r = simplify(4 * x - 2);
+    auto f = simplify(q * g + r);
     auto euclid = euclidean_division(f, g);  
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
     BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
   }
   {//Standard division without remainder
-    auto q = x * x * x + 3 * x - 2;
-    auto g = x * x - 2 * x;
+    auto q = simplify(x * x * x + 3 * x - 2);
+    auto g = simplify(x * x - 2 * x);
     auto r = Polynomial<0>{0};
-    auto f = q * g + r;
+    auto f = simplify(q * g + r);
     auto euclid = euclidean_division(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
@@ -661,10 +669,10 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
   }
 
   {//Division with a zero leading order coefficient
-    auto q = x * x * x + 3 * x - 2;
-    auto g = 0 * x*x*x + x*x - 2 * x;
+    auto q = simplify(x * x * x + 3 * x - 2);
+    auto g = simplify(0 * x*x*x + x*x - 2 * x);
     auto r = Polynomial<0>{0};
-    auto f = q * g + r;
+    auto f = simplify(q * g + r);
     auto euclid = euclidean_division(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
@@ -672,10 +680,10 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
   }
 
   {//Division by a constant
-    auto q = x * x * x + 3 * x - 2;
+    auto q = simplify(x * x * x + 3 * x - 2);
     auto g = Polynomial<0>{0.5};
     auto r = Polynomial<0>{0};
-    auto f = q * g + r;
+    auto f = simplify(q * g + r);
     auto euclid = euclidean_division(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
@@ -683,10 +691,10 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
   }
 
   {//Division by a high-order Polynomial which is actually a constant
-    auto q = x * x * x + 3 * x - 2;
+    auto q = simplify(x * x * x + 3 * x - 2);
     auto g = Polynomial<3>{0.25};
     auto r = Polynomial<0>{0};
-    auto f = q * g + r;
+    auto f = simplify(q * g + r);
     auto euclid = euclidean_division(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
@@ -700,13 +708,13 @@ BOOST_AUTO_TEST_CASE( poly_Sturm_chains )
   const Polynomial<1> x{0, 1};
 
   { //Example from wikipedia (x^4+x^3-x-1)
-    auto f = x*x*x*x + x*x*x - x - 1;
+    auto f = simplify(x*x*x*x + x*x*x - x - 1);
     auto chain = sturm_chain(f);
 
     BOOST_CHECK(compare_expression(chain.get(0), f));
-    BOOST_CHECK(compare_expression(chain.get(1), 4*x*x*x + 3*x*x - 1));
-    BOOST_CHECK(compare_expression(chain.get(2), (3.0/16) * x*x + (3.0/4)*x + (15.0/16)));
-    BOOST_CHECK(compare_expression(chain.get(3), -32*x -64));
+    BOOST_CHECK(compare_expression(chain.get(1), simplify(4*x*x*x + 3*x*x - 1)));
+    BOOST_CHECK(compare_expression(chain.get(2), simplify((3.0/16) * x*x + (3.0/4)*x + (15.0/16))));
+    BOOST_CHECK(compare_expression(chain.get(3), simplify(-32*x -64)));
     BOOST_CHECK(compare_expression(chain.get(4), Polynomial<0>{-3.0/16}));
     BOOST_CHECK(compare_expression(chain.get(5), Polynomial<0>{0}));
     BOOST_CHECK(compare_expression(chain.get(6), Polynomial<0>{0}));
@@ -743,11 +751,11 @@ BOOST_AUTO_TEST_CASE( descartes_sturm_and_budan_01_alesina_rootcount_test )
 		    for (int sign : {-1, +1}) {
 		      //Test where all 5 roots of a 5th order
 		      //Polynomial are real
-		      auto f1 = sign * (x - root1) * (x - root2) * (x - root3) * (x - root4) * (x - root5);
+		      auto f1 = simplify(sign * (x - root1) * (x - root2) * (x - root3) * (x - root4) * (x - root5));
 		      
 		      //Test with the same roots, but an additional 2
 		      //imaginary roots
-		      auto f2 = f1 * (x * x - 3 * x + 4);
+		      auto f2 = simplify(f1 * (x * x - 3 * x + 4));
 
 		      auto roots_in_range = [&](double a, double b) {
 			return size_t
@@ -819,7 +827,7 @@ BOOST_AUTO_TEST_CASE( LMQ_upper_bound_test )
 	for (const double root4: roots)
 	  for (int sign : {-1, +1})
 	    {
-	      auto f = sign * (x - root1) * (x - root2) * (x - root3) * (x - root4);
+	      auto f = simplify(sign * (x - root1) * (x - root2) * (x - root3) * (x - root4));
 
 	      double max_root = root1;
 	      max_root = std::max(max_root, root2);
@@ -838,7 +846,7 @@ BOOST_AUTO_TEST_CASE( LMQ_upper_bound_test )
     for (const double root2: roots)
       for (int sign : {-1, +1})
 	{
-	  auto f = sign * (x - root1) * (x - root2) + 0 * x*x*x*x*x;
+	  auto f = simplify(sign * (x - root1) * (x - root2) + 0 * x*x*x*x*x);
 	  double max_root = std::max(root1, root2);
 	  
 	  double bound = LMQ_upper_bound(f);
@@ -849,7 +857,7 @@ BOOST_AUTO_TEST_CASE( LMQ_upper_bound_test )
 	}
 
   //Test constant coefficients 
-  BOOST_CHECK_EQUAL(LMQ_upper_bound(1 + 0 * x*x*x*x*x), 0);
+  BOOST_CHECK_EQUAL(LMQ_upper_bound(simplify(1 + 0 * x*x*x*x*x)), 0);
 }
 
 BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
@@ -865,7 +873,7 @@ BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
 	for (const double root4: roots)
 	  for (int sign : {-1, +1})
 	    {
-	      auto f = sign * (x - root1) * (x - root2) * (x - root3) * (x - root4);
+	      auto f = simplify(sign * (x - root1) * (x - root2) * (x - root3) * (x - root4));
 
 	      double min_pos_root = HUGE_VAL;
 	      if (root1 >= 0)
@@ -889,7 +897,7 @@ BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
     for (const double root2: roots)
       for (int sign : {-1, +1})
 	{
-	  auto f = sign * (x - root1) * (x - root2) + 0 * x*x*x*x*x;
+	  auto f = simplify(sign * (x - root1) * (x - root2) + 0 * x*x*x*x*x);
 
 	  double min_pos_root = HUGE_VAL;
 	  if (root1 >= 0)
@@ -905,7 +913,7 @@ BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
 	}
 
   //Test constant coefficients 
-  BOOST_CHECK_EQUAL(LMQ_lower_bound(1 + 0 * x*x*x*x*x), HUGE_VAL);
+  BOOST_CHECK_EQUAL(LMQ_lower_bound(simplify(1 + 0 * x*x*x*x*x)), HUGE_VAL);
 }
 
 BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
@@ -926,11 +934,11 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 		StackVector<double, 5> test_roots{*it1, *it2, *it3, *it4, *it5};
 
 		//Test where all 5 roots of a 5th order Polynomial are real
-		auto f1_hp = sign * (x_hp - *it1) * (x_hp - *it2) * (x_hp - *it3) * (x_hp - *it4) * (x_hp - *it5);
+		auto f1_hp = simplify(sign * (x_hp - *it1) * (x_hp - *it2) * (x_hp - *it3) * (x_hp - *it4) * (x_hp - *it5));
 		//Test where 5 roots of a 7th order Polynomial are real
-		auto f2_hp = f1_hp * (x_hp * x_hp - 3 * x_hp + 4);
+		auto f2_hp = simplify(f1_hp * (x_hp * x_hp - 3 * x_hp + 4));
 		//Test where 5 roots of a 9th order Polynomial are real
-		auto f3_hp = f1_hp * (x_hp * x_hp - 3 * x_hp + 4) * (x_hp * x_hp - 3 * x_hp + 30);
+		auto f3_hp = simplify(f1_hp * (x_hp * x_hp - 3 * x_hp + 4) * (x_hp * x_hp - 3 * x_hp + 30));
 
 		//long double precision is used to calculate the
 		//coefficients of the polynomial, as loss of precision
@@ -973,7 +981,7 @@ BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
   using namespace stator::symbolic;
   const Polynomial<1> x{0, 1};
   //Test Polynomial derivatives on subtraction Operation types
-  auto poly1 = derivative(2*x*x - x, Variable<'x'>());
+  auto poly1 = simplify(derivative(2*x*x - x, Variable<'x'>()));
   //derivative will automatically combine polynomials
   BOOST_CHECK_EQUAL(poly1[0], -1);
   BOOST_CHECK_EQUAL(poly1[1], 4);
@@ -984,7 +992,7 @@ BOOST_AUTO_TEST_CASE( polynomials_multiply_expansion )
   using namespace stator::symbolic;
   const Polynomial<1> x{0, 1};
   //Test Polynomial simplification on multiplication Operation types
-  auto poly1 = (x + 1)*(x + 3);
+  auto poly1 = simplify((x + 1)*(x + 3));
   BOOST_CHECK_EQUAL(poly1[0], 3);
   BOOST_CHECK_EQUAL(poly1[1], 4);
   BOOST_CHECK_EQUAL(poly1[2], 1);
@@ -1005,14 +1013,14 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   using namespace stator::symbolic;
   Variable<'y'> y;
 
-  //Simplifying in the wrong variable
   BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Variable<'x'>()), y*y*y));
   
-  ////Simplifying PowerOp expressions into Polynomial
   BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), y), y*y*y));
-  
+
   //Test truncation of PowerOp expressions when the original order is too high
   CHECK_TYPE(taylor_series<2>(y*y*y, Null(), y), Null);
+    
+  detail::TaylorSeriesWorker<2, 6, 'y'>::eval(derivative(derivative(sin(y), Variable<'y'>()), Variable<'y'>()), Null());
   
   //Test simple Taylor expansion of sine 
   BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), simplify((1.0/120) * y*y*y*y*y - (1.0/6) * y*y*y + y)));

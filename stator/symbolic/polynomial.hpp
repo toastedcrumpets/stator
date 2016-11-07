@@ -115,7 +115,7 @@ namespace stator {
       Polynomial.
     */
     template<size_t Order, class Real, char Letter>
-    class Polynomial : public std::array<Real, Order+1>
+    class Polynomial : public std::array<Real, Order+1>, SymbolicOperator
     {
       typedef std::array<Real, Order+1> Base;
 
@@ -430,60 +430,6 @@ namespace stator {
       return RetType(f * (1.0 / g[0]), Polynomial<0, Real, Letter>{empty_sum(Real())});
     }
 
-    /*! \brief left-handed addition of Null on a Polynomial.
-    */
-    template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator+(const Null& r, const Polynomial<Order, Real, Letter>& poly)
-    { return poly; }
-
-    /*! \brief Right-handed addition of Null on a Polynomial.
-    */
-    template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator+(const Polynomial<Order, Real, Letter>& poly, const Null& r)
-    { return poly; }
-
-    /*! \brief left-handed subtraction of Null on a Polynomial.
-    */
-    template<size_t Order, class Real, char Letter>
-    Polynomial<Order, Real, Letter> operator-(const Null& r, const Polynomial<Order, Real, Letter>& poly)
-    { return -poly; }
-
-    /*! \brief Right-handed subtraction of Null on a Polynomial.
-    */
-    template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator-(const Polynomial<Order, Real, Letter>& poly, const Null& r)
-    { return poly; }
-
-    /*! \brief left-handed multiplication of Null on a Polynomial.
-    */
-    template<size_t Order, class Real, char Letter>
-    Null operator*(const Null& r, const Polynomial<Order, Real, Letter>& poly)
-    { return Null(); }
-
-    /*! \brief Right-handed multiplication of Null on a Polynomial.
-    */
-    template<size_t Order, class Real, char Letter>
-    Null operator*(const Polynomial<Order, Real, Letter>& poly, const Null& r)
-    { return Null(); }
-
-    /*! \brief left-handed multiplication of Unity on a Polynomial.
-    */
-    template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator*(const Unity& r, const Polynomial<Order, Real, Letter>& poly)
-    { return poly; }
-
-    /*! \brief Right-handed multiplication of Unity on a Polynomial.
-    */
-    template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator*(const Polynomial<Order, Real, Letter>& poly, const Unity& r)
-    { return poly; }
-
-    /*! \brief Right-handed division of a Polynomial by Unity.
-    */
-    template<size_t Order, class Real, char Letter>
-    const Polynomial<Order, Real, Letter>& operator/(const Polynomial<Order, Real, Letter>& poly, const Unity& r)
-    { return poly; }
-
     /*! \brief Right-handed addition operation on a Polynomial.
       
       This operator is only enabled if the type of the Polynomial
@@ -493,8 +439,13 @@ namespace stator {
     */
     template<class Real1, size_t Order, class Real, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    auto operator+(const Real1& r, const Polynomial<Order, Real, Letter>& poly)
-      -> STATOR_AUTORETURN(poly+r)
+    auto simplify(const AddOp<Real1, Polynomial<Order, Real, Letter> >& f) -> Polynomial<Order, STORETYPE(f._l + f._r[0]), Letter>
+    {
+      Polynomial<Order, STORETYPE(f._l + f._r[0]), Letter> retval(f._r);
+      retval[0] += f._l;
+      return retval;
+    }
+    
 
     /*!\brief Left-handed addition operator for Polynomials 
 
@@ -503,23 +454,31 @@ namespace stator {
       for distribution over the Polnomial coefficients. This is tested
       using detail::distribute_poly.
     */
-    template<class Real1, class Real2, size_t N, char Letter,
-	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
-    auto operator+(const Polynomial<N, Real1, Letter>& poly, const Real2& r) -> Polynomial<N, STORETYPE(poly[0] + r), Letter>
+    template<class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const AddOp<Polynomial<Order, Real, Letter>, Real1>& f) -> Polynomial<Order, STORETYPE(f._l[0] + f._r), Letter>
     {
-      Polynomial<N, STORETYPE(poly[0] + r), Letter> retval(poly);
-      retval[0] = retval[0] + r;
+      Polynomial<Order, STORETYPE(f._l[0] + f._r), Letter> retval(f._l);
+      retval[0] += f._r;
       return retval;
     }
 
     /*!\brief Addition operator for two Polynomial types. 
      */
-    template<size_t M, size_t N, class Real1, class Real2, char Letter>
-    auto operator+(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<detail::max_order(M, N), STORETYPE(poly1[0] + poly2[0]), Letter>
+    template<class Real1, size_t M, class Real2, size_t N, char Letter>
+    auto simplify(const AddOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f) -> Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] + f._r[0]), Letter>
     {
-      Polynomial<detail::max_order(M, N), STORETYPE(poly1[0] + poly2[0]), Letter> retval(poly1);
-      for (size_t i(0); i <= N; ++i)
-	retval[i] += poly2[i];
+      Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] + f._r[0]), Letter> retval;
+
+      for (size_t i(0); i <= std::min(N, M); ++i)
+	retval[i] = f._l[i] + f._r[i];
+      
+      for (size_t i(std::min(N, M)+1); i <= N; ++i)
+	retval[i] = f._l[i];
+
+      for (size_t i(std::min(N, M)+1); i <= M; ++i)
+	retval[i] = f._r[i];
+      
       return retval;
     }
 
@@ -529,16 +488,21 @@ namespace stator {
       operator with an addition if the left-handed addition form
       exists.
     */
-    template<class Real1, class Real2, size_t N, char Letter,
-	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
-    auto operator-(const Real1& r, const Polynomial<N, Real2, Letter>& poly) 
-      -> STATOR_AUTORETURN((-poly) + r)
-  
+    template<class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const SubtractOp<Real1, Polynomial<Order, Real, Letter> >& f)
+      -> STATOR_AUTORETURN(simplify(f._l + (-f._r)));
+    
     /*! \brief Left-handed subtraction from a Polynomial type.
-
+      
       This will convert the operation to a unary negation operator
       with an addition if the left-handed form exists.
     */
+    template<class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Real1>& f)
+      -> STATOR_AUTORETURN(simplify(f._l + (-f._r)));
+
     template<class Real1, class Real2, size_t N, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type >
     auto operator-(const Polynomial<N,Real1,Letter>& poly, const Real2& r) 
@@ -546,12 +510,19 @@ namespace stator {
 
     /*! \brief Subtraction between two Polynomial types. 
      */
-    template<class Real1, class Real2, size_t M, size_t N, char Letter>
-    auto operator-(const Polynomial<M,Real1, Letter>& poly1, const Polynomial<N,Real2, Letter>& poly2) -> Polynomial<detail::max_order(M, N),decltype(poly1[0]-poly2[0]), Letter>
+    template<class Real1, size_t M, class Real2, size_t N, char Letter>
+    auto simplify(const SubtractOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f) -> Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] - f._r[0]), Letter>
     {
-      Polynomial<detail::max_order(M, N),decltype(poly1[0]-poly2[0]), Letter> retval(poly1);
-      for (size_t i(0); i <= N; ++i)
-	retval[i] -= poly2[i];
+      Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] - f._r[0]), Letter> retval;
+      for (size_t i(0); i <= std::min(N, M); ++i)
+	retval[i] = f._l[i] - f._r[i];
+      
+      for (size_t i(std::min(N, M)+1); i <= N; ++i)
+	retval[i] = f._l[i];
+
+      for (size_t i(std::min(N, M)+1); i <= M; ++i)
+	retval[i] = -f._r[i];
+      
       return retval;
     }
 
@@ -562,10 +533,17 @@ namespace stator {
       for distribution over the Polnomial coefficients. This is tested
       using detail::distribute_poly.
     */
-    template<class Real1, class Real2, size_t N, char Letter,
-	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
-    auto operator*(const Real1& r, const Polynomial<N, Real2, Letter>& poly) -> Polynomial<N, decltype(poly[0] * r), Letter>
-    { return poly * r; }
+    template<class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const MultiplyOp<Real1, Polynomial<Order, Real, Letter> >& f) -> Polynomial<Order, STORETYPE(f._l * f._r[0]), Letter>
+    {
+      Polynomial<Order, STORETYPE(f._l * f._r[0]), Letter> retval;
+
+      for (size_t i(0); i <= Order; ++i)
+	retval[i] = f._l * f._r[i];
+
+      return retval;
+    }
 
     /*! \brief Left-handed multiplication on a Polynomial.
 
@@ -574,48 +552,50 @@ namespace stator {
       for distribution over the Polnomial coefficients. This is tested
       using detail::distribute_poly.
     */
-    template<class Real1, class Real2, size_t N, char Letter,
-	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
-    auto operator*(const Polynomial<N, Real1, Letter>& poly, const Real2& r) -> Polynomial<N, decltype(poly[0] * r), Letter>
+    template<class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Real1>& f) -> Polynomial<Order, STORETYPE(f._l[0] * f._r), Letter>
     {
-      Polynomial<N, decltype(Real1() * Real2()), Letter> retval;
-      for (size_t i(0); i <= N; ++i)
-	retval[i] = poly[i] * r;
+      Polynomial<Order, STORETYPE(f._l[0] * f._r), Letter> retval;
+      for (size_t i(0); i <= Order; ++i)
+	retval[i] = f._l[i] * f._r;
       return retval;
     }
 
     /*! \brief Multiplication between two Polynomial types.
      */
     template<class Real1, class Real2, size_t M, size_t N, char Letter>
-    auto operator*(const Polynomial<M, Real1, Letter>& poly1, const Polynomial<N, Real2, Letter>& poly2) -> Polynomial<M + N, STORETYPE(poly1[0] * poly2[0]), Letter>
+    auto simplify(const MultiplyOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f)
+      -> Polynomial<M + N, STORETYPE(f._l[0] * f._r[0]), Letter>
     {
-      Polynomial<M + N, STORETYPE(poly1[0] * poly2[0]), Letter> retval;
+      Polynomial<M + N, STORETYPE(f._l[0] * f._r[0]), Letter> retval;
       for (size_t i(0); i <= N+M; ++i)
 	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
-	  retval[i] += poly1[j] * poly2[i-j];
+	  retval[i] += f._l[j] * f._r[i-j];
       return retval;
     }
 
     /*! \brief Specialisation for squares of matrix expressions. */
     template<size_t Power, class Matrix, size_t N, char Letter,
              typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Matrix>, Matrix>::value>::type>
-      auto pow(const Polynomial<N, Matrix, Letter>& f) -> Polynomial<2 * N, STORETYPE(f[0].dot(f[0])), Letter>
+    auto simplify(const PowerOp<Polynomial<N, Matrix, Letter>, Power>& f)
+      -> Polynomial<2 * N, STORETYPE(f._arg[0].dot(f.arg[0])), Letter>
     { 
-      Polynomial<2 * N, STORETYPE(f[0].dot(f[0])), Letter> retval;
+      Polynomial<2 * N, STORETYPE(f._arg[0].dot(f._arg[0])), Letter> retval;
       for (size_t i(0); i <= 2 * N; ++i)
 	for (size_t j(i>N?i-N:0); (j <= i) && (j <=N); ++j)
-	  retval[i] += f[j].dot(f[i-j]);
+	  retval[i] += f._arg[j].dot(f._arg[i-j]);
       return retval;
     }
 
     /*! \brief Division of a Polynomial by a constant. */
     template<class Real1, class Real2, size_t N, char Letter,
 	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
-    auto operator/(const Polynomial<N, Real1, Letter>& poly, const Real2& r) -> Polynomial<N, STORETYPE(poly[0] / r), Letter>
+    auto simplify(const DivideOp<Polynomial<N, Real1, Letter>, Real2> & f) -> Polynomial<N, STORETYPE(f._l[0] / f._r), Letter>
     {
-      Polynomial<N, STORETYPE(poly[0] / r), Letter> retval;
+      Polynomial<N, STORETYPE(f._l[0] / f._r), Letter> retval;
       for (size_t i(0); i <= N; ++i)
-	retval[i] = poly[i] / r;
+	retval[i] = f._l[i] / f._r;
       return retval;
     }
 

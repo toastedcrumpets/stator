@@ -163,7 +163,7 @@ namespace stator {
     /*! \brief Symbolic unary negation operator. */
     template<class Arg,
 	     typename = typename std::enable_if<IsSymbolic<SymbolicOperator>::value>::type>
-    auto operator-(const Arg& l) -> STATOR_AUTORETURN(-1 * l)
+    auto operator-(const Arg& l) -> STATOR_AUTORETURN(C<-1>() * l)
 
     /*! \brief Symbolic addition operator. */
     template<class LHS, class RHS,

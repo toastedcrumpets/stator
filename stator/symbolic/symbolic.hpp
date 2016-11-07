@@ -57,7 +57,9 @@ namespace stator {
 
     /*! \brief Conversion operator from std::ratio to C.*/
     template<class stdratio>
-    using C_wrap = C<stdratio::num, stdratio::den>;
+    struct C_wrap {
+      typedef C<stdratio::num, stdratio::den> type;
+    };
     
     /*! \brief Compile time type-test for compile-time constants \ref C.*/
     template<class T> struct is_C { static const bool value = false; };
@@ -70,10 +72,10 @@ namespace stator {
     typedef C<1> Unity;
     
     /*! \brief A symbolic/compile-time rational approximation of \f$\pi\f$. */
-    typedef C_wrap<constant_ratio::pi> pi;
+    typedef C_wrap<constant_ratio::pi>::type pi;
 
     /*! \brief A symbolic/compile-time rational approximation of \f$\mathrm{e}\f$. */
-    typedef C_wrap<constant_ratio::e> e;
+    typedef C_wrap<constant_ratio::e>::type e;
 
     /*! \brief Output operator for compile-time constant (\ref C types).*/
     template<std::intmax_t Num, std::intmax_t Denom>

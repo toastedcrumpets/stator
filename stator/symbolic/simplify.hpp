@@ -71,22 +71,22 @@ namespace stator {
 
     //Ratio operators (these are lower priority than above
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    C_wrap<std::ratio_multiply<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
+    typename C_wrap<std::ratio_multiply<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >::type
     multiply(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
     { return {};}
 
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    C_wrap<std::ratio_add<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
+    typename C_wrap<std::ratio_add<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >::type
     add(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
     { return {};}
 
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    C_wrap<std::ratio_divide<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
+    typename C_wrap<std::ratio_divide<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >::type
     divide(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
     { return {};}
 
     template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    C_wrap<std::ratio_subtract<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >
+    typename C_wrap<std::ratio_subtract<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> > >::type
     subtract(const C<Num1, Denom1>&, const C<Num2, Denom2>&, detail::choice<1>)
     { return {};}
 

@@ -43,6 +43,12 @@ namespace stator {
       using stator::detail::last_choice;
       using stator::detail::select_overload;
     } // namespace detail
+
+    struct SymbolicOperator {};
+    template<class T>
+    struct IsSymbolic {
+      static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
+    };
     
     /*! \brief A class representing a compile-time constant.
 
@@ -53,7 +59,7 @@ namespace stator {
       ratio-float multipliation).
      */
     template<std::intmax_t Num, std::intmax_t Denom = 1>
-    struct C: std::ratio<Num, Denom> {};
+    struct C: std::ratio<Num, Denom>, SymbolicOperator {};
 
     /*! \brief Conversion operator from std::ratio to C.*/
     template<class stdratio>
@@ -126,7 +132,7 @@ namespace stator {
       is a single ASCII character which represents this variable and
       is used to identify it during symbolic actions and output.
     */
-    template<char Letter> struct Variable {
+    template<char Letter> struct Variable : SymbolicOperator {
       template<class Arg>
       VariableSubstitution<Letter, Arg> operator==(const Arg& a) const {
 	return VariableSubstitution<Letter, Arg>(a);

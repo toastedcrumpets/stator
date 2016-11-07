@@ -31,18 +31,7 @@ namespace stator {
 	BinaryOp(const LHStype& l, const RHStype& r): _l(l), _r(r) {}
       };
     }
-
-
-    /*! \brief Type trait which enables symbolic operators for
-        algebraic operations (*+-). */
-    template<class T> struct SymbolicOperators {
-      static const bool value = is_C<T>::value;
-    };
-     
-    template<char Letter> struct SymbolicOperators<Variable<Letter> > {
-      static const bool value = true;
-    };
-     
+         
     /*! \brief Type trait which denotes if operations should be
         reordered to bring these types together. 
 
@@ -67,13 +56,9 @@ namespace stator {
     
 #define CREATE_BINARY_OP(HELPERNAME, CLASSNAME, OP, PRINTFORM)		\
     template<class LHStype, class RHStype>				\
-    struct CLASSNAME : public detail::BinaryOp<LHStype, RHStype> {	\
+    struct CLASSNAME : public detail::BinaryOp<LHStype, RHStype>, SymbolicOperator {	\
       typedef detail::BinaryOp<LHStype, RHStype> Base;			\
       CLASSNAME(const LHStype& l, const RHStype& r): Base(l, r) {}	\
-    };									\
-									\
-    template<class LHS, class RHS> struct SymbolicOperators<CLASSNAME<LHS,RHS> > { \
-      static const bool value = true;					\
     };									\
 									\
     template<class LHS, class RHS, char Letter, class Arg>		\
@@ -167,17 +152,17 @@ namespace stator {
         classes are operated on. */
     template<class LHS, class RHS> 
     struct ApplySymbolicOps {
-      static const bool value = SymbolicOperators<LHS>::value || (!SymbolicOperators<LHS>::value && SymbolicOperators<RHS>::value);
+      static const bool value = IsSymbolic<LHS>::value || (!IsSymbolic<LHS>::value && IsSymbolic<RHS>::value);
     };
 
     /*! \brief Symbolic unary positive operator. */
     template<class Arg,
-	     typename = typename std::enable_if<SymbolicOperators<Arg>::value>::type>
+	     typename = typename std::enable_if<IsSymbolic<SymbolicOperator>::value>::type>
     Arg operator+(const Arg& l) { return l; }
 
     /*! \brief Symbolic unary negation operator. */
     template<class Arg,
-	     typename = typename std::enable_if<SymbolicOperators<Arg>::value>::type>
+	     typename = typename std::enable_if<IsSymbolic<SymbolicOperator>::value>::type>
     auto operator-(const Arg& l) -> STATOR_AUTORETURN(-1 * l)
 
     /*! \brief Symbolic addition operator. */
@@ -253,7 +238,7 @@ namespace stator {
     /*! \brief Symbolic representation of a (positive) power operator.
      */
     template<class Arg, size_t Power>
-    struct PowerOp {
+    struct PowerOp: SymbolicOperator {
       Arg _arg;
       PowerOp(Arg a): _arg(a) {}
       PowerOp(): _arg() {}
@@ -320,12 +305,7 @@ namespace stator {
     /*! \relates PowerOp
       \name PowerOp operations
       \{
-      \brief Enablement of the symbolic operators for the PowerOp type.
     */
-    template<class Arg, size_t Power>
-    struct SymbolicOperators<PowerOp<Arg, Power> > {
-      static const bool value = true;
-    };
 
     /*! \brief Derivatives of PowerOp operations.
      */

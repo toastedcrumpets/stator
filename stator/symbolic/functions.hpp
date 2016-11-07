@@ -29,7 +29,7 @@ namespace stator {
         non-polynomial functions.
     */
     template<class Arg, size_t FUNC_ID>
-    class Function {
+    class Function: SymbolicOperator {
     public:
       /*! \brief The symbolic expression which is the argument of the
           Function. 
@@ -38,13 +38,6 @@ namespace stator {
       
       /*! \brief Construct a Function with its argument. */
       Function(const Arg& a): _arg(a) {}
-    };
-
-    /*! \brief Enabling of symbolic operators for Function types 
-     */
-    template<class Arg, size_t FuncID>
-    struct SymbolicOperators<Function<Arg, FuncID> > {
-      static const bool value = true;
     };
 
 #define CREATE_FUNCTION(HELPERNAME, NUMERIC_IMPL, ARG_DERIVATIVE, TEXT_REPRESENTATION, ID) \

@@ -100,9 +100,24 @@ namespace stator {
     template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
     constexpr auto operator/(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename C_wrap<std::ratio_divide<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
 
-    template<std::intmax_t Num1, std::intmax_t Denom1, std::intmax_t Num2, std::intmax_t Denom2>
-    constexpr bool operator==(const C<Num1, Denom1>&, const C<Num2, Denom2>&)
-    { return std::ratio_equal<std::ratio<Num1, Denom1>, std::ratio<Num2, Denom2> >::value; }
+    template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
+    constexpr bool operator==(const C<n1, d1>&, const C<n2, d2>&)
+    { return std::ratio_equal<std::ratio<n1, d1>, std::ratio<n2, d2> >::value; }
+
+    
+    template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
+    T operator+(const T& l, Null) { return l; }
+    template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
+    T operator+(Null, const T& r) { return r; }
+    template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
+    T operator-(const T& l, Null) { return l; }
+    template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
+    auto operator-(Null, const T& r) -> STATOR_AUTORETURN(-r);
+    template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
+    Null operator*(const T&, Null) { return Null(); }
+    template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
+    Null operator*(Null, const T&) { return Null(); }
+    
     
     /*! \brief Symbolic Inverse factorial function.
      

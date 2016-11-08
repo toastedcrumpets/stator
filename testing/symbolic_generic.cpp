@@ -40,7 +40,7 @@ Vector random_unit_vec() {
 
 template<class A, class B>
 struct Check_Type {
-  static_assert(std::is_same<A, B>::value, "Type comparison failed");
+  static_assert(std::is_same<typename std::decay<A>::type, B>::value, "Type comparison failed");
 };
 
 #define CHECK_TYPE(EXPRESSION, TYPE) static_assert(std::is_same<decltype(EXPRESSION), TYPE>::value, "Type is wrong")
@@ -62,43 +62,43 @@ bool compare_expression(const T1& f, const T2& g, bool output_error=true) {
 
 BOOST_AUTO_TEST_CASE( symbolic_C )
 {
-Check_Type<decltype(Unity() * Unity()), Unity>();
-Check_Type<decltype(Unity() + Unity()), C<2>>();
-Check_Type<decltype(Unity() + Null()), Unity>();
-Check_Type<decltype(Null() + Unity()), Unity>();
-Check_Type<decltype(eval(Unity(), 100)), Unity>();
+  Check_Type<decltype(Unity() * Unity()), Unity>();
+  Check_Type<decltype(Unity() + Unity()), C<2>>();
+  Check_Type<decltype(Unity() + Null()), Unity>();
+  Check_Type<decltype(Null() + Unity()), Unity>();
+  Check_Type<std::decay<decltype(eval(Unity(), 100))>::type, Unity>();
 
-Check_Type<decltype(Unity() * Null()), Null>();
+  Check_Type<decltype(Unity() * Null()), Null>();
 
   Variable<'x'> x;
-Check_Type<decltype(substitution(C<5>(), x == 2)), C<5>>();
-Check_Type<decltype((C<5>() - C<3>() - C<2>()) * x), Null>();
+  Check_Type<std::decay<decltype(substitution(C<5>(), x == 2))>::type, C<5>>();
+  Check_Type<decltype((C<5>() - C<3>() - C<2>()) * x), Null>();
 
   BOOST_CHECK(compare_expression(pi()*pi()/pi(), "π"));
   BOOST_CHECK(compare_expression(e(), "e"));
 
-Check_Type<decltype(sin(Null())), Null>();
-Check_Type<decltype(sin(pi())), Null>();
-Check_Type<decltype(sin(C<12>()*pi())), Null>();
-Check_Type<decltype(sin(C<5,2>()*pi())), Unity>();
+  Check_Type<decltype(sin(Null())), Null>();
+  Check_Type<decltype(sin(pi())), Null>();
+  Check_Type<decltype(sin(C<12>()*pi())), Null>();
+  Check_Type<decltype(sin(C<5,2>()*pi())), Unity>();
 
-Check_Type<decltype(cos(Null())), Unity>();
-Check_Type<decltype(cos(pi())), Unity>();
-Check_Type<decltype(cos(C<8>()*pi())), Unity>();
-Check_Type<decltype(cos(C<5,2>()*pi())), Null>();
+  Check_Type<decltype(cos(Null())), Unity>();
+  Check_Type<decltype(cos(pi())), Unity>();
+  Check_Type<decltype(cos(C<8>()*pi())), Unity>();
+  Check_Type<decltype(cos(C<5,2>()*pi())), Null>();
 
-Variable<'y'> y;
-Check_Type<decltype(substitution(Null(), y==100)), Null>();
-Check_Type<decltype(derivative(Null(), x)), Null>();
-Check_Type<decltype(derivative(Unity(),x)), Null>();
-Check_Type<decltype(substitution(Null(), y==100)), Null>();
-//Check some substitutions
-Check_Type<decltype(substitution(y*y*y, y == Null())), Null>();
-Check_Type<decltype(derivative(2, x)), Null>();
-Check_Type<decltype(derivative(3.141, x)), Null>();
+  Variable<'y'> y;
+  Check_Type<std::decay<decltype(substitution(Null(), y==100))>::type, Null>();
+  Check_Type<decltype(derivative(Null(), x)), Null>();
+  Check_Type<decltype(derivative(Unity(),x)), Null>();
+  Check_Type<decltype(substitution(Null(), y==100)), Null>();
+  //Check some substitutions
+  Check_Type<std::decay<decltype(substitution(y*y*y, y == Null()))>::type, Null>();
+  Check_Type<decltype(derivative(2, x)), Null>();
+  Check_Type<decltype(derivative(3.141, x)), Null>();
 
-Check_Type<decltype((Vector{1,2,3} * Null())), Null>();
-BOOST_CHECK(compare_expression(Vector{1,2,3} + Null(), Vector{1,2,3}));
+  Check_Type<decltype((Vector{1,2,3} * Null())), Null>();
+  BOOST_CHECK(compare_expression(Vector{1,2,3} + Null(), Vector{1,2,3}));
 }
 
 BOOST_AUTO_TEST_CASE( Unity_tests )
@@ -126,12 +126,12 @@ BOOST_AUTO_TEST_CASE( Substitution_of_variables )
   Variable<'x'> x;
   Variable<'y'> y;
 
-Check_Type<decltype(substitution(x, x==y)), Variable<'y'>>();
+  Check_Type<std::decay<decltype(substitution(x, x==y))>::type, Variable<'y'>>();
 }
 
 BOOST_AUTO_TEST_CASE( function_basic )
 {
-Variable<'x'> x;
+  Variable<'x'> x;
   //Check basic Function operation
   BOOST_CHECK_CLOSE(eval(stator::symbolic::sin(x), 0.5), std::sin(0.5), 1e-10);
   BOOST_CHECK_CLOSE(eval(stator::symbolic::cos(x), 0.5), std::cos(0.5), 1e-10);
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE( power_basic )
   BOOST_CHECK_CLOSE(eval(pow<3>(x) * x, 0.75), std::pow(0.75, 3) * 0.75, 1e-10);
 
   //Check special case derivatives
-Check_Type<decltype(derivative(pow<1>(x), Variable<'x'>())), Unity>();
+  Check_Type<decltype(derivative(pow<1>(x), Variable<'x'>())), Unity>();
 }
 
 BOOST_AUTO_TEST_CASE( Var_tests )
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE( reorder_operations )
   //Here we check that constants (such as 2) will become Null
   //types when the derivative is taken, causing their terms to be
   //eliminated.
-  BOOST_CHECK(compare_expression(derivative(2 * cos(x), Variable<'x'>()), -2 * sin(x)));
+  BOOST_CHECK(compare_expression(derivative(C<2>() * cos(x), Variable<'x'>()), C<-2>() * sin(x)));
   BOOST_CHECK(compare_expression(derivative(2 * sin(x), Variable<'x'>()), 2 * cos(x)));
 }
 
@@ -257,6 +257,7 @@ BOOST_AUTO_TEST_CASE( vector_symbolic )
   const double errlvl = 1e-10;
 
   Vector test1 = substitution(Vector{0,1,2} * x, x == 2);
+  std::cout << test1 << std::endl;
   BOOST_CHECK(test1[0] == 0);
   BOOST_CHECK(test1[1] == 2);
   BOOST_CHECK(test1[2] == 4);

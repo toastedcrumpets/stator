@@ -158,7 +158,7 @@ namespace stator {
     */
     template<class T, char Letter, class Arg,
 	     typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-      T substitution(const T& f, const VariableSubstitution<Letter, Arg>&)
+    const T& substitution(const T& f, const VariableSubstitution<Letter, Arg>&)
     { return f; }
 
     /*! \brief Evaluates a symbolic Variable at a given point.
@@ -167,7 +167,7 @@ namespace stator {
       substitution.
     */
     template<char Letter, class Arg>
-    Arg substitution(const Variable<Letter>& f, const VariableSubstitution<Letter, Arg>& x)
+    const Arg& substitution(const Variable<Letter>& f, const VariableSubstitution<Letter, Arg>& x)
     { return x._val; }
 
     /*! \brief Evaluates a symbolic Variable at a given point.

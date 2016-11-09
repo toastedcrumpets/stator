@@ -257,7 +257,6 @@ BOOST_AUTO_TEST_CASE( vector_symbolic )
   const double errlvl = 1e-10;
 
   Vector test1 = substitution(Vector{0,1,2} * x, x == 2);
-  std::cout << test1 << std::endl;
   BOOST_CHECK(test1[0] == 0);
   BOOST_CHECK(test1[1] == 2);
   BOOST_CHECK(test1[2] == 4);

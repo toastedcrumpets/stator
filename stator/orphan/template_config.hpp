@@ -8,6 +8,7 @@
 
 #include <type_traits>
 
+
 namespace stator {
   namespace orphan {
     template<typename ID, typename T, T value>
@@ -47,7 +48,7 @@ namespace stator {
 	: std::integral_constant<int, get_value_int<D, Args...>::value> {};
 
       template<typename D2, typename T22>
-      struct impl <D2, T22, std::enable_if_t<std::is_same<typename D2::type_id, typename T22::type_id>::value>> 
+      struct impl <D2, T22, typename std::enable_if<std::is_same<typename D2::type_id, typename T22::type_id>::value>::type> 
 	: std::integral_constant<int, T22::value> {};
 
       static constexpr const int value = impl<D, T2>::value;
@@ -64,7 +65,7 @@ namespace stator {
 	: std::integral_constant<decltype(D::value), get_value<D, Args...>::value> {};
 
       template<typename D2, typename T22>
-      struct impl <D2, T22, std::enable_if_t<std::is_same<typename D2::type_id, typename T22::type_id>::value>> 
+      struct impl <D2, T22, typename std::enable_if<std::is_same<typename D2::type_id, typename T22::type_id>::value>::type> 
 	: std::integral_constant<decltype(D::value), T22::value> {};
 
       static constexpr const auto value = impl<D, T2>::value;
@@ -85,7 +86,7 @@ namespace stator {
       };
 
       template<typename D2, typename T22>
-      struct impl <D2, T22, std::enable_if_t<std::is_same<typename D2::type_id, typename T22::type_id>::value>> {
+      struct impl <D2, T22, typename std::enable_if<std::is_same<typename D2::type_id, typename T22::type_id>::value>::type> {
 	using value = typename T22::value;
       };
 
@@ -109,7 +110,7 @@ namespace stator {
       };
 
       template<typename D2, typename T22>
-      struct impl <D2, T22, std::enable_if_t<std::is_same<typename D2::type_id, typename T22::type_id>::value>> {
+      struct impl <D2, T22, typename std::enable_if<std::is_same<typename D2::type_id, typename T22::type_id>::value>::type> {
 	template<typename C>
 	  using value = typename T22::template value<C>;
       };

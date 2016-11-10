@@ -19,9 +19,26 @@
 
 #pragma once
 
+#include <stator/orphan/template_config.hpp>
+
 namespace stator {
   namespace symbolic {
+    namespace detail {
+      struct use_Polynomial_ID;
+      struct new_Polynomial_coeff_t_ID;
+    };
 
+    struct use_Polynomial : orphan::basic_conf_t<detail::use_Polynomial_ID> {};
+    template<typename T> struct new_Polynomial_coeff_t : orphan::type_conf_t<detail::new_Polynomial_coeff_t_ID, T> {};
+
+    template <typename ...Args>
+    struct SimplifyConfig {
+      static constexpr const auto use_polynomial = orphan::is_present<use_Polynomial, Args...>::value;
+      using new_polynomial_coeff_t = typename orphan::get_type<new_Polynomial_coeff_t<double>, Args...>::value;
+    };
+
+    using DefaultSimplifyConfig = SimplifyConfig<>;
+    
     //The implementations below perform basic simplification of expressions
     //
     //These simplify expressions dramatically, so they have the highest priority
@@ -96,35 +113,35 @@ namespace stator {
     constexpr C<((num >= 0) ? num : -num), den> abs(const C<num, den>&) { return C<((num >= 0) ? num : -num), den>(); }
     
     namespace detail {
-      template<class T>
+      template<class Config, class T>
       auto try_simplify_imp(const T& a, int) -> decltype(simplify(a)) {
-	return simplify(a);
+	return simplify<DefaultSimplifyConfig>(a);
       }
       
-      template<class T>
+      template<class Config, class T>
       T try_simplify_imp(const T& a, long) {
 	return a;
       }
     }
 
-    template<class T>
-    auto try_simplify(const T& a) -> decltype(detail::try_simplify_imp(a,0)) {
-      return detail::try_simplify_imp(a, 0);
+    template<class Config = DefaultSimplifyConfig, class T>
+    auto try_simplify(const T& a) -> decltype(detail::try_simplify_imp<Config>(a,0)) {
+      return detail::try_simplify_imp<Config>(a, 0);
     }
 
-    template<class Arg, size_t Power>
-    auto simplify_powerop_impl(const PowerOp<Arg, Power>& f, detail::choice<0>) -> decltype(simplify(PowerOpSubstitution<Power>::eval(simplify(f._arg))))
-    { return PowerOpSubstitution<Power>::eval(simplify(f._arg)); }
+    template<class Config, class Arg, size_t Power>
+    auto simplify_powerop_impl(const PowerOp<Arg, Power>& f, detail::choice<0>) -> decltype(simplify<Config>(PowerOpSubstitution<Power>::eval(simplify<Config>(f._arg))))
+    { return simplify<Config>(PowerOpSubstitution<Power>::eval(simplify<Config>(f._arg))); }
     
-    template<class Arg, size_t Power>
-    auto simplify_powerop_impl(const PowerOp<Arg, Power>& f, detail::choice<1>) -> decltype(PowerOpSubstitution<Power>::eval(simplify(f._arg)))
-    { return PowerOpSubstitution<Power>::eval(simplify(f._arg)); }
+    template<class Config, class Arg, size_t Power>
+    auto simplify_powerop_impl(const PowerOp<Arg, Power>& f, detail::choice<1>) -> decltype(PowerOpSubstitution<Power>::eval(simplify<Config>(f._arg)))
+    { return PowerOpSubstitution<Power>::eval(simplify<Config>(f._arg)); }
     
-    template<class Arg, size_t Power>
-    auto simplify_powerop_impl(const PowerOp<Arg, Power>& f, detail::choice<2>) -> decltype(simplify(PowerOpSubstitution<Power>::eval(f._arg)))
-    { return simplify(PowerOpSubstitution<Power>::eval(f._arg)); }
+    template<class Config, class Arg, size_t Power>
+    auto simplify_powerop_impl(const PowerOp<Arg, Power>& f, detail::choice<2>) -> decltype(simplify<Config>(PowerOpSubstitution<Power>::eval(f._arg)))
+    { return simplify<Config>(PowerOpSubstitution<Power>::eval(f._arg)); }
 
-    template<class Arg, size_t Power>
+    template<class Config, class Arg, size_t Power>
     auto simplify_powerop_impl(const PowerOp<Arg, Power>& f, detail::choice<3>) -> decltype(PowerOpSubstitution<Power>::eval(f._arg))
     { return PowerOpSubstitution<Power>::eval(f._arg); }
 
@@ -136,14 +153,14 @@ namespace stator {
       This implementation only works if the argument has an simplify
       function defined for its argument.
      */
-    template<class Arg, size_t Power,
+    template<class Config = DefaultSimplifyConfig, class Arg, size_t Power,
 	     typename = typename std::enable_if<PowerOpEnableExpansion<Arg>::value>::type>
-    auto simplify(const PowerOp<Arg, Power>& f) -> decltype(simplify_powerop_impl(f, detail::select_overload{}))
-    { return simplify_powerop_impl(f, detail::select_overload{}); }
+    auto simplify(const PowerOp<Arg, Power>& f) -> decltype(simplify_powerop_impl<Config>(f, detail::select_overload{}))
+    { return simplify_powerop_impl<Config>(f, detail::select_overload{}); }
 
     /*! \brief Simplification of a Polynomial LHS multiplied by a
       Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
     { 
       Polynomial<Order+1, Real, Letter> retval;
@@ -154,7 +171,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial RHS multiplied by a
       Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
     {
       Polynomial<Order+1, Real, Letter> retval;
@@ -165,7 +182,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial LHS added to a
       Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
     { 
       Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._l);
@@ -175,9 +192,9 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial RHS added to a
       Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const AddOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
-    { 
+    {
       Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._r);
       retval[1] += 1;
       return retval;
@@ -185,7 +202,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial LHS subtracted by a
       Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
     {
       Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._l);
@@ -195,7 +212,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial RHS subtracted by a
       Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order+1, Real, Letter> simplify(const SubtractOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
     { 
       Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(-f._r);
@@ -205,7 +222,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial LHS added to a
       PowerOp of the Variable. */
-    template<char Letter, size_t Order, class Real, size_t POrder>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> > & f)
     {
       Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._l);
@@ -215,7 +232,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial RHS added to a
       PowerOp of the Variable. */
-    template<char Letter, size_t Order, class Real, size_t POrder>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> > & f)
     {
       Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._r);
@@ -225,7 +242,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial LHS subtracted from a
       PowerOp of the Variable. */
-    template<char Letter, size_t Order, class Real, size_t POrder>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> >& f)
     {
       Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._r);
@@ -235,7 +252,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial RHS subtracted from a
       PowerOp of the Variable. */
-    template<char Letter, size_t Order, class Real, size_t POrder>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const SubtractOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> >& f)
     {
       Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(-f._r);
@@ -245,7 +262,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial LHS multiplied by a
       PowerOp of a Variable. */
-    template<char Letter, size_t Order, class Real, size_t POrder>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<Order+POrder, Real, Letter> simplify(const MultiplyOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> >& f)
     {
       Polynomial<Order+POrder, Real, Letter> retval;
@@ -255,7 +272,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial RHS multiplied by a
       PowerOp of a Variable. */
-    template<char Letter, size_t Order, class Real, size_t POrder>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<Order+POrder, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> >& f)
     {
       Polynomial<Order+POrder, Real, Letter> retval;
@@ -265,7 +282,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial LHS added to a
       PowerOp of the Variable. */
-    template<char Letter, size_t Order, class Real, size_t POrder>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
     Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Unity> & f)
     {
       Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._l);
@@ -275,7 +292,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial RHS added to a
       PowerOp of the Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order, Real, Letter> simplify(const AddOp<Unity, Polynomial<Order, Real, Letter> > & f)
     {
       Polynomial<Order, Real, Letter> retval(f._r);
@@ -285,7 +302,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial LHS subtracted by a
       PowerOp of the Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Unity> & f)
     {
       Polynomial<Order, Real, Letter> retval(f._l);
@@ -295,7 +312,7 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial RHS subtracted by a
       PowerOp of the Variable. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     Polynomial<Order, Real, Letter> simplify(const SubtractOp<Unity, Polynomial<Order, Real, Letter> > & f)
     {
       Polynomial<Order, Real, Letter> retval(-f._r);
@@ -305,7 +322,7 @@ namespace stator {
 
     /*! \brief Conversion of PowerOp RHS multiplied by a constant to a
       Polynomial. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
     simplify(const MultiplyOp<PowerOp<Variable<Letter>, Order>, Real>& f)
     {
@@ -316,7 +333,7 @@ namespace stator {
 
     /*! \brief Conversion of PowerOp LHS multiplied by a constant to a
       Polynomial. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
     simplify(const MultiplyOp<Real, PowerOp<Variable<Letter>, Order> >& f)
     {
@@ -327,21 +344,21 @@ namespace stator {
 
     /*! \brief Conversion of Variable RHS multiplied by a constant to a
       Polynomial. */
-    template<char Letter, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type
     simplify(const MultiplyOp<Variable<Letter>, Real> & f)
     { return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(empty_sum(f._r)), toArithmetic(f._r)}; }
 
     /*! \brief Conversion of Variable LHS multiplied by a constant to a
       Polynomial. */
-    template<char Letter, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type 
     simplify(const MultiplyOp<Real, Variable<Letter> > & f)
     { return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{empty_sum(f._l), f._l}; }
 
     /*! \brief Conversion of PowerOp LHS added with a constant to a
       Polynomial. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> >::type 
     simplify(const AddOp<PowerOp<Variable<Letter>, Order>, Real>& f)
     { 
@@ -353,7 +370,7 @@ namespace stator {
 
     /*! \brief Conversion of PowerOp LHS added with a constant to a
       Polynomial. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> >::type 
     simplify(const AddOp<Real, PowerOp<Variable<Letter>, Order> >& f)
     { 
@@ -365,7 +382,7 @@ namespace stator {
 
     /*! \brief Conversion of PowerOp LHS subtracted with a constant to a
       Polynomial. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> >::type 
     simplify(const SubtractOp<PowerOp<Variable<Letter>, Order>, Real>& f)
     {
@@ -377,7 +394,7 @@ namespace stator {
 
     /*! \brief Conversion of PowerOp LHS subtracted with a constant to a
       Polynomial. */
-    template<char Letter, size_t Order, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> >::type 
     simplify(const SubtractOp<Real, PowerOp<Variable<Letter>, Order> >& f)
     {
@@ -388,86 +405,86 @@ namespace stator {
     }
 
     /*! \brief Conversion of a Variable RHS added with a constant. */
-    template<char Letter, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type
     simplify(const AddOp<Variable<Letter>, Real>& f)
     { return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(f._r), Real(1)}; }
 
     /*! \brief Conversion of a Variable LHS added with a constant. */
-    template<char Letter, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type 
     simplify(const AddOp<Real, Variable<Letter> >& f)
     { return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(f._r), Real(1)}; }
 
 
     /*! \brief Conversion of a Variable added with a Variable. */
-    template<char Letter>
+    template<class Config = DefaultSimplifyConfig, char Letter>
     Polynomial<1, int, Letter>
     simplify(const AddOp<Variable<Letter>, Variable<Letter> >& f)
     { return Polynomial<1, int, Letter>{0, 2}; }
 
 
     /*! \brief Conversion of a Variable RHS subtracted with a constant. */
-    template<char Letter, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type 
     simplify(const SubtractOp<Variable<Letter>, Real>& f)
     { return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{-toArithmetic(f._r), Real(1)}; }
 
     /*! \brief Conversion of a Variable LHS subtracted with a constant. */
-    template<char Letter, class Real>
+    template<class Config = DefaultSimplifyConfig, char Letter, class Real>
     typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type
     simplify(const SubtractOp<Real, Variable<Letter> >& f)
     { return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(f._l), Real(-1)}; }
 
 
     //                      FUNCTION SIMPLIFICATION
-    template<class Arg, size_t FuncID>
-    auto simplify(const Function<Arg, FuncID>& f) -> decltype(Function<decltype(simplify(f._arg)), FuncID>(simplify(f._arg)))
-    { return Function<decltype(simplify(f._arg)), FuncID>(simplify(f._arg)); }
+    template<class Config = DefaultSimplifyConfig, class Arg, size_t FuncID>
+    auto simplify(const Function<Arg, FuncID>& f) -> decltype(Function<decltype(simplify<Config>(f._arg)), FuncID>(simplify<Config>(f._arg)))
+    { return Function<decltype(simplify<Config>(f._arg)), FuncID>(simplify<Config>(f._arg)); }
 
-    template<class LHS, class Arg>
+    template<class Config = DefaultSimplifyConfig, class LHS, class Arg>
     auto simplify(const MultiplyOp<LHS, arbsignF<Arg> >& f) 
-      -> decltype(arbsign(try_simplify(f._l * f._r._arg)))
-    { return arbsign(try_simplify(f._l * f._r._arg)); }
+      -> decltype(arbsign(try_simplify<Config>(f._l * f._r._arg)))
+    { return arbsign(try_simplify<Config>(f._l * f._r._arg)); }
 
-    template<class RHS, class Arg>
+    template<class Config = DefaultSimplifyConfig, class RHS, class Arg>
     auto simplify(const MultiplyOp<arbsignF<Arg>, RHS>& f)
-      -> decltype(arbsign(try_simplify(f._l._arg * f._r)))
-    { return arbsign(try_simplify(f._l._arg * f._r)); }
+      -> decltype(arbsign(try_simplify<Config>(f._l._arg * f._r)))
+    { return arbsign(try_simplify<Config>(f._l._arg * f._r)); }
 
-    template<class Arg1, class Arg2>
+    template<class Config = DefaultSimplifyConfig, class Arg1, class Arg2>
     auto simplify(const MultiplyOp<arbsignF<Arg1>, arbsignF<Arg2> >& f)
-      -> decltype(arbsign(try_simplify(f._l._arg * f._r._arg)))
-    { return arbsign(try_simplify(f._l._arg * f._r._arg)); }
+      -> decltype(arbsign(try_simplify<Config>(f._l._arg * f._r._arg)))
+    { return arbsign(try_simplify<Config>(f._l._arg * f._r._arg)); }
 
-    template<class LHS, class Arg>
+    template<class Config = DefaultSimplifyConfig, class LHS, class Arg>
     auto simplify(const DivideOp<LHS, arbsignF<Arg> >& f) 
-      -> decltype(arbsign(try_simplify(f._l / f._r._arg)))
-    { return arbsign(try_simplify(f._l / f._r._arg)); }
+      -> decltype(arbsign(try_simplify<Config>(f._l / f._r._arg)))
+    { return arbsign(try_simplify<Config>(f._l / f._r._arg)); }
 
-    template<class RHS, class Arg>
+    template<class Config = DefaultSimplifyConfig, class RHS, class Arg>
     auto simplify(const DivideOp<arbsignF<Arg>, RHS>& f)
-      -> decltype(arbsign(try_simplify(f._l._arg / f._r)))
-    { return arbsign(try_simplify(f._l._arg / f._r)); }
+      -> decltype(arbsign(try_simplify<Config>(f._l._arg / f._r)))
+    { return arbsign(try_simplify<Config>(f._l._arg / f._r)); }
 
-    template<class Arg1, class Arg2>
+    template<class Config = DefaultSimplifyConfig, class Arg1, class Arg2>
     auto simplify(const DivideOp<arbsignF<Arg1>, arbsignF<Arg2> >& f)
-      -> decltype(arbsign(try_simplify(f._l._arg / f._r._arg)))
-    { return arbsign(try_simplify(f._l._arg / f._r._arg)); }
+      -> decltype(arbsign(try_simplify<Config>(f._l._arg / f._r._arg)))
+    { return arbsign(try_simplify<Config>(f._l._arg / f._r._arg)); }
 
-    template<class Arg>
+    template<class Config = DefaultSimplifyConfig, class Arg>
     auto simplify(const arbsignF<arbsignF<Arg> >& f)
-      -> decltype(arbsign(try_simplify(f._arg._arg)))
-    { return arbsign(try_simplify(f._arg._arg)); }
+      -> decltype(arbsign(try_simplify<Config>(f._arg._arg)))
+    { return arbsign(try_simplify<Config>(f._arg._arg)); }
 
     //For even powers, remove the sign term
-    template<class Arg, size_t Power>
+    template<class Config = DefaultSimplifyConfig, class Arg, size_t Power>
     auto simplify(const PowerOp<arbsignF<Arg>,Power>& f)
       -> typename std::enable_if<!(Power % 2), decltype(pow<Power>(f._arg._arg))>::type
     { return pow<Power>(f._arg._arg); }
 
     //For odd powers, move the sign term outside
-    template<class Arg, size_t Power>
+    template<class Config = DefaultSimplifyConfig, class Arg, size_t Power>
     auto simplify(const PowerOp<arbsignF<Arg>,Power>& f)
       -> typename std::enable_if<Power % 2, decltype(arbsign(pow<Power>(f._arg._arg)))>::type
     { return arbsign(pow<Power>(f._arg._arg)); }    

@@ -1043,11 +1043,8 @@ namespace stator {
       f = f / f[2];
       
       static const double maxSqrt = std::sqrt(std::numeric_limits<double>::max());
-      if ((f[1] > maxSqrt) || (f[1] < -maxSqrt)) {
-	//arg contains f[1]*f[1], so it will overflow. In this case we
-	//can approximate the equation as x^2 + a x = 0 to solve for
-	//one root, and use root2 = f[0]/root1 to find the second
-	//root. This should work even with large constant values
+      if (std::abs(f[1]) > maxSqrt) {
+	//arg contains f[1]*f[1], so it will overflow. 
 	StackVector<double, 2> retval{-f[1], -f[0] / f[1]};
 	//Sort them into order
 	if (retval[0] > retval[1])

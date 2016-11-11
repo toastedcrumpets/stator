@@ -1021,7 +1021,8 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   CHECK_TYPE(taylor_series<2>(y*y*y, Null(), y), Null);
     
   detail::TaylorSeriesWorker<2, 6, 'y'>::eval(derivative(derivative(sin(y), Variable<'y'>()), Variable<'y'>()), Null());
-  
+
+  simplify(y + C<2>());
   //Test simple Taylor expansion of sine 
   BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), simplify((1.0/120) * y*y*y*y*y - (1.0/6) * y*y*y + y)));
   BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), simplify(- (1.0/6) * y*y*y*y*y*y + y*y)));

@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE( poly_vector )
   auto poly1 = simplify(x+C);
   BOOST_CHECK_EQUAL(poly1[0], (Vector{3,2,1}));
   BOOST_CHECK_EQUAL(poly1[1], (Vector{1,2,3}));
-  
+
   auto poly2 = simplify(pow<2>(poly1));
   BOOST_CHECK_EQUAL(poly2[0], 14);
   BOOST_CHECK_EQUAL(poly2[1], 20);
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE( poly_simplify )
   //Check expansion
   {
     Polynomial<1> x{0,1};
-    BOOST_CHECK(compare_expression(simplify_powerop_impl(pow<3>(x+2), detail::select_overload{}), (x+2) * (x+2) * (x+2)));;
+    BOOST_CHECK(compare_expression(simplify_powerop_impl<DefaultSimplifyConfig>(pow<3>(x+2), detail::select_overload{}), (x+2) * (x+2) * (x+2)));;
   }
 }
 
@@ -625,9 +625,9 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
     BOOST_CHECK_CLOSE(droots[2], +1.187818836058599076329128653113014315066, 1e-10);
   }
 
-  {//Check PowerOp quartic
+  {//PowerOp quartic
     auto f1 = simplify(pow<2>(30 * x * x + x - 23));
-    
+
     //auto roots = solve_real_roots(f1);
     //FIX THIS UNIT TEST!
     //BOOST_CHECK(roots.size() == 2);

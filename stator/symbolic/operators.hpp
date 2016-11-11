@@ -24,8 +24,8 @@ namespace stator {
     namespace detail {
       /*! \brief Symbolic representation of a binary symbolic operation. 
        */
-      template<class LHStype, class RHStype>
-      struct BinaryOp {
+      template<class LHStype, class RHStype, typename Derived>
+      struct BinaryOp{
 	LHStype _l;
 	RHStype _r;
 	BinaryOp(const LHStype& l, const RHStype& r): _l(l), _r(r) {}
@@ -53,11 +53,12 @@ namespace stator {
       static const bool value = true;
     };
 
+    template<class Config> void simplify() {}
     
 #define CREATE_BINARY_OP(HELPERNAME, CLASSNAME, OP, PRINTFORM)		\
     template<class LHStype, class RHStype>				\
-    struct CLASSNAME : public detail::BinaryOp<LHStype, RHStype>, SymbolicOperator {	\
-      typedef detail::BinaryOp<LHStype, RHStype> Base;			\
+    struct CLASSNAME : public detail::BinaryOp<LHStype, RHStype, CLASSNAME<LHStype, RHStype> >, SymbolicOperator { \
+      typedef detail::BinaryOp<LHStype, RHStype, CLASSNAME<LHStype, RHStype> > Base;			\
       CLASSNAME(const LHStype& l, const RHStype& r): Base(l, r) {}	\
     };									\
 									\
@@ -74,33 +75,33 @@ namespace stator {
     auto HELPERNAME(const LHS& l, const RHS& r, detail::last_choice)    \
       -> STATOR_AUTORETURN((toArithmetic(l)) OP (toArithmetic(r)))      \
     									\
-    template<class LHS, class RHS>					\
+    template<class Config, class LHS, class RHS>			\
       auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<0>) \
-    -> STATOR_AUTORETURN((simplify(simplify(f._l)) OP (simplify(f._r)))) \
+      -> STATOR_AUTORETURN((simplify<Config>(simplify<Config>(f._l)) OP (simplify<Config>(f._r)))) \
                                                                         \
-    template<class LHS, class RHS>					\
+      template<class Config, class LHS, class RHS>			\
     auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<1>) \
-    -> STATOR_AUTORETURN(simplify((f._l) OP (simplify(f._r))))          \
+      -> STATOR_AUTORETURN(simplify<Config>((f._l) OP (simplify<Config>(f._r)))) \
 									\
-    template<class LHS, class RHS>					\
+    template<class Config, class LHS, class RHS>				\
     auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<2>) \
-    -> STATOR_AUTORETURN(simplify((simplify(f._l)) OP (f._r)))          \
+      -> STATOR_AUTORETURN(simplify<Config>((simplify<Config>(f._l)) OP (f._r))) \
 									\
-    template<class LHS, class RHS>					\
+      template<class Config, class LHS, class RHS>			\
     auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<3>) \
-    -> STATOR_AUTORETURN((simplify(f._l)) OP (simplify(f._r)))          \
+    -> STATOR_AUTORETURN((simplify<Config>(f._l)) OP (simplify<Config>(f._r))) \
 									\
-    template<class LHS, class RHS>					\
+      template<class Config, class LHS, class RHS>			\
     auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<4>) \
-    -> STATOR_AUTORETURN((f._l) OP (simplify(f._r)))                    \
+    -> STATOR_AUTORETURN((f._l) OP (simplify<Config>(f._r)))		\
                                                                         \
-    template<class LHS, class RHS>					\
+      template<class Config, class LHS, class RHS>			\
     auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<5>) \
-    -> STATOR_AUTORETURN((simplify(f._l)) OP (f._r))                    \
+    -> STATOR_AUTORETURN((simplify<Config>(f._l)) OP (f._r))		\
 									\
-    template<class LHS, class RHS>					\
+    template<class Config = DefaultSimplifyConfig, class LHS, class RHS>	\
     auto simplify(const CLASSNAME<LHS, RHS>& f)\
-    -> STATOR_AUTORETURN(simplify_##HELPERNAME##_impl(f, detail::select_overload{})) \
+    -> STATOR_AUTORETURN(simplify_##HELPERNAME##_impl<Config>(f, detail::select_overload{})) \
                                                                         \
     /*THESE HELPERS ARE OVERLOAD LEVEL 1, TO ALLOW CANCELLATION AT LEVEL 0*/ \
     /*! \brief Helper function which reorders (A*B)*C to (B*C)*A operations. */	\

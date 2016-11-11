@@ -19,26 +19,8 @@
 
 #pragma once
 
-#include <stator/orphan/template_config.hpp>
-
 namespace stator {
-  namespace symbolic {
-    namespace detail {
-      struct use_Polynomial_ID;
-      struct new_Polynomial_coeff_t_ID;
-    };
-
-    struct use_Polynomial : orphan::basic_conf_t<detail::use_Polynomial_ID> {};
-    template<typename T> struct new_Polynomial_coeff_t : orphan::type_conf_t<detail::new_Polynomial_coeff_t_ID, T> {};
-
-    template <typename ...Args>
-    struct SimplifyConfig {
-      static constexpr const auto use_polynomial = orphan::is_present<use_Polynomial, Args...>::value;
-      using new_polynomial_coeff_t = typename orphan::get_type<new_Polynomial_coeff_t<double>, Args...>::value;
-    };
-
-    using DefaultSimplifyConfig = SimplifyConfig<>;
-    
+  namespace symbolic {    
     //The implementations below perform basic simplification of expressions
     //
     //These simplify expressions dramatically, so they have the highest priority
@@ -436,6 +418,174 @@ namespace stator {
     simplify(const SubtractOp<Real, Variable<Letter> >& f)
     { return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(f._l), Real(-1)}; }
 
+    /*! \brief Right-handed addition operation on a Polynomial.
+      
+      This operator is only enabled if the type of the Polynomial
+      coefficients and the type being added is marked as compatitble
+      for distribution over the Polnomial coefficients. This is tested
+      using detail::distribute_poly.
+    */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const AddOp<Real1, Polynomial<Order, Real, Letter> >& f) -> Polynomial<Order, STORETYPE(f._l + f._r[0]), Letter>
+    {
+      Polynomial<Order, STORETYPE(f._l + f._r[0]), Letter> retval(f._r);
+      retval[0] += f._l;
+      return retval;
+    }
+    
+
+    /*!\brief Left-handed addition operator for Polynomials 
+
+      This operator is only enabled if the type of the Polynomial
+      coefficients and the type being added is marked as compatitble
+      for distribution over the Polnomial coefficients. This is tested
+      using detail::distribute_poly.
+    */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const AddOp<Polynomial<Order, Real, Letter>, Real1>& f) -> Polynomial<Order, STORETYPE(f._l[0] + f._r), Letter>
+    {
+      Polynomial<Order, STORETYPE(f._l[0] + f._r), Letter> retval(f._l);
+      retval[0] += f._r;
+      return retval;
+    }
+
+    /*!\brief Addition operator for two Polynomial types. 
+     */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t M, class Real2, size_t N, char Letter>
+    auto simplify(const AddOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f) -> Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] + f._r[0]), Letter>
+    {
+      Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] + f._r[0]), Letter> retval;
+
+      for (size_t i(0); i <= std::min(N, M); ++i)
+	retval[i] = f._l[i] + f._r[i];
+      
+      for (size_t i(std::min(N, M)+1); i <= N; ++i)
+	retval[i] = f._l[i];
+
+      for (size_t i(std::min(N, M)+1); i <= M; ++i)
+	retval[i] = f._r[i];
+      
+      return retval;
+    }
+
+    /*! \brief Right-handed subtraction operator for Polynomial types.
+     
+      This will reorder and convert the operation to a unary negation
+      operator with an addition if the left-handed addition form
+      exists.
+    */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const SubtractOp<Real1, Polynomial<Order, Real, Letter> >& f)
+      -> STATOR_AUTORETURN(simplify<Config>(f._l + (-f._r)));
+    
+    /*! \brief Left-handed subtraction from a Polynomial type.
+      
+      This will convert the operation to a unary negation operator
+      with an addition if the left-handed form exists.
+    */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Real1>& f)
+      -> STATOR_AUTORETURN(simplify<Config>(f._l + (-f._r)));
+
+    template<class Real1, class Real2, size_t N, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type >
+    auto operator-(const Polynomial<N,Real1,Letter>& poly, const Real2& r) 
+      -> STATOR_AUTORETURN(poly + (-r))
+
+    /*! \brief Subtraction between two Polynomial types. 
+     */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t M, class Real2, size_t N, char Letter>
+    auto simplify(const SubtractOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f) -> Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] - f._r[0]), Letter>
+    {
+      Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] - f._r[0]), Letter> retval;
+      for (size_t i(0); i <= std::min(N, M); ++i)
+	retval[i] = f._l[i] - f._r[i];
+      
+      for (size_t i(std::min(N, M)+1); i <= N; ++i)
+	retval[i] = f._l[i];
+
+      for (size_t i(std::min(N, M)+1); i <= M; ++i)
+	retval[i] = -f._r[i];
+      
+      return retval;
+    }
+
+    /*! \brief Right-handed multiplication operation on a Polynomial.
+      
+      This operator is only enabled if the type of the Polynomial
+      coefficients and the type being added is marked as compatitble
+      for distribution over the Polnomial coefficients. This is tested
+      using detail::distribute_poly.
+    */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const MultiplyOp<Real1, Polynomial<Order, Real, Letter> >& f) -> Polynomial<Order, STORETYPE(f._l * f._r[0]), Letter>
+    {
+      Polynomial<Order, STORETYPE(f._l * f._r[0]), Letter> retval;
+
+      for (size_t i(0); i <= Order; ++i)
+	retval[i] = f._l * f._r[i];
+
+      return retval;
+    }
+
+    /*! \brief Left-handed multiplication on a Polynomial.
+
+      This operator is only enabled if the type of the Polynomial
+      coefficients and the type being added is marked as compatitble
+      for distribution over the Polnomial coefficients. This is tested
+      using detail::distribute_poly.
+    */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+    auto simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Real1>& f) -> Polynomial<Order, STORETYPE(f._l[0] * f._r), Letter>
+    {
+      Polynomial<Order, STORETYPE(f._l[0] * f._r), Letter> retval;
+      for (size_t i(0); i <= Order; ++i)
+	retval[i] = f._l[i] * f._r;
+      return retval;
+    }
+
+    /*! \brief Multiplication between two Polynomial types.
+     */
+    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, char Letter>
+    auto simplify(const MultiplyOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f)
+      -> Polynomial<M + N, STORETYPE(f._l[0] * f._r[0]), Letter>
+    {
+      Polynomial<M + N, STORETYPE(f._l[0] * f._r[0]), Letter> retval;
+      for (size_t i(0); i <= N+M; ++i)
+	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
+	  retval[i] += f._l[j] * f._r[i-j];
+      return retval;
+    }
+
+    /*! \brief Specialisation for squares of matrix expressions. */
+    template<class Config = DefaultSimplifyConfig, size_t Power, class Matrix, size_t N, char Letter,
+             typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Matrix>, Matrix>::value>::type>
+    auto simplify(const PowerOp<Polynomial<N, Matrix, Letter>, Power>& f)
+      -> Polynomial<2 * N, STORETYPE(f._arg[0].dot(f.arg[0])), Letter>
+    { 
+      Polynomial<2 * N, STORETYPE(f._arg[0].dot(f._arg[0])), Letter> retval;
+      for (size_t i(0); i <= 2 * N; ++i)
+	for (size_t j(i>N?i-N:0); (j <= i) && (j <=N); ++j)
+	  retval[i] += f._arg[j].dot(f._arg[i-j]);
+      return retval;
+    }
+
+    /*! \brief Division of a Polynomial by a constant. */
+    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t N, char Letter,
+	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type>
+    auto simplify(const DivideOp<Polynomial<N, Real1, Letter>, Real2> & f) -> Polynomial<N, STORETYPE(f._l[0] / f._r), Letter>
+    {
+      Polynomial<N, STORETYPE(f._l[0] / f._r), Letter> retval;
+      for (size_t i(0); i <= N; ++i)
+	retval[i] = f._l[i] / f._r;
+      return retval;
+    }
 
     //                      FUNCTION SIMPLIFICATION
     template<class Config = DefaultSimplifyConfig, class Arg, size_t FuncID>

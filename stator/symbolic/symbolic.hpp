@@ -35,9 +35,27 @@
 #include <ratio>
 
 #include "stator/symbolic/constants.hpp"
+#include "stator/orphan/template_config.hpp"
+
 
 namespace stator {
   namespace symbolic {
+    namespace detail {
+      struct use_Polynomial_ID;
+      struct new_Polynomial_coeff_t_ID;
+    };
+
+    struct use_Polynomial : orphan::basic_conf_t<detail::use_Polynomial_ID> {};
+    template<typename T> struct new_Polynomial_coeff_t : orphan::type_conf_t<detail::new_Polynomial_coeff_t_ID, T> {};
+
+    template <typename ...Args>
+    struct SimplifyConfig {
+      static constexpr const auto use_polynomial = orphan::is_present<use_Polynomial, Args...>::value;
+      using new_polynomial_coeff_t = typename orphan::get_type<new_Polynomial_coeff_t<double>, Args...>::value;
+    };
+
+    using DefaultSimplifyConfig = SimplifyConfig<>;
+
     using stator::orphan::StackVector;
     
     namespace detail {

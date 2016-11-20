@@ -221,7 +221,7 @@ namespace stator {
       template<size_t Power>
       struct PowerOpSubstitution {
 	template<class Arg_t>
-	static auto eval(Arg_t x) 
+	static auto eval(Arg_t x)
           -> STATOR_AUTORETURN(PowerOpSubstitution<Power-1>::eval(x) * x)
       };
 

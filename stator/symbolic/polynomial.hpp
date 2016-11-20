@@ -498,14 +498,14 @@ namespace stator {
 	  os << val;
 	else if (val.cols() == 1) {
 	  os << "{ ";
-	  for (size_t i(0); i < val.rows(); ++i)
+	  for (int i(0); i < val.rows(); ++i)
 	    os << val(i, 0) << " ";
 	  os << "}^T";
 	} else {
 	  os << "{ ";
-	  for (size_t i(0); i < val.cols(); ++i) {
+	  for (int i(0); i < val.cols(); ++i) {
 	    os << "{ ";
-	    for (size_t j(0); j < val.rows(); ++j)
+	    for (int j(0); j < val.rows(); ++j)
 	      os << val(i, j) << " ";
 	    os << "} ";
 	  }

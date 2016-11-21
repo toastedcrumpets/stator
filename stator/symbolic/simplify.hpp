@@ -70,7 +70,7 @@ namespace stator {
 
     template<class C_arg, class factor, class offset = std::ratio<0> >
     struct is_whole_factor {
-      static const bool value = (std::ratio_divide<std::ratio_subtract<C_arg, offset>, factor>::den == 1);
+      static const bool value = (std::ratio_divide<std::ratio_subtract<std::ratio<C_arg::num, C_arg::den>, std::ratio<offset::num, offset::den> >, factor>::den == 1);
     };
 
     //Specialisations of sine cosine for whole multiples of pi/2

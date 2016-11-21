@@ -62,6 +62,7 @@ add_required_include(${Boost_INCLUDE_DIRS})
 ########## Eigen library detection and configuration
 ######################################################################
 include(CheckIncludeFileCXX)
+
 check_include_file_cxx(Eigen/Dense HAS_SYSTEM_EIGEN)
 if(HAS_SYSTEM_EIGEN)
   message(STATUS "Found installed Eigen library, using this.")
@@ -153,10 +154,10 @@ endfunction(stator_test)
 stator_test(stack_vector)
 
 if(CXX11_TEMPLATE_TYPEDEFS)
-  stator_test(geometry_shapes)
+  #stator_test(geometry_shapes)
   if(CXX11_TYPE_MANGLING AND CXX11_decltype_works)
     stator_test(symbolic_generic)
-    stator_test(symbolic_polynomial)
-    stator_test(symbolic_integration)
+    #stator_test(symbolic_polynomial)
+    #stator_test(symbolic_integration)
   endif()
 endif()

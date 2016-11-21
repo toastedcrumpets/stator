@@ -68,6 +68,32 @@ namespace stator {
     CREATE_FUNCTION(abs, std::abs(x), f._arg / f, "|" << f._arg << "|", 2)
     CREATE_FUNCTION(arbsign, arbsign(std::abs(x)), arbsign(Unity()), "±|" << f._arg << "|", 3)
 
+    template<class C_arg, class factor, class offset = std::ratio<0> >
+    struct is_whole_factor {
+      static const bool value = (std::ratio_divide<std::ratio_subtract<std::ratio<C_arg::num, C_arg::den>, std::ratio<offset::num, offset::den> >, std::ratio<factor::num, factor::den> >::den == 1);
+    };
+
+    //Specialisations of sine cosine for whole multiples of pi/2
+    template<std::intmax_t num, std::intmax_t den,
+	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
+    constexpr Null sin(const C<num, den>&) { return Null(); }
+
+    template<std::intmax_t num, std::intmax_t den,
+	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
+    constexpr Unity sin(const C<num, den>&) { return Unity(); }
+
+    template<std::intmax_t num, std::intmax_t den,
+	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
+    constexpr Null cos(const C<num, den>&) { return Null(); }
+
+    template<std::intmax_t num, std::intmax_t den,
+	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi >::value>::type>
+    constexpr Unity cos(const C<num, den>&) { return Unity(); }
+
+    //Removal of sign via abs on compile-time constants!
+    template<std::intmax_t num, std::intmax_t den>
+    constexpr C<((num >= 0) ? num : -num), den> abs(const C<num, den>&) { return C<((num >= 0) ? num : -num), den>(); }
+
     /////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////         Complex functions         /////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////    

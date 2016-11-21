@@ -21,17 +21,27 @@
 
 namespace stator {
   namespace symbolic {
-    namespace detail {
-      /*! \brief Symbolic representation of a binary symbolic operation. 
-       */
-      template<class LHStype, class RHStype, typename Derived>
-      struct BinaryOp{
-	LHStype _l;
-	RHStype _r;
-	BinaryOp(const LHStype& l, const RHStype& r): _l(l), _r(r) {}
-      };
+    struct BinaryOpBase {};
+    
+    /*! \brief Symbolic representation of a binary symbolic operation. 
+     */
+    template<class LHStype, class RHStype, typename Derived>
+    struct BinaryOp: BinaryOpBase, SymbolicOperator {
+      LHStype _l;
+      RHStype _r;
+      BinaryOp(const LHStype& l, const RHStype& r): _l(l), _r(r) {}
+    };
+    
+    template<class LHS, class RHS, class Derived>
+    inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, RHS, Derived>& op) {
+      os << "(" << op._l << ") " << Derived::_str <<  " (" << op._r << ")";
+      return os;
     }
-         
+
+    template<class LHS, class RHS, class Derived, char Letter, class Arg> 
+    auto substitution(BinaryOp<LHS, RHS, Derived> f, VariableSubstitution<Letter, Arg> x) 
+      -> STATOR_AUTORETURN(Derived::apply(substitution(f._l, x), substitution(f._r, x)));
+    
     /*! \brief Type trait which denotes if operations should be
         reordered to bring these types together. 
 
@@ -52,92 +62,17 @@ namespace stator {
     struct Reorder<C<n1,d1>, C<n2,d2> > {
       static const bool value = true;
     };
-
-    template<class Config> void simplify() {}
     
 #define CREATE_BINARY_OP(HELPERNAME, CLASSNAME, OP, PRINTFORM)		\
     template<class LHStype, class RHStype>				\
-    struct CLASSNAME : public detail::BinaryOp<LHStype, RHStype, CLASSNAME<LHStype, RHStype> >, SymbolicOperator { \
-      typedef detail::BinaryOp<LHStype, RHStype, CLASSNAME<LHStype, RHStype> > Base;			\
+    struct CLASSNAME : public BinaryOp<LHStype, RHStype, CLASSNAME<LHStype, RHStype> > { \
+      typedef BinaryOp<LHStype, RHStype, CLASSNAME<LHStype, RHStype> > Base;			\
       CLASSNAME(const LHStype& l, const RHStype& r): Base(l, r) {}	\
-    };									\
-									\
-    template<class LHS, class RHS, char Letter, class Arg>		\
-    auto substitution(const CLASSNAME<LHS, RHS>& f, const VariableSubstitution<Letter, Arg>& x)	\
-      -> STATOR_AUTORETURN((substitution(f._l, x)) OP (substitution(f._r, x)))	\
-    									\
-    template<class LHS, class RHS>					\
-    typename std::enable_if<!(detail::IsConstant<LHS>::value && detail::IsConstant<RHS>::value), CLASSNAME<LHS, RHS> >::type \
-    HELPERNAME(const LHS& l, const RHS& r, detail::last_choice)		\
-    { return CLASSNAME<LHS, RHS>(l, r); }				\
-									\
-    template<class LHS, class RHS>					\
-    auto HELPERNAME(const LHS& l, const RHS& r, detail::last_choice)    \
-      -> STATOR_AUTORETURN((toArithmetic(l)) OP (toArithmetic(r)))      \
-    									\
-    template<class Config, class LHS, class RHS>			\
-      auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<0>) \
-      -> STATOR_AUTORETURN((simplify<Config>(simplify<Config>(f._l)) OP (simplify<Config>(f._r)))) \
-                                                                        \
-      template<class Config, class LHS, class RHS>			\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<1>) \
-      -> STATOR_AUTORETURN(simplify<Config>((f._l) OP (simplify<Config>(f._r)))) \
-									\
-    template<class Config, class LHS, class RHS>				\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<2>) \
-      -> STATOR_AUTORETURN(simplify<Config>((simplify<Config>(f._l)) OP (f._r))) \
-									\
-      template<class Config, class LHS, class RHS>			\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<3>) \
-    -> STATOR_AUTORETURN((simplify<Config>(f._l)) OP (simplify<Config>(f._r))) \
-									\
-      template<class Config, class LHS, class RHS>			\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<4>) \
-    -> STATOR_AUTORETURN((f._l) OP (simplify<Config>(f._r)))		\
-                                                                        \
-      template<class Config, class LHS, class RHS>			\
-    auto simplify_##HELPERNAME##_impl(const CLASSNAME<LHS, RHS>& f, detail::choice<5>) \
-    -> STATOR_AUTORETURN((simplify<Config>(f._l)) OP (f._r))		\
-									\
-    template<class Config = DefaultSimplifyConfig, class LHS, class RHS>	\
-    auto simplify(const CLASSNAME<LHS, RHS>& f)\
-    -> STATOR_AUTORETURN(simplify_##HELPERNAME##_impl<Config>(f, detail::select_overload{})) \
-                                                                        \
-    /*THESE HELPERS ARE OVERLOAD LEVEL 1, TO ALLOW CANCELLATION AT LEVEL 0*/ \
-    /*! \brief Helper function which reorders (A*B)*C to (B*C)*A operations. */	\
-    template<class T1, class T2, class T3,				\
-	     typename = typename std::enable_if<Reorder<T2, T3>::value && !Reorder<T1, T2>::value>::type>	\
-      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<1>) \
-      -> CLASSNAME<decltype((l._r) OP (r)), T1>				\
-    { return HELPERNAME((l._r) OP (r), l._l, detail::select_overload{}); } \
-									\
-    /*! \brief Helper function which reorders (A*B)*C to (A*C)*B operations. */	\
-    template<class T1, class T2, class T3,				\
-	     typename = typename std::enable_if<Reorder<T1, T3>::value && !Reorder<T1, T2>::value && !Reorder<T2, T3>::value>::type>	\
-      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<1>)		\
-      -> CLASSNAME<decltype((l._l) OP (r)), T2>				\
-    { return HELPERNAME((l._l) OP (r), l._r, detail::select_overload{}); } \
-    									\
-    /*! \brief Helper function which reorders A*(B*C) to (A*B)*C operations. */	\
-    template<class T1, class T2, class T3,				\
-	     typename = typename std::enable_if<Reorder<T1, T2>::value && !Reorder<T2, T3>::value>::type> \
-      auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<1>) \
-      -> CLASSNAME<decltype((l) OP (r._l)), T3>				\
-    { return HELPERNAME((l) OP (r._l), r._r, detail::select_overload{}); } \
-									\
-    /*! \brief Helper function which reorders A*(B*C) to (A*C)*B operations. */	\
-    template<class T1, class T2, class T3,				\
-	     typename = typename std::enable_if<Reorder<T1, T3>::value  && !Reorder<T1, T2>::value  && !Reorder<T2, T3>::value>::type> \
-      auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<1>) \
-      -> CLASSNAME<decltype((l) OP (r._r)), T2>				\
-    { return HELPERNAME((l) OP (r._r), r._l, detail::select_overload{}); } \
-									\
-    template<class LHS, class RHS>					\
-    inline std::ostream& operator<<(std::ostream& os, const CLASSNAME<LHS, RHS>& op) {\
-      os << "(" << op._l << ") " PRINTFORM " (" << op._r << ")";		\
-	return os;							\
-    }
-    
+      static constexpr const char* _str = PRINTFORM;			\
+      template<class L, class R>					\
+      static auto apply(L l, R r) -> STATOR_AUTORETURN((l) OP (r));	\
+    };
+									    
     CREATE_BINARY_OP(add, AddOp, +, "+")
     CREATE_BINARY_OP(subtract, SubtractOp, -, "-")
     CREATE_BINARY_OP(multiply, MultiplyOp, *, "×")
@@ -170,30 +105,30 @@ namespace stator {
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator+(const LHS& l, const RHS& r) 
-      -> STATOR_AUTORETURN(add(l, r, detail::select_overload{}))
+      -> STATOR_AUTORETURN((AddOp<LHS, RHS>(l, r)))
 
     /*! \brief Symbolic multiplication operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator*(const LHS& l, const RHS& r) 
-      -> STATOR_AUTORETURN(multiply(l, r, detail::select_overload{}))
+      -> STATOR_AUTORETURN((MultiplyOp<LHS, RHS>(l, r)))
 
     /*! \brief Symbolic subtraction operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator-(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN(subtract(l, r, detail::select_overload{}))
+    -> STATOR_AUTORETURN((SubtractOp<LHS, RHS>(l, r)))
 
     /*! \brief Symbolic divide operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator/(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN(divide(l, r, detail::select_overload{}))
+    -> STATOR_AUTORETURN((DivideOp<LHS, RHS>(l, r)))
 
     /*! \brief Derivatives of AddOp operations.
      */
     template<char dVariable, class LHS, class RHS>
-    auto derivative(const AddOp<LHS, RHS>& f, Variable<dVariable>) 
+    auto derivative(const AddOp<LHS, RHS>& f, Variable<dVariable>)
       -> STATOR_AUTORETURN(derivative(f._l, Variable<dVariable>()) + derivative(f._r, Variable<dVariable>()))
 
     /*! \brief Derivatives of SubtractOp operations.

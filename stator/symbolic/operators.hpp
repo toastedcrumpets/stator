@@ -38,80 +38,83 @@ namespace stator {
       return os;
     }
 
-    template<class LHS, class RHS, class Derived, char Letter, class Arg> 
-    auto substitution(BinaryOp<LHS, RHS, Derived> f, VariableSubstitution<Letter, Arg> x) 
-      -> STATOR_AUTORETURN(Derived::apply(substitution(f._l, x), substitution(f._r, x)));
+    template<class LHS, class RHS, class Op, char Letter, class Arg> 
+    auto substitution(BinaryOp<LHS, RHS, Op> f, VariableSubstitution<Letter, Arg> x)
+      -> STATOR_AUTORETURN(Op::apply(substitution(f._l, x), substitution(f._r, x)));
     
-    /*! \brief Type trait which denotes if operations should be
-        reordered to bring these types together. 
+    namespace detail {
+      struct Add {
+	static constexpr bool commutative = true;
+	static constexpr bool associative = true;
+	typedef Null left_identity;
+	typedef Null right_identity;
+	static constexpr const char* _str = "+";
+	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l + r);
+      };
 
-	This is true for all arithmetic types, as operations on these
-	generally can be precalculate by the compiler into a single
-	term. All symbolic constants are also reordered.
-    */
-    template<class T1, class T2> struct Reorder {
-      static const bool value = std::is_arithmetic<T1>::value && std::is_arithmetic<T2>::value;
-    };
+      struct Subtract {
+	static constexpr bool commutative = false;
+	static constexpr bool associative = false;
+	typedef Null right_identity;
+	static constexpr const char* _str = "-";
+	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l - r);
+      };
 
-    template<char Letter1, char Letter2> 
-    struct Reorder<Variable<Letter1>, Variable<Letter2> > {
-      static const bool value = Letter1 == Letter2;
-    };
+      struct Multiply {
+	static constexpr bool commutative = true;
+	static constexpr bool associative = true;
+	typedef Unity left_identity;
+	typedef Unity right_identity;
+	typedef Null left_zero;
+	typedef Null right_zero;
+	static constexpr const char* _str = "×";
+	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l * r);
+      };
 
-    template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2> 
-    struct Reorder<C<n1,d1>, C<n2,d2> > {
-      static const bool value = true;
-    };
+      struct Divide {
+	static constexpr bool commutative = false;
+	static constexpr bool associative = false;
+	typedef Unity right_identity;
+	typedef Null left_zero;
+	static constexpr const char* _str = "÷";
+	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l / r);
+      };
+
+      struct Dot {
+	static constexpr bool commutative = false;
+	static constexpr bool associative = false;
+	static constexpr const char* _str = "•";
+	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l.dot(r));
+      };
+    }
+
+    template<class LHStype, class RHStype> using AddOp      = BinaryOp<LHStype, RHStype, detail::Add>;
+    template<class LHStype, class RHStype> using SubtractOp = BinaryOp<LHStype, RHStype, detail::Subtract>;    
+    template<class LHStype, class RHStype> using MultiplyOp = BinaryOp<LHStype, RHStype, detail::Multiply>;
+    template<class LHStype, class RHStype> using DivideOp   = BinaryOp<LHStype, RHStype, detail::Divide>;
+    template<class LHStype, class RHStype> using DotOp      = BinaryOp<LHStype, RHStype, detail::Dot>;
+
+    template <class Op, class OverOp>
+    struct left_distributive { static constexpr bool value = false; };
+
+    template <class Op, class OverOp>
+    struct right_distributive { static constexpr bool value = Op::commutative && left_distributive<Op,OverOp>::value; };
     
-    template<class LHStype, class RHStype>
-    struct AddOp : public BinaryOp<LHStype, RHStype, AddOp<LHStype, RHStype> > {
-      typedef BinaryOp<LHStype, RHStype, AddOp<LHStype, RHStype> > Base;
-      AddOp(const LHStype& l, const RHStype& r): Base(l, r) {}
-      static constexpr const char* _str = "+";
-      template<class L, class R> 
-      static auto apply(L l, R r) -> STATOR_AUTORETURN(l + r);
-    };
+    template <class Op, class OverOp>
+    struct distributive { static constexpr bool value = right_distributive<Op,OverOp>::value && left_distributive<Op,OverOp>::value; };
 
-    template<class LHStype, class RHStype>
-    struct SubtractOp : public BinaryOp<LHStype, RHStype, SubtractOp<LHStype, RHStype> > {
-      typedef BinaryOp<LHStype, RHStype, SubtractOp<LHStype, RHStype> > Base;
-      SubtractOp(const LHStype& l, const RHStype& r): Base(l, r) {}
-      static constexpr const char* _str = "-";
-      template<class L, class R> 
-      static auto apply(L l, R r) -> STATOR_AUTORETURN(l - r);
-    };
-
-    template<class LHStype, class RHStype>
-    struct MultiplyOp : public BinaryOp<LHStype, RHStype, MultiplyOp<LHStype, RHStype> > {
-      typedef BinaryOp<LHStype, RHStype, MultiplyOp<LHStype, RHStype> > Base;
-      MultiplyOp(const LHStype& l, const RHStype& r): Base(l, r) {}
-      static constexpr const char* _str = "×";
-      template<class L, class R> 
-      static auto apply(L l, R r) -> STATOR_AUTORETURN(l * r);
-    };
+    template<>
+    struct left_distributive<detail::Multiply, detail::Add> { static constexpr bool value = true; };
     
-    template<class LHStype, class RHStype>
-    struct DivideOp : public BinaryOp<LHStype, RHStype, DivideOp<LHStype, RHStype> > {
-      typedef BinaryOp<LHStype, RHStype, DivideOp<LHStype, RHStype> > Base;
-      DivideOp(const LHStype& l, const RHStype& r): Base(l, r) {}
-      static constexpr const char* _str = "÷";
-      template<class L, class R> 
-      static auto apply(L l, R r) -> STATOR_AUTORETURN(l / r);
-    };
+    template<>
+    struct left_distributive<detail::Dot, detail::Add> { static constexpr bool value = true; };
 
-    template<class LHStype, class RHStype>
-    struct DotOp : public BinaryOp<LHStype, RHStype, DotOp<LHStype, RHStype> > {
-      typedef BinaryOp<LHStype, RHStype, DotOp<LHStype, RHStype> > Base;
-      DotOp(const LHStype& l, const RHStype& r): Base(l, r) {}
-      static constexpr const char* _str = "•";
-      template<class L, class R> 
-      static auto apply(L l, R r) -> STATOR_AUTORETURN(l.dot(r));
-    };
+    template<>
+    struct right_distributive<detail::Divide, detail::Add> { static constexpr bool value = true; };
 
     /*! \name Symbolic algebra
       \{
     */
-
     /*! \brief Simple combination rule to enable Symbolic operations,
         but avoid redundantly specifying where two SymbolicOperator
         classes are operated on. */

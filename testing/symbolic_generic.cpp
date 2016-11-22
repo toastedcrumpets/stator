@@ -220,16 +220,16 @@ BOOST_AUTO_TEST_CASE( reorder_operations )
   BOOST_CHECK(!compare_expression(x, sin(x), false));
 
   //Here we're looking for the two Polynomial terms to be reordered
-  BOOST_CHECK(compare_expression((sin(2*x) * x) * x, x * x * sin(2*x)));
-  BOOST_CHECK(compare_expression((x * sin(2*x)) * x, x * x * sin(2*x)));
-  BOOST_CHECK(compare_expression(x * (sin(2*x) * x), x * x * sin(2*x)));
-  BOOST_CHECK(compare_expression(x * (x * sin(2*x)), x * x * sin(2*x)));
+  BOOST_CHECK(compare_expression(simplify((sin(2*x) * x) * x), sin(2*x) * pow<2>(x)));
+  BOOST_CHECK(compare_expression(simplify((x * sin(2*x)) * x), pow<2>(x) * sin(2*x)));
+  BOOST_CHECK(compare_expression(simplify(x * (sin(2*x) * x)), pow<2>(x) * sin(2*x)));
+  BOOST_CHECK(compare_expression(simplify(x * (x * sin(2*x))), pow<2>(x) * sin(2*x)));
 
   //Here we check that constants (such as 2) will become Null
   //types when the derivative is taken, causing their terms to be
   //eliminated.
-  BOOST_CHECK(compare_expression(derivative(C<2>() * cos(x), Variable<'x'>()), C<-2>() * sin(x)));
-  BOOST_CHECK(compare_expression(derivative(2 * sin(x), Variable<'x'>()), 2 * cos(x)));
+  BOOST_CHECK(compare_expression(simplify(derivative(C<2>() * cos(x), Variable<'x'>())), C<-2>() * sin(x)));
+  BOOST_CHECK(compare_expression(simplify(derivative(2 * sin(x), Variable<'x'>())), 2 * cos(x)));
 }
 
 BOOST_AUTO_TEST_CASE( Factorial_test )

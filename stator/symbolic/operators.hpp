@@ -63,21 +63,50 @@ namespace stator {
       static const bool value = true;
     };
     
-#define CREATE_BINARY_OP(HELPERNAME, CLASSNAME, OP, PRINTFORM)		\
-    template<class LHStype, class RHStype>				\
-    struct CLASSNAME : public BinaryOp<LHStype, RHStype, CLASSNAME<LHStype, RHStype> > { \
-      typedef BinaryOp<LHStype, RHStype, CLASSNAME<LHStype, RHStype> > Base;			\
-      CLASSNAME(const LHStype& l, const RHStype& r): Base(l, r) {}	\
-      static constexpr const char* _str = PRINTFORM;			\
-      template<class L, class R>					\
-      static auto apply(L l, R r) -> STATOR_AUTORETURN((l) OP (r));	\
+    template<class LHStype, class RHStype>
+    struct AddOp : public BinaryOp<LHStype, RHStype, AddOp<LHStype, RHStype> > {
+      typedef BinaryOp<LHStype, RHStype, AddOp<LHStype, RHStype> > Base;
+      AddOp(const LHStype& l, const RHStype& r): Base(l, r) {}
+      static constexpr const char* _str = "+";
+      template<class L, class R> 
+      static auto apply(L l, R r) -> STATOR_AUTORETURN(l + r);
     };
-									    
-    CREATE_BINARY_OP(add, AddOp, +, "+")
-    CREATE_BINARY_OP(subtract, SubtractOp, -, "-")
-    CREATE_BINARY_OP(multiply, MultiplyOp, *, "×")
-    CREATE_BINARY_OP(divide, DivideOp, /, "÷")
-    CREATE_BINARY_OP(dot, DotOp, .dot , "•")
+
+    template<class LHStype, class RHStype>
+    struct SubtractOp : public BinaryOp<LHStype, RHStype, SubtractOp<LHStype, RHStype> > {
+      typedef BinaryOp<LHStype, RHStype, SubtractOp<LHStype, RHStype> > Base;
+      SubtractOp(const LHStype& l, const RHStype& r): Base(l, r) {}
+      static constexpr const char* _str = "-";
+      template<class L, class R> 
+      static auto apply(L l, R r) -> STATOR_AUTORETURN(l - r);
+    };
+
+    template<class LHStype, class RHStype>
+    struct MultiplyOp : public BinaryOp<LHStype, RHStype, MultiplyOp<LHStype, RHStype> > {
+      typedef BinaryOp<LHStype, RHStype, MultiplyOp<LHStype, RHStype> > Base;
+      MultiplyOp(const LHStype& l, const RHStype& r): Base(l, r) {}
+      static constexpr const char* _str = "×";
+      template<class L, class R> 
+      static auto apply(L l, R r) -> STATOR_AUTORETURN(l * r);
+    };
+    
+    template<class LHStype, class RHStype>
+    struct DivideOp : public BinaryOp<LHStype, RHStype, DivideOp<LHStype, RHStype> > {
+      typedef BinaryOp<LHStype, RHStype, DivideOp<LHStype, RHStype> > Base;
+      DivideOp(const LHStype& l, const RHStype& r): Base(l, r) {}
+      static constexpr const char* _str = "÷";
+      template<class L, class R> 
+      static auto apply(L l, R r) -> STATOR_AUTORETURN(l / r);
+    };
+
+    template<class LHStype, class RHStype>
+    struct DotOp : public BinaryOp<LHStype, RHStype, DotOp<LHStype, RHStype> > {
+      typedef BinaryOp<LHStype, RHStype, DotOp<LHStype, RHStype> > Base;
+      DotOp(const LHStype& l, const RHStype& r): Base(l, r) {}
+      static constexpr const char* _str = "•";
+      template<class L, class R> 
+      static auto apply(L l, R r) -> STATOR_AUTORETURN(l.dot(r));
+    };
 
     /*! \name Symbolic algebra
       \{

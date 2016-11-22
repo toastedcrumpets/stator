@@ -66,6 +66,22 @@ namespace stator {
       return os << ">()";
     }
     
+    /*! \brief Output operator specialised for one quarter.*/
+    inline std::ostream& operator<<(std::ostream& os, const C<1,4>) {
+      return (os << "¼");
+      
+    }
+
+    /*! \brief Output operator specialised for one half.*/
+    inline std::ostream& operator<<(std::ostream& os, const C<1,2>) {
+      return (os << "½");
+    }
+
+    /*! \brief Output operator specialised for three quarters.*/
+    inline std::ostream& operator<<(std::ostream& os, const C<3,4>) {
+      return (os << "¾");
+    }
+    
     /*! \brief Specialized output operator for \f$\pi\f$.*/
     inline std::ostream& operator<<(std::ostream& os, const pi) { os << "π"; return os; }
     /*! \brief Specialized output operator for \f$\mathrm{e}\f$.*/

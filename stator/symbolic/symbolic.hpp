@@ -127,26 +127,6 @@ namespace stator {
       return T::Zero();
     }
 
-    /*! \brief Evaluates a symbolic expression by substituting a
-      variable for another expression.
-	
-      If a arithmetic type is substituted, this will likely cause a
-      numerical evaluation of the expression. This "helper"
-      implementation converts to a substitution for the variable
-      'x'.
-    */
-    template<class T, class VarArg>
-    auto eval(const T& f, const VarArg& xval) 
-      -> STATOR_AUTORETURN(substitution(f, Variable<'x'>() == xval))
-
-    /*! \brief Evaluates a symbolic expression using a substitution.
-      
-      This is just a synonym for substitution.
-    */
-    template<class T, char Letter, class Arg>
-    auto eval(const T& f, const VariableSubstitution<Letter, Arg>& x)
-      -> STATOR_AUTORETURN(substitution(f, x))
-    
     /*! \brief Default implementation of substitution of a symbolic
       expression at a given point.
       

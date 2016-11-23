@@ -62,15 +62,15 @@ bool compare_expression(const T1& f, const T2& g, bool output_error=true) {
 
 BOOST_AUTO_TEST_CASE( symbolic_C )
 {
+  Variable<'x'> x;
   Check_Type<decltype(Unity() * Unity()), Unity>();
   Check_Type<decltype(Unity() + Unity()), C<2>>();
   Check_Type<decltype(Unity() + Null()), Unity>();
   Check_Type<decltype(Null() + Unity()), Unity>();
-  Check_Type<std::decay<decltype(eval(Unity(), 100))>::type, Unity>();
+  Check_Type<std::decay<decltype(substitution(Unity(), x == 100))>::type, Unity>();
 
   Check_Type<decltype(Unity() * Null()), Null>();
 
-  Variable<'x'> x;
   Check_Type<std::decay<decltype(substitution(C<5>(), x == 2))>::type, C<5>>();
   Check_Type<decltype((C<5>() - C<3>() - C<2>()) * x), Null>();
 
@@ -136,12 +136,12 @@ BOOST_AUTO_TEST_CASE( function_basic )
   BOOST_CHECK_CLOSE(substitution(2 * x, x==0.5), 1.0, 1e-10);
   
     
-  BOOST_CHECK_CLOSE(eval(stator::symbolic::sin(x), 0.5), std::sin(0.5), 1e-10);
-  BOOST_CHECK_CLOSE(eval(stator::symbolic::cos(x), 0.5), std::cos(0.5), 1e-10);
+  BOOST_CHECK_CLOSE(substitution(stator::symbolic::sin(x), x==0.5), std::sin(0.5), 1e-10);
+  BOOST_CHECK_CLOSE(substitution(stator::symbolic::cos(x), x==0.5), std::cos(0.5), 1e-10);
 
   //Test BinaryOP Addition and subtraction
-  BOOST_CHECK_CLOSE(eval(x * sin(x) + x, 0.5), 0.5 * std::sin(0.5) + 0.5, 1e-10);
-  BOOST_CHECK_CLOSE(eval(x * sin(x) - x, 0.5), 0.5 * std::sin(0.5) - 0.5, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(x * sin(x) + x, x==0.5), 0.5 * std::sin(0.5) + 0.5, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(x * sin(x) - x, x==0.5), 0.5 * std::sin(0.5) - 0.5, 1e-10);
 }
 
 BOOST_AUTO_TEST_CASE( function_multiplication )
@@ -149,19 +149,19 @@ BOOST_AUTO_TEST_CASE( function_multiplication )
   Variable<'x'> x;
   //Check function and Polynomial multiplication
   auto poly1 = sin(x + x) * x;
-  BOOST_CHECK_CLOSE(eval(poly1, 0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(poly1, x==0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
   auto poly2 = x * sin(x + x);
-  BOOST_CHECK_CLOSE(eval(poly2, 0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(poly2, x==0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
 }
 
 BOOST_AUTO_TEST_CASE( function_derivatives )
 {
   Variable<'x'> x;
   //Check function and Polynomial derivatives
-  auto f1 = derivative(x * sin(x), Variable<'x'>());
-  BOOST_CHECK_CLOSE(eval(f1, 0.5), std::sin(0.5) + 0.5 * std::cos(0.5), 1e-10);
-  auto f2 = derivative(x * cos(x), Variable<'x'>());
-  BOOST_CHECK_CLOSE(eval(f2, 0.5), -0.5 * std::sin(0.5) + std::cos(0.5), 1e-10);
+  auto f1 = derivative(x * sin(x), x);
+  BOOST_CHECK_CLOSE(substitution(f1, x==0.5), std::sin(0.5) + 0.5 * std::cos(0.5), 1e-10);
+  auto f2 = derivative(x * cos(x), x);
+  BOOST_CHECK_CLOSE(substitution(f2, x==0.5), -0.5 * std::sin(0.5) + std::cos(0.5), 1e-10);
 }
 
 BOOST_AUTO_TEST_CASE( power_basic )
@@ -170,13 +170,13 @@ BOOST_AUTO_TEST_CASE( power_basic )
   BOOST_CHECK(pow<3>(3) == 27);
   BOOST_CHECK(pow<2>(Vector{0,1,2}) == 5);
 
-  BOOST_CHECK_CLOSE(substitution(pow<3>(x), Variable<'x'>()==4.0), 4.0*4.0*4.0, 1e-10);
-  BOOST_CHECK_CLOSE(eval(pow<3>(x), 0.75), std::pow(0.75, 3), 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow<3>(x), x==4.0), 4.0*4.0*4.0, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow<3>(x), x==0.75), std::pow(0.75, 3), 1e-10);
 
   //Test PowerOp algebraic operations
-  BOOST_CHECK_CLOSE(eval(pow<3>(x) - x, 0.75), std::pow(0.75, 3) - 0.75, 1e-10);
-  BOOST_CHECK_CLOSE(eval(pow<3>(x) + x, 0.75), std::pow(0.75, 3) + 0.75, 1e-10);
-  BOOST_CHECK_CLOSE(eval(pow<3>(x) * x, 0.75), std::pow(0.75, 3) * 0.75, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow<3>(x) - x, x==0.75), std::pow(0.75, 3) - 0.75, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow<3>(x) + x, x==0.75), std::pow(0.75, 3) + 0.75, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow<3>(x) * x, x==0.75), std::pow(0.75, 3) * 0.75, 1e-10);
 
   //Check special case derivatives
   Check_Type<decltype(derivative(pow<1>(x), Variable<'x'>())), Unity>();
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE( Var_tests )
   BOOST_CHECK(compare_expression(substitution(y, x == 3.14159265), "y"));
 
   //Check default substitution is for x
-  BOOST_CHECK(compare_expression(eval(y, 3.14159265), "y"));
+  BOOST_CHECK(compare_expression(substitution(y, x == 3.14159265), "y"));
 
   //Check that Var derivatives are correct
   BOOST_CHECK(compare_expression(simplify(derivative(sin(x), Variable<'x'>())), cos(x)));
@@ -246,25 +246,25 @@ BOOST_AUTO_TEST_CASE( Factorial_test )
 }
 
 
-//BOOST_AUTO_TEST_CASE( vector_symbolic )
-//{
-//  static_assert(stator::symbolic::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
-//  
-//  BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<'x'>()), Null()));
-//  BOOST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
-//  BOOST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
-//
-//  Variable<'x'> x;
-//
-//  const size_t testcount = 100;
-//  const double errlvl = 1e-10;
-//
-//  Vector test1 = substitution(Vector{0,1,2} * x, x == 2);
+BOOST_AUTO_TEST_CASE( vector_symbolic )
+{
+  static_assert(stator::symbolic::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
+  
+  BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<'x'>()), Null()));
+  BOOST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
+  BOOST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
+
+  Variable<'x'> x;
+
+  const size_t testcount = 100;
+  const double errlvl = 1e-10;
+
+  Vector test1 = substitution(Vector{0,1,2} * x, x == 2);
 //  BOOST_CHECK(test1[0] == 0);
 //  BOOST_CHECK(test1[1] == 2);
 //  BOOST_CHECK(test1[2] == 4);
 //
-//  //A tough test is to implement the Rodriugues formula symbolically.
+//  //Implementation of the Rodriugues formula symbolically.
 //  RNG.seed();
 //  for (size_t i(0); i < testcount; ++i)
 //    {
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE( Factorial_test )
 //      
 //      Vector r = axis * axis.dot(start);
 //      auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
-//      Vector err = end - eval(f, angle);
+//      Vector err = end - substitution(f, x==angle);
 //      
 //      BOOST_CHECK(std::abs(err[0]) < errlvl);
 //      BOOST_CHECK(std::abs(err[1]) < errlvl);
@@ -283,8 +283,8 @@ BOOST_AUTO_TEST_CASE( Factorial_test )
 //    }
 //
 //  BOOST_CHECK(toArithmetic(Vector{1,2,3}) == (Vector{1,2,3}));
-//  BOOST_CHECK(dot(Vector{1,2,3} , Vector{4,5,6}, stator::symbolic::detail::select_overload{}) == 32);
-//}
+//  BOOST_CHECK(simplify(dot(Vector{1,2,3} , Vector{4,5,6})) == 32);
+}
 
 BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )
 {

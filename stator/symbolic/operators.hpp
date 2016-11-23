@@ -94,6 +94,9 @@ namespace stator {
     template<class LHStype, class RHStype> using DivideOp   = BinaryOp<LHStype, RHStype, detail::Divide>;
     template<class LHStype, class RHStype> using DotOp      = BinaryOp<LHStype, RHStype, detail::Dot>;
 
+    template<class LHStype, class RHStype>
+    auto dot(const LHStype& l, const RHStype& r) -> STATOR_AUTORETURN((DotOp<LHStype, RHStype>(l, r)));
+
     template <class Op, class OverOp>
     struct left_distributive { static constexpr bool value = false; };
 

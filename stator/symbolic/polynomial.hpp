@@ -258,7 +258,8 @@ namespace stator {
 	     typename = typename std::enable_if<(std::is_arithmetic<Real2>::value
                                                  && !std::is_base_of<Eigen::EigenBase<Real>, Real>::value
                                                  && !std::is_base_of<Eigen::EigenBase<Real2>, Real2>::value)>::type>
-    STORETYPE(Real() * Real2()) substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
+    typename StoreType<decltype(Real() * Real2())>::type
+    substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
     {
       //Handle the case where this is actually a constant and not a
       //Polynomial. This is free to evaluate now as Order is a
@@ -286,7 +287,8 @@ namespace stator {
 	return f[0];
       }
 
-      typedef STORETYPE(Real() * Real2()) RetType;
+      
+      typedef typename StoreType<decltype(Real() * Real2())>::type RetType;
       RetType sum = RetType();
       for(size_t i = Order; i > 0; --i)
 	sum = sum * x + f[i];

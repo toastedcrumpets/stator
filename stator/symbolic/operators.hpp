@@ -256,7 +256,7 @@ namespace stator {
     /*! \brief Specialisation for squares of matrix expressions. */
     template<size_t Power, class Arg,
              typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
-      auto pow(const Arg& f) 
+      auto pow(const Arg& f)
       -> STATOR_AUTORETURN_BYVALUE(f.dot(f))
 
     /*! \} */

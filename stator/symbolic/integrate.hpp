@@ -30,7 +30,7 @@
 namespace stator {
   namespace symbolic {
     
-#define IS_CONSTANT(f, letter) std::is_same<STORETYPE(derivative(f, Variable<letter>())), Null>::value
+#define IS_CONSTANT(f, letter) std::is_same<typename StoreType<decltype(derivative(f, Variable<letter>()))>::type, Null>::value
 
     /*! \brief Integration of any constant/independent expression.
       
@@ -39,7 +39,7 @@ namespace stator {
     */
     template<char letter, class T>
     auto integrate(const T& a, Variable<letter>)
-      -> typename std::enable_if<IS_CONSTANT(a, letter), STORETYPE(a * Variable<letter>())>::type
+      -> typename std::enable_if<IS_CONSTANT(a, letter), typename StoreType<decltype(a * Variable<letter>())>::type>::type
     { return a * Variable<letter>(); }
 
     /*! \brief Distributive integration over addition. */
@@ -55,13 +55,13 @@ namespace stator {
     /*! \brief distribute integration through LHS constant multiplication. */
     template<char Letter, class LHS, class RHS>
     auto integrate(const MultiplyOp<LHS, RHS>& a, Variable<Letter> x)
-      -> typename std::enable_if<IS_CONSTANT(a._l, Letter), STORETYPE(a._l * integrate(a._r, x))>::type
+      -> typename std::enable_if<IS_CONSTANT(a._l, Letter), typename StoreType<decltype(a._l * integrate(a._r, x))>::type>::type
     { return a._l * integrate(a._r, x); }
 
     /*! \brief distribute integration through RHS constant multiplication. */
     template<char Letter, class LHS, class RHS>
     auto integrate(const MultiplyOp<LHS, RHS>& a, Variable<Letter> x)
-      -> typename std::enable_if<IS_CONSTANT(a._r, Letter), STORETYPE(integrate(a._l, x) * a._r)>::type
+      -> typename std::enable_if<IS_CONSTANT(a._r, Letter), typename StoreType<decltype(integrate(a._l, x) * a._r)>::type>::type
     { return integrate(a._l, x) * a._r; }
     
     /*! \brief Integration of \$x\$ by \$x\$.*/

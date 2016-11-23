@@ -41,6 +41,7 @@
 namespace stator {
   namespace symbolic {
     using stator::orphan::StackVector;
+    using stator::detail::StoreType;
     
     namespace detail {
       using stator::detail::choice;

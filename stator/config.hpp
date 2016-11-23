@@ -23,6 +23,54 @@
 #pragma once
 #include <Eigen/Dense>
 
+namespace stator {
+  /*! \brief A convenience typedef for a non-aligned Eigen Matrix.*/
+  template<typename Scalar, size_t D1, size_t D2> using Matrix = Eigen::Matrix<Scalar, D1, D2, Eigen::DontAlign>;
+  
+  /*! \brief A convenience typedef for a non-aligned Eigen Vector.*/
+  template<typename Scalar, size_t D> using Vector = Matrix<Scalar, D, 1>;
+  
+  namespace detail {
+
+    /*! \brief A class which recursively inherits from itself to allow ambiguous function definition ordering.*/
+    template<unsigned I> struct choice : choice<I+1>{};
+    
+    /*! \brief The lowest-priority overload level.*/
+    static const int LAST_OVERLOAD_LVL = 10;
+
+    /*! \brief The lowest-priority overload level (closing the recursion)*/
+    template<> struct choice<LAST_OVERLOAD_LVL> {};
+
+    typedef choice<LAST_OVERLOAD_LVL> last_choice;
+
+    /*! \brief A class used to start the ambiguous function definition ordering calculation. */
+    struct select_overload : choice<0>{};
+
+    /*!  Determine the type which can permanently store the passed
+      Type (an extension of std::decay).
+      
+      This should determine the underlying type which is capable of
+      storing a given type. Generally, this is just std::decay;
+      however, libraries (such as Eigen) uses delayed evaluation thus
+      we need to determine the resulting type to avoid aliasing
+      issues.
+      
+	\code{.cpp}
+	StoreType<decltype(A + B)>::type val = A + B;
+	\endcode
+    */
+    template<class T, class = void >
+    struct StoreType {
+      typedef typename std::decay<T>::type type;
+    };
+
+    template<class T>
+    struct StoreType<T, decltype(std::declval<T>().eval())> {
+      typedef typename std::decay<decltype(std::declval<T>().eval())>::type type;
+    };
+  } // namespace detail
+} // namespace stator
+
 /*! \brief A convenience Macro for defining auto return type functions.
 
   A fully generic addition function is written like so
@@ -48,89 +96,11 @@
 */
 #define STATOR_AUTORETURN(EXPR) decltype(EXPR) { return EXPR; }
 
-namespace stator {
-  /*! \brief A convenience typedef for a non-aligned Eigen Matrix.*/
-  template<typename Scalar, size_t D1, size_t D2> using Matrix = Eigen::Matrix<Scalar, D1, D2, Eigen::DontAlign>;
-  
-  /*! \brief A convenience typedef for a non-aligned Eigen Vector.*/
-  template<typename Scalar, size_t D> using Vector = Matrix<Scalar, D, 1>;
-  
-  namespace detail {
-
-    /*! \brief A class which recursively inherits from itself to allow ambiguous function definition ordering.*/
-    template<unsigned I> struct choice : choice<I+1>{};
-    
-    /*! \brief The lowest-priority overload level.*/
-    static const int LAST_OVERLOAD_LVL = 10;
-
-    /*! \brief The lowest-priority overload level (closing the recursion)*/
-    template<> struct choice<LAST_OVERLOAD_LVL> {};
-
-    typedef choice<LAST_OVERLOAD_LVL> last_choice;
-
-    /*! \brief A class used to start the ambiguous function definition ordering calculation. */
-    struct select_overload : choice<0>{};
-
-    template<class T, class = void >
-    struct StoreType {
-      typedef typename std::decay<T>::type type;
-    };
-
-    template<class T>
-    struct StoreType<T, typename std::result_of<decltype(&T::eval)()>::type> {
-      typedef typename std::decay<typename std::result_of<decltype(&T::eval)()>::type>::type type;
-    };
-      
-    
-    /*! \brief The preferred implementation of try_eval().
-    
-      This takes a higher precedence to the try_eval implementation
-      below due to not requiring a conversion for the second
-      argument (when called as try_eval_imp(a, 0)).
-    */
-    template<class T>
-    auto try_Eigen_eval_imp(const T& a, choice<0>) -> STATOR_AUTORETURN(a.eval());
-
-    /*! \brief The backup implementation of try_eval().
-        
-      This takes a lower precedence to the above try_eval due to the
-      implicit conversion from int->long for the second argument.
-    */
-    template<class T>
-    T try_Eigen_eval_imp(T a, choice<1>) { return a; }
-
-    /*!\brief Returns the result of calling the eval() member function
-      (if available) on the passed argument, or the unmodified
-      argument (if not).
-    */
-    template<class T>
-    auto try_Eigen_eval(const T& a) -> STATOR_AUTORETURN(detail::try_Eigen_eval_imp(a, select_overload{}));
-  } // namespace detail
-} // namespace stator
-
-
-/*! Determine the type used to store the result of an expression.
-  
-  This Macro handles everything, including Eigen expressions, and
-  returns an appropriate type to store the results of the expression
-  A. Example usage is:
-  
-  \code{.cpp}
-  STORETYPE(A.dot(B) + C) val = A.dot(B) + C;
-  \endcode
-
-  This macro is often used to determine the coefficient type of a
-  Polynomial class.
-*/
-#define STORETYPE(A) typename std::decay<decltype(stator::detail::try_Eigen_eval(A))>::type
-
-#define AS_STORETYPE(A) STORETYPE(A)(A)
-
 /*! \brief A convenience Macro for defining auto by-value return type functions.
 
   This macro is identical to STATOR_AUTORETURN, except it ensures the
   return values are by reference. It does this by using the STORETYPE
   macro to calculate the return type.
 */
-#define STATOR_AUTORETURN_BYVALUE(EXPR) STORETYPE(EXPR) { return EXPR; }
+#define STATOR_AUTORETURN_BYVALUE(EXPR) STATOR_AUTORETURN(typename stator::detail::StoreType<decltype(EXPR)>::type (EXPR))
 

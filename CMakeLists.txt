@@ -109,16 +109,9 @@ int unwrap(int a) { return 1; }
 template <typename T> auto unwrap(T t) -> decltype(unwrap(unwrap1(t))) { return unwrap(unwrap1(t)); }
 int main() { unwrap(wrapped<wrapped<int>>()); }" CXX11_TYPE_MANGLING)
 
-check_cxx_source_compiles("#include <stator/symbolic/symbolic.hpp>
-    int main() { using namespace stator::symbolic; Variable<'x'> x; simplify(x+(x-1)); }" CXX11_decltype_works)
-
 #Complain about missing functionality
 if(NOT CXX11_TYPE_MANGLING)
-  message(WARNING "Although the compiler advertises support for C++0x/C++11, this support is limited (e.g., gcc-4.7 or lower). You can only test a reduced section of stator (no symbolic math).")
-endif()
-
-if(NOT CXX11_decltype_works)
-  message(WARNING "Although the compiler advertises support for C++0x/11, this support contains bugs (e.g., gcc-4.8.2). You can only test a reduced section of stator (no symbolic math).")
+  message(SEND_ERROR "C++11 decltype seems not to be working properly, please install a more modern C++ compiler.")
 endif()
 
 unset(CMAKE_REQUIRED_FLAGS)
@@ -155,9 +148,7 @@ stator_test(stack_vector)
 
 if(CXX11_TEMPLATE_TYPEDEFS)
   #stator_test(geometry_shapes)
-  if(CXX11_TYPE_MANGLING AND CXX11_decltype_works)
-    stator_test(symbolic_generic)
-    #stator_test(symbolic_polynomial)
-    #stator_test(symbolic_integration)
-  endif()
+  stator_test(symbolic_generic)
+  #stator_test(symbolic_polynomial)
+  #stator_test(symbolic_integration)
 endif()

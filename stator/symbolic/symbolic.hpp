@@ -41,7 +41,7 @@
 namespace stator {
   namespace symbolic {
     using stator::orphan::StackVector;
-    using stator::detail::StoreType;
+    using stator::detail::store;
     
     namespace detail {
       using stator::detail::choice;
@@ -141,17 +141,15 @@ namespace stator {
     */
     template<class T, char Letter, class Arg,
 	     typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-    const T& substitution(const T& f, const VariableSubstitution<Letter, Arg>&)
-    { return f; }
-
+    auto substitution(const T& f, const VariableSubstitution<Letter, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
+    
     /*! \brief Evaluates a symbolic Variable at a given point.
       
       This is only used if the Variable is the correct letter for the
       substitution.
     */
     template<char Letter, class Arg>
-    const Arg& substitution(const Variable<Letter>& f, const VariableSubstitution<Letter, Arg>& x)
-    { return x._val; }
+    auto substitution(const Variable<Letter>& f, const VariableSubstitution<Letter, Arg>& x) -> STATOR_AUTORETURN_BYVALUE(x._val);
 
     /*! \brief Evaluates a symbolic Variable at a given point.
       

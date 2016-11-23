@@ -25,11 +25,11 @@ namespace stator {
     
     /*! \brief Symbolic representation of a binary symbolic operation. 
      */
-    template<class LHStype, class RHStype, typename Derived>
+    template<class LHS, class RHS, typename Op>
     struct BinaryOp: BinaryOpBase, SymbolicOperator {
-      LHStype _l;
-      RHStype _r;
-      BinaryOp(const LHStype& l, const RHStype& r): _l(l), _r(r) {}
+      LHS _l;
+      RHS _r;
+      BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
     };
     
     template<class LHS, class RHS, class Derived>
@@ -40,7 +40,7 @@ namespace stator {
 
     template<class LHS, class RHS, class Op, char Letter, class Arg> 
     auto substitution(BinaryOp<LHS, RHS, Op> f, VariableSubstitution<Letter, Arg> x)
-      -> STATOR_AUTORETURN(Op::apply(substitution(f._l, x), substitution(f._r, x)));
+      -> STATOR_AUTORETURN_BYVALUE(Op::apply(substitution(f._l, x), substitution(f._r, x)));
     
     namespace detail {
       struct Add {
@@ -88,14 +88,14 @@ namespace stator {
       };
     }
 
-    template<class LHStype, class RHStype> using AddOp      = BinaryOp<LHStype, RHStype, detail::Add>;
-    template<class LHStype, class RHStype> using SubtractOp = BinaryOp<LHStype, RHStype, detail::Subtract>;    
-    template<class LHStype, class RHStype> using MultiplyOp = BinaryOp<LHStype, RHStype, detail::Multiply>;
-    template<class LHStype, class RHStype> using DivideOp   = BinaryOp<LHStype, RHStype, detail::Divide>;
-    template<class LHStype, class RHStype> using DotOp      = BinaryOp<LHStype, RHStype, detail::Dot>;
+    template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, RHS, detail::Add>;
+    template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, RHS, detail::Subtract>;    
+    template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, RHS, detail::Multiply>;
+    template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, RHS, detail::Divide>;
+    template<class LHS, class RHS> using DotOp      = BinaryOp<LHS, RHS, detail::Dot>;
 
-    template<class LHStype, class RHStype>
-    auto dot(const LHStype& l, const RHStype& r) -> STATOR_AUTORETURN((DotOp<LHStype, RHStype>(l, r)));
+    template<class LHS, class RHS>
+    auto dot(const LHS& l, const RHS& r) -> STATOR_AUTORETURN((DotOp<decltype(store(l)), decltype(store(r))>(l, r)));
 
     template <class Op, class OverOp>
     struct left_distributive { static constexpr bool value = false; };
@@ -140,25 +140,25 @@ namespace stator {
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator+(const LHS& l, const RHS& r) 
-      -> STATOR_AUTORETURN((AddOp<LHS, RHS>(l, r)))
+      -> STATOR_AUTORETURN((AddOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
     /*! \brief Symbolic multiplication operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator*(const LHS& l, const RHS& r) 
-      -> STATOR_AUTORETURN((MultiplyOp<LHS, RHS>(l, r)))
+      -> STATOR_AUTORETURN((MultiplyOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
     /*! \brief Symbolic subtraction operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator-(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((SubtractOp<LHS, RHS>(l, r)))
+    -> STATOR_AUTORETURN((SubtractOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
     /*! \brief Symbolic divide operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator/(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((DivideOp<LHS, RHS>(l, r)))
+    -> STATOR_AUTORETURN((DivideOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
     /*! \brief Derivatives of AddOp operations.
      */

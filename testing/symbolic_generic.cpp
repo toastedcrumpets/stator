@@ -67,6 +67,7 @@ BOOST_AUTO_TEST_CASE( symbolic_C )
   Check_Type<decltype(Unity() + Unity()), C<2>>();
   Check_Type<decltype(Unity() + Null()), Unity>();
   Check_Type<decltype(Null() + Unity()), Unity>();
+
   Check_Type<std::decay<decltype(substitution(Unity(), x == 100))>::type, Unity>();
 
   Check_Type<decltype(Unity() * Null()), Null>();
@@ -134,10 +135,9 @@ BOOST_AUTO_TEST_CASE( function_basic )
   Variable<'x'> x;
   //Check basic Function operation
   BOOST_CHECK_CLOSE(substitution(2 * x, x==0.5), 1.0, 1e-10);
-  
     
-  BOOST_CHECK_CLOSE(substitution(stator::symbolic::sin(x), x==0.5), std::sin(0.5), 1e-10);
-  BOOST_CHECK_CLOSE(substitution(stator::symbolic::cos(x), x==0.5), std::cos(0.5), 1e-10);
+  BOOST_CHECK_CLOSE(substitution(sin(x), x==0.5), std::sin(0.5), 1e-10);
+  BOOST_CHECK_CLOSE(substitution(cos(x), x==0.5), std::cos(0.5), 1e-10);
 
   //Test BinaryOP Addition and subtraction
   BOOST_CHECK_CLOSE(substitution(x * sin(x) + x, x==0.5), 0.5 * std::sin(0.5) + 0.5, 1e-10);
@@ -260,34 +260,31 @@ BOOST_AUTO_TEST_CASE( vector_symbolic )
   const double errlvl = 1e-10;
 
   Vector test1 = substitution(Vector{0,1,2} * x, x == 2);
-
-  //std::result_of<decltype(&decltype(Vector{0,1,2} + Vector{2,3,4})::eval)()>::type;
-  typedef decltype(Vector{0,1,2} + Vector{2,3,4}) Type;
   
-//  BOOST_CHECK(test1[0] == 0);
-//  BOOST_CHECK(test1[1] == 2);
-//  BOOST_CHECK(test1[2] == 4);
-//
-//  //Implementation of the Rodriugues formula symbolically.
-//  RNG.seed();
-//  for (size_t i(0); i < testcount; ++i)
-//    {
-//      double angle = angle_dist(RNG);
-//      Vector axis = random_unit_vec().normalized();
-//      Vector start = random_unit_vec();
-//      Vector end = Eigen::AngleAxis<double>(angle, axis) * start;
-//      
-//      Vector r = axis * axis.dot(start);
-//      auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
-//      Vector err = end - substitution(f, x==angle);
-//      
-//      BOOST_CHECK(std::abs(err[0]) < errlvl);
-//      BOOST_CHECK(std::abs(err[1]) < errlvl);
-//      BOOST_CHECK(std::abs(err[2]) < errlvl);
-//    }
-//
-//  BOOST_CHECK(toArithmetic(Vector{1,2,3}) == (Vector{1,2,3}));
-//  BOOST_CHECK(simplify(dot(Vector{1,2,3} , Vector{4,5,6})) == 32);
+  BOOST_CHECK(test1[0] == 0);
+  BOOST_CHECK(test1[1] == 2);
+  BOOST_CHECK(test1[2] == 4);
+
+  //Implementation of the Rodriugues formula symbolically.
+  RNG.seed();
+  for (size_t i(0); i < testcount; ++i)
+    {
+      double angle = angle_dist(RNG);
+      Vector axis = random_unit_vec().normalized();
+      Vector start = random_unit_vec();
+      Vector end = Eigen::AngleAxis<double>(angle, axis) * start;
+      
+      Vector r = axis * axis.dot(start);
+      auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
+      Vector err = end - substitution(f, x==angle);
+      
+      BOOST_CHECK(std::abs(err[0]) < errlvl);
+      BOOST_CHECK(std::abs(err[1]) < errlvl);
+      BOOST_CHECK(std::abs(err[2]) < errlvl);
+    }
+
+  BOOST_CHECK(toArithmetic(Vector{1,2,3}) == (Vector{1,2,3}));
+  BOOST_CHECK(simplify(dot(Vector{1,2,3} , Vector{4,5,6})) == 32);
 }
 
 BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )

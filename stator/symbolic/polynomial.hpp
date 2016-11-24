@@ -1942,6 +1942,18 @@ namespace stator {
     }
     /*! \endcond \} */
 
+
+
+
+
+
+
+
+
+
+
+
+    
     /*!\brief Addition operator for two Polynomial types. 
      */
     template<class Real1, size_t N, class Real2, size_t M, char Letter>
@@ -2016,6 +2028,18 @@ namespace stator {
     	  retval[i] += l[j] * r[i-j];
       return retval;
     }
-    
+
+    /*! \brief Divisioln between two Polynomial types.
+     */
+    template<class Real1, class Real2, size_t M, char Letter>
+    auto operator/(const Polynomial<M, Real1, Letter>& l, const Polynomial<0, Real2, Letter>& r)
+      -> Polynomial<M, decltype(store(l[0] / r[0])), Letter>
+    {
+      Polynomial<M, decltype(store(l[0] / r[0])), Letter> retval;
+      for (size_t i(0); i <= M; ++i)
+    	  retval[i] += l[i] / r[0];
+      return retval;
+    }
+
   } // namespace symbolic
 } // namespace stator

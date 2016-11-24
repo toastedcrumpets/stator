@@ -298,14 +298,14 @@ namespace stator {
       constant RHS. */
     template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, class Op, class Real2,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
-    auto simplify(const BinaryOp<Polynomial<Order, Real, Letter>, Real2, Op>& f)
+      auto simplify_BinaryOp(const BinaryOp<Polynomial<Order, Real, Letter>, Real2, Op>& f, detail::last_choice)
       -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, Polynomial<0, Real2, Letter>{f._r})));
-
+    
     /*! \brief Simplification of a Polynomial operating with a
       constant LHS. */
     template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, class Op, class Real2,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
-      auto simplify(const BinaryOp<Real2, Polynomial<Order, Real, Letter>, Op>& f)
+      auto simplify_BinaryOp(const BinaryOp<Real2, Polynomial<Order, Real, Letter>, Op>& f, detail::last_choice)
       -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(Polynomial<0, Real2, Letter>{f._l}, f._r)));
     
     //      template<class OpType, class PolyType>

@@ -185,24 +185,25 @@ BOOST_AUTO_TEST_CASE( poly_multiplication )
 
   static_assert(std::is_same<decltype(Null() * Polynomial<2>{1,2,3}), Null>::value, "Null multiply is not cancelling the polynomial");
   static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Null()), Null>::value, "Null multiply is not cancelling the polynomial");
-
-  //  CHECK_TYPE((Unity() * Polynomial<2>{1,2,3}), Polynomial<2>);
-  //  CHECK_TYPE((Polynomial<2>{1,2,3} * Unity()), Polynomial<2>);
+  
+  CHECK_TYPE(simplify(Unity() * Polynomial<2>{1,2,3}), Polynomial<2>);
+  CHECK_TYPE(simplify(Polynomial<2>{1,2,3} * Unity()), Polynomial<2>);
 }
 
-//BOOST_AUTO_TEST_CASE( poly_division )
-//{
-//  using namespace stator::symbolic;
-//  Polynomial<1> x{0, 1};
-//  auto poly1 = 2.0 - x + x * x;
-//  auto poly2 = simplify(poly1 / 0.5);
-//  BOOST_CHECK_EQUAL(poly2[0], 4);
-//  BOOST_CHECK_EQUAL(poly2[1], -2);
-//  BOOST_CHECK_EQUAL(poly2[2], 2);
-//
-//  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} / Unity()), Polynomial<2>>::value, "Unity division is not returning the polynomial");
-//}
-//
+BOOST_AUTO_TEST_CASE( poly_division )
+{
+  using namespace stator::symbolic;
+  Polynomial<1> x{0, 1};
+  auto poly1 = 2.0 - x + x * x;
+  auto poly2 = expand(poly1 / 0.5);
+  BOOST_CHECK_EQUAL(poly2[0], 4);
+  BOOST_CHECK_EQUAL(poly2[1], -2);
+  BOOST_CHECK_EQUAL(poly2[2], 2);
+
+  //(Polynomial<2>{1,2,3} / Unity()).nothing;
+  //static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} / Unity()), Polynomial<2>>::value, "Unity division is not returning the polynomial");
+}
+
 //BOOST_AUTO_TEST_CASE( poly_vector )
 //{
 //  using namespace stator::symbolic;

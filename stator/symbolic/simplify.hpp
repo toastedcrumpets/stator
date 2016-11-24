@@ -164,6 +164,51 @@ namespace stator {
     auto simplify_BinaryOp(const BinaryOp<Arg1, BinaryOp<Arg2, Arg3, Op>, Op>& f, detail::choice<5>)
       -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Arg3, Op>(f._l, f._r._r)), f._r._l)));
 
+
+
+          
+      /*! \relates Polynomial 
+	
+ 	\brief Type trait which determines if an operation
+ 	(multiplication, addition) can be distributed over the
+ 	coefficients of a polynomial.
+
+ 	This general form allows all operations between all constants.
+      */
+//      template<class OpType, class PolyType>
+//      struct distribute_poly {
+// 	static const bool value = (detail::IsConstant<OpType>::value && detail::IsConstant<PolyType>::value);
+//      };
+//
+//      /*! \relates Polynomial 
+//	
+// 	\brief Type trait enabling use of std::complex as a Polynomial
+// 	coefficient with arithmetic types.
+//      */
+//      template<class OpType, class T>
+//      struct distribute_poly<OpType, std::complex<T> > {
+// 	static const bool value = std::is_arithmetic<OpType>::value;
+//      };
+//
+//      /*! \relates Polynomial 
+//	
+// 	\brief Type trait enabling use of std::complex as an operation
+// 	with Polynomials with arithmetic type coefficients.
+//      */
+//      template<class T, class PolyType>
+//      struct distribute_poly<std::complex<T>, PolyType> {
+// 	static const bool value = std::is_arithmetic<PolyType>::value;
+//      };
+//
+//      /*! \relates Polynomial 
+//	
+// 	\brief Type trait enabling use of std::complex as an operation
+// 	with Polynomials.
+//      */
+//      template<class T>
+//      struct distribute_poly<std::complex<T>, std::complex<T> > {
+// 	static const bool value = true;
+//      };    
 //    template<class T1, class T2, class T3,				
 //	     typename = typename std::enable_if<Reorder<T2, T3>::value && !Reorder<T1, T2>::value>::type>    
 //      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<1>) 

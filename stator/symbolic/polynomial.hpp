@@ -40,49 +40,6 @@ namespace stator {
     namespace detail {
       constexpr size_t max_order(size_t N, size_t M)
       { return N > M ? N : M; }
-          
-      /*! \relates Polynomial 
-	
- 	\brief Type trait which determines if an operation
- 	(multiplication, addition) can be distributed over the
- 	coefficients of a polynomial.
-
- 	This general form allows all operations between all constants.
-      */
-      template<class OpType, class PolyType>
-      struct distribute_poly {
- 	static const bool value = (detail::IsConstant<OpType>::value && detail::IsConstant<PolyType>::value);
-      };
-
-//      /*! \relates Polynomial 
-//	
-// 	\brief Type trait enabling use of std::complex as a Polynomial
-// 	coefficient with arithmetic types.
-//      */
-//      template<class OpType, class T>
-//      struct distribute_poly<OpType, std::complex<T> > {
-// 	static const bool value = std::is_arithmetic<OpType>::value;
-//      };
-//
-//      /*! \relates Polynomial 
-//	
-// 	\brief Type trait enabling use of std::complex as an operation
-// 	with Polynomials with arithmetic type coefficients.
-//      */
-//      template<class T, class PolyType>
-//      struct distribute_poly<std::complex<T>, PolyType> {
-// 	static const bool value = std::is_arithmetic<PolyType>::value;
-//      };
-//
-//      /*! \relates Polynomial 
-//	
-// 	\brief Type trait enabling use of std::complex as an operation
-// 	with Polynomials.
-//      */
-//      template<class T>
-//      struct distribute_poly<std::complex<T>, std::complex<T> > {
-// 	static const bool value = true;
-//      };
     }// namespace detail
 
     namespace { template<size_t T> struct dependent_false: std::false_type {}; }
@@ -92,7 +49,7 @@ namespace stator {
       static_assert(dependent_false<Order>::value,  "Cannot use C types as the coefficients of a polynomial");
     };
 
-    /*! \brief Representation of Polynomial with basic algebra operations.
+    /*! \brief Array representation of Polynomial.
 
       This class allows basic computer algebra to be performed with
       Polynomial equations.
@@ -113,7 +70,7 @@ namespace stator {
 
       \tparam Real The type of the coefficients of the
       Polynomial.
-    */
+    */ 
     template<size_t Order, class Real, char Letter>
     class Polynomial : public std::array<Real, Order+1>, SymbolicOperator
     {

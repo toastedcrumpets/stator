@@ -24,45 +24,73 @@ namespace stator {
     ////////////////////// Simplify! ////////////////////////////
     //
     // Rules of the game:
-    // (1) A simplfy implementation is only available if there is a simplification!
-    // (2) Cancellation is the highest priority to keep the AST as small as possible.
-    // (3) Adding new rules is difficult, some simplify rules are recursive, thus you must avoid infinite recursion AND ambiguity
+    //
+    // (1) A simplfy implementation is only available if there is a
+    // simplification! This is required to ensure recursive
+    // simplification terminates.
+    //
+    // (2) Cancellation is the highest priority to keep the AST as
+    // small as possible.
+    //
+    // (3) Adding new rules is difficult, some simplify rules are
+    // recursive, thus you must avoid infinite recursion AND ambiguity.
+    //
     // (4) ...?
+
+    ////////////////////// Simplify configuration //////////////
     namespace detail {
-      struct use_Polynomial_ID;
-      struct new_Polynomial_coeff_t_ID;
+      struct expand_to_Polynomial_ID;
     };
 
-    struct use_Polynomial : orphan::basic_conf_t<detail::use_Polynomial_ID> {};
-    template<typename T> struct new_Polynomial_coeff_t : orphan::type_conf_t<detail::new_Polynomial_coeff_t_ID, T> {};
+    struct expand_to_Polynomial : orphan::basic_conf_t<detail::expand_to_Polynomial_ID> {};
 
     template <typename ...Args>
     struct SimplifyConfig {
-      static constexpr const auto use_polynomial = orphan::is_present<use_Polynomial, Args...>::value;
-      using new_polynomial_coeff_t = typename orphan::get_type<new_Polynomial_coeff_t<double>, Args...>::value;
+      static constexpr const auto expand_to_Polynomial = orphan::is_present<stator::symbolic::expand_to_Polynomial, Args...>::value;
     };
 
     using DefaultSimplifyConfig = SimplifyConfig<>;
 
-    template<class Config> void simplify() {}
-    
-    ////////////////////// Try Simplify! ////////////////////////////
+
+    ////////////////////// Simplify generic implementations //////////////
+    /*! \brief The simplify base implementation.
+
+      By default, there is no generic simplify implemented. There
+      should be a compiler error if no simplify is available.
+     */
+    template<class Config = DefaultSimplifyConfig> void simplify();
+
     namespace detail {
       template<class Config, class T>
-      auto try_simplify_imp(const T& a, int) -> decltype(simplify(a)) {
-	return simplify<DefaultSimplifyConfig>(a);
-      }
+      auto try_simplify_imp(const T& a, detail::choice<0>) -> STATOR_AUTORETURN(simplify<Config>(a));
       
       template<class Config, class T>
-      T try_simplify_imp(const T& a, long) {
+      T try_simplify_imp(const T& a, detail::choice<1>) {
 	return a;
       }
     }
 
+    /*! \brief A method to apply simplification only if it is
+        available.
+     */
     template<class Config = DefaultSimplifyConfig, class T>
-    auto try_simplify(const T& a) -> decltype(detail::try_simplify_imp<Config>(a,0)) {
-      return detail::try_simplify_imp<Config>(a, 0);
+    auto try_simplify(const T& a) -> decltype(detail::try_simplify_imp<Config>(a, detail::select_overload{})) {
+      return detail::try_simplify_imp<Config>(a, detail::select_overload{});
     }
+
+    typedef SimplifyConfig<expand_to_Polynomial> ExpandConfig;
+    
+    /*! \brief A variant of simplify that expands into Polynomial
+        types aggressively.
+     */
+    template<class T> auto expand(const T& a)
+      -> STATOR_AUTORETURN(simplify<ExpandConfig>(a));
+
+    /*! \brief A variant of try_simplify that expands into Polynomial
+        types aggressively.
+     */
+    template<class T> auto try_expand(const T& a)
+      -> STATOR_AUTORETURN(try_simplify<ExpandConfig>(a));
     
     /////////////////// BINARY OPERATORS /////////////////////////////
     // 
@@ -71,41 +99,41 @@ namespace stator {
     // as possible to minimise template depth. Then we try
     // permutations.
     
-    // Prune expressions which do not require the symbolic operator
-    // framework -> apply their own basic operators
-    template<class Config, class LHS, class RHS, class Op,
-	     typename = typename std::enable_if<!ApplySymbolicOps<LHS, RHS>::value>::type
-	     >
+    // Prune expressions which do not require the BinaryOp framework
+    // as their are higher precedent operator implementations// .
+    template<class Config, class LHS, class RHS, class Op>
     auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>& f, detail::choice<0>)
-      -> STATOR_AUTORETURN(Op::apply(f._l, f._r));
+      -> typename std::enable_if<!std::is_same<decltype(Op::apply(f._l, f._r)), BinaryOp<LHS, RHS, Op> >::value, decltype(Op::apply(f._l, f._r))>::type
+    { return Op::apply(f._l, f._r); };
     
-    // Zero identity operations
+    // Convert any zero operations into the zero
     template<class Config, class LHS, class RHS, class Op,
 	     typename = typename std::enable_if<std::is_same<RHS, typename Op::right_zero>::value >::type>
     typename Op::right_zero simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>&, detail::choice<0>) { return {}; };
     
     template<class Config, class LHS, class RHS, class Op,
 	     typename = typename std::enable_if<std::is_same<LHS, typename Op::left_zero>::value && !std::is_same<RHS, typename Op::right_zero>::value>::type>
-      typename Op::left_zero simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>&, detail::choice<0>) { return {};};
+      typename Op::left_zero simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>&, detail::choice<0>) { return {}; };
 
-    // Identity operations
+    // Eliminate any identity operations
     template<class Config, class LHS, class RHS, class Op,
 	     typename = typename std::enable_if<std::is_same<RHS, typename Op::right_identity>::value >::type>
     LHS simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>& op, detail::choice<0>) { return try_simplify<Config>(op._l); }
 
     template<class Config, class LHS, class RHS, class Op,
 	     typename = typename std::enable_if<std::is_same<LHS, typename Op::left_identity>::value && !std::is_same<RHS, typename Op::right_identity>::value>::type>
-      RHS simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>& op, detail::choice<0>) { return try_simplify<Config>(op._r);}
+      RHS simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>& op, detail::choice<0>) { return try_simplify<Config>(op._r); }
 
+    //Special case for divide
     template<class Config, char Letter>
     Unity simplify_BinaryOp(const BinaryOp<Variable<Letter>, Variable<Letter>, detail::Divide>& op, detail::choice<0>)
     { return {};}
     
-    //Special case for the subtraction binary operator becoming the unary operator
+    //Special case for the subtraction binary operator becoming the unary negation operator
     template<class Config, class RHS, typename = typename std::enable_if<!std::is_same<RHS, Null>::value>::type>
     RHS simplify_BinaryOp(const SubtractOp<Null, RHS>& r, detail::choice<0>) { return try_simplify<Config>(-r._r); }
     
-    //Transformations
+    //Transformations to power-ops where possible
     template<class Config, char Letter>
     auto simplify_BinaryOp(const MultiplyOp<Variable<Letter>, Variable<Letter> >&, detail::choice<0>)
       -> STATOR_AUTORETURN((PowerOp<Variable<Letter>, 2>()));
@@ -132,13 +160,14 @@ namespace stator {
     auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Derived>& f, detail::choice<2>)
       -> STATOR_AUTORETURN(try_simplify<Config>(Derived::apply(f._l, simplify<Config>(f._r))));
     
-    ////////// Reorder to find further simplifications
+    // Reorder to find further simplifications
     //
     // If you're trying to check if there is a simplification for a
     // reordering, you must create the new BinaryOp's yourself and not
     // use Op::apply, as the arguments may have their own ::operatorX
     // methods which are simpler but do not simplify(). To detect this
-    // we rely on the first BinaryOp simplification rule thus need to create the BinaryOps ourselves.
+    // we rely on the first BinaryOp simplification rule which detects
+    // arguments having their own specialised operators.
     
     // For associative operators, try (A*B)*C as A*(B*C) (but only do this if B*C has a simplification)
     template<class Config, class Arg1, class Arg2, class Arg3, class Op,
@@ -165,102 +194,10 @@ namespace stator {
       -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Arg3, Op>(f._l, f._r._r)), f._r._l)));
 
 
-
-          
-      /*! \relates Polynomial 
-	
- 	\brief Type trait which determines if an operation
- 	(multiplication, addition) can be distributed over the
- 	coefficients of a polynomial.
-
- 	This general form allows all operations between all constants.
-      */
-//      template<class OpType, class PolyType>
-//      struct distribute_poly {
-// 	static const bool value = (detail::IsConstant<OpType>::value && detail::IsConstant<PolyType>::value);
-//      };
-//
-//      /*! \relates Polynomial 
-//	
-// 	\brief Type trait enabling use of std::complex as a Polynomial
-// 	coefficient with arithmetic types.
-//      */
-//      template<class OpType, class T>
-//      struct distribute_poly<OpType, std::complex<T> > {
-// 	static const bool value = std::is_arithmetic<OpType>::value;
-//      };
-//
-//      /*! \relates Polynomial 
-//	
-// 	\brief Type trait enabling use of std::complex as an operation
-// 	with Polynomials with arithmetic type coefficients.
-//      */
-//      template<class T, class PolyType>
-//      struct distribute_poly<std::complex<T>, PolyType> {
-// 	static const bool value = std::is_arithmetic<PolyType>::value;
-//      };
-//
-//      /*! \relates Polynomial 
-//	
-// 	\brief Type trait enabling use of std::complex as an operation
-// 	with Polynomials.
-//      */
-//      template<class T>
-//      struct distribute_poly<std::complex<T>, std::complex<T> > {
-// 	static const bool value = true;
-//      };    
-//    template<class T1, class T2, class T3,				
-//	     typename = typename std::enable_if<Reorder<T2, T3>::value && !Reorder<T1, T2>::value>::type>    
-//      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<1>) 
-//      -> CLASSNAME<decltype((l._r) OP (r)), T1>				
-//    { return HELPERNAME((l._r) OP (r), l._l, detail::select_overload{}); } 
-//									
-//    /*! \brief Helper function which reorders (A*B)*C to (A*C)*B operations. */      
-//    template<class T1, class T2, class T3,				
-//	     typename = typename std::enable_if<Reorder<T1, T3>::value && !Reorder<T1, T2>::value && !Reorder<T2, T3>::value>::type>	
-//      auto HELPERNAME(const CLASSNAME<T1, T2>& l, const T3& r, detail::choice<1>)		
-//      -> CLASSNAME<decltype((l._l) OP (r)), T2>				
-//    { return HELPERNAME((l._l) OP (r), l._r, detail::select_overload{}); } 
-//    									
-//    /*! \brief Helper function which reorders A*(B*C) to (A*B)*C operations. */	
-//    template<class T1, class T2, class T3,				
-//	     typename = typename std::enable_if<Reorder<T1, T2>::value && !Reorder<T2, T3>::value>::type> 
-//      auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<1>) 
-//      -> CLASSNAME<decltype((l) OP (r._l)), T3>				
-//    { return HELPERNAME((l) OP (r._l), r._r, detail::select_overload{}); } 
-//									
-//    /*! \brief Helper function which reorders A*(B*C) to (A*C)*B operations. */	
-//    template<class T1, class T2, class T3,				
-//	     typename = typename std::enable_if<Reorder<T1, T3>::value  && !Reorder<T1, T2>::value  && !Reorder<T2, T3>::value>::type> 
-//      auto HELPERNAME(const T1& l, const CLASSNAME<T2, T3>& r, detail::choice<1>) 
-//      -> CLASSNAME<decltype((l) OP (r._r)), T2>				
-//    { return HELPERNAME((l) OP (r._r), r._l, detail::select_overload{}); } 
-    
-    // Simplification via rearrangement
-    /*! \brief Type trait which denotes if operations should be
-      reordered to bring these types together. 
-      
-      This is true for all arithmetic types, as operations on these
-      generally can be precalculate by the compiler into a single
-      term. All symbolic constants are also reordered.
-    */
-    template<class T1, class T2> struct Reorder {
-      static const bool value = std::is_arithmetic<T1>::value && std::is_arithmetic<T2>::value;
-    };
-    
-    template<char Letter1, char Letter2> 
-    struct Reorder<Variable<Letter1>, Variable<Letter2> > {
-      static const bool value = Letter1 == Letter2;
-    };
-    
-    template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2> 
-    struct Reorder<C<n1,d1>, C<n2,d2> > {
-      static const bool value = true;
-    };
-
+    // Finally, the gateway to the above series of simplifications for BinaryOps!
     template<class Config = DefaultSimplifyConfig, class T, typename = typename std::enable_if<std::is_base_of<BinaryOpBase, T>::value >::type >
     auto simplify(T t) -> STATOR_AUTORETURN(simplify_BinaryOp<Config>(t, detail::select_overload{}));
-        
+    
 
     /////////////////// PowerOp OPERATORS /////////////////////////////
     // 
@@ -285,67 +222,127 @@ namespace stator {
 	     typename = typename std::enable_if<PowerOpEnableExpansion<Arg>::value>::type>
     auto simplify(const PowerOp<Arg, Power>& f) -> STATOR_AUTORETURN(simplify_powerop_impl<Config>(f, detail::select_overload{}));
 
-    ///*! \brief Simplification of a Polynomial LHS multiplied by a
-    //  Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
-    //{ 
-    //  Polynomial<Order+1, Real, Letter> retval;
-    //  retval[0] = 0;
-    //  std::copy(f._r.begin(), f._r.end(), retval.begin() + 1);
-    //  return retval;
-    //}
+
+    /*! \relates Polynomial 
+	
+ 	\brief Type trait which determines if an operation
+ 	(multiplication, addition) can be distributed over the
+ 	coefficients of a polynomial.
+
+ 	This general form allows all operations between all constants.
+      */
+
+    /*! \brief Simplification of a Polynomial LHS multiplied by a
+      Variable. */
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
+    Polynomial<Order+1, Real, Letter> simplify(MultiplyOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
+    {
+      Polynomial<Order+1, Real, Letter> retval;
+      retval[0] = 0;
+      std::copy(f._r.begin(), f._r.end(), retval.begin() + 1);
+      return retval;
+    }
+    
+    /*! \brief Simplification of a Polynomial RHS multiplied by a
+      Variable. */
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
+    Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Variable<Letter>>& f)
+    {
+      Polynomial<Order+1, Real, Letter> retval;
+      retval[0] = empty_sum(retval[0]);
+      std::copy(f._l.begin(), f._l.end(), retval.begin() + 1);
+      return retval;
+    }
+
+    /*! \brief Simplification of a Polynomial LHS added to a
+      Variable. */
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
+    Polynomial<Order+1, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Variable<Letter>>& f)
+    { 
+      Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._l);
+      retval[1] += 1;
+      return retval;
+    }
+    
+    /*! \brief Simplification of a Polynomial RHS added to a
+      Variable. */
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
+    Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
+    {
+      Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._r);
+      retval[1] += 1;
+      return retval;
+    }
+    
+    /*! \brief Simplification of a Polynomial LHS subtracted by a
+      Variable. */
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
+    Polynomial<Order+1, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Variable<Letter>>& f)
+    {
+      Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._l);
+      retval[1] -= 1;
+      return retval;
+    }
+    
+    /*! \brief Simplification of a Polynomial RHS subtracted by a
+      Variable. */
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
+    Polynomial<Order+1, Real, Letter> simplify(const SubtractOp<Variable<Letter>, Polynomial<Order, Real, Letter>>& f)
+    {
+      Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(-f._r);
+      retval[1] += 1;
+      return retval;
+    }
+
+    /*! \brief Simplification of a Polynomial operating with a
+      constant RHS. */
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, class Op, class Real2,
+	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
+    auto simplify(const BinaryOp<Polynomial<Order, Real, Letter>, Real2, Op>& f)
+      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, Polynomial<0, Real2, Letter>{f._r})));
+
+    /*! \brief Simplification of a Polynomial operating with a
+      constant LHS. */
+    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, class Op, class Real2,
+	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
+      auto simplify(const BinaryOp<Real2, Polynomial<Order, Real, Letter>, Op>& f)
+      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(Polynomial<0, Real2, Letter>{f._l}, f._r)));
+    
+    //      template<class OpType, class PolyType>
+    //      struct distribute_poly {
+    // 	static const bool value = (detail::IsConstant<OpType>::value && detail::IsConstant<PolyType>::value);
+    //      };
     //
-    ///*! \brief Simplification of a Polynomial RHS multiplied by a
-    //  Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
-    //{
-    //  Polynomial<Order+1, Real, Letter> retval;
-    //  retval[0] = empty_sum(retval[0]);
-    //  std::copy(f._l.begin(), f._l.end(), retval.begin() + 1);
-    //  return retval;
-    //}
+    //      /*! \relates Polynomial 
+    //	
+    // 	\brief Type trait enabling use of std::complex as a Polynomial
+    // 	coefficient with arithmetic types.
+    //      */
+    //      template<class OpType, class T>
+    //      struct distribute_poly<OpType, std::complex<T> > {
+    // 	static const bool value = std::is_arithmetic<OpType>::value;
+    //      };
     //
-    ///*! \brief Simplification of a Polynomial LHS added to a
-    //  Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order+1, Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
-    //{ 
-    //  Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._l);
-    //  retval[1] += 1;
-    //  return retval;
-    //}
+    //      /*! \relates Polynomial 
+    //	
+    // 	\brief Type trait enabling use of std::complex as an operation
+    // 	with Polynomials with arithmetic type coefficients.
+    //      */
+    //      template<class T, class PolyType>
+    //      struct distribute_poly<std::complex<T>, PolyType> {
+    // 	static const bool value = std::is_arithmetic<PolyType>::value;
+    //      };
     //
-    ///*! \brief Simplification of a Polynomial RHS added to a
-    //  Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order+1, Real, Letter> simplify(const AddOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
-    //{
-    //  Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._r);
-    //  retval[1] += 1;
-    //  return retval;
-    //}
+    //      /*! \relates Polynomial 
+    //	
+    // 	\brief Type trait enabling use of std::complex as an operation
+    // 	with Polynomials.
+    //      */
+    //      template<class T>
+    //      struct distribute_poly<std::complex<T>, std::complex<T> > {
+    // 	static const bool value = true;
+    //      };    
     //
-    ///*! \brief Simplification of a Polynomial LHS subtracted by a
-    //  Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order+1, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Variable<Letter> >& f)
-    //{
-    //  Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(f._l);
-    //  retval[1] -= 1;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial RHS subtracted by a
-    //  Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order+1, Real, Letter> simplify(const SubtractOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
-    //{ 
-    //  Polynomial<(Order > 0) ? Order : 1, Real, Letter> retval(-f._r);
-    //  retval[1] += 1;
-    //  return retval;
-    //}
     //
     ///*! \brief Simplification of a Polynomial LHS added to a
     //  PowerOp of the Variable. */
@@ -596,68 +593,6 @@ namespace stator {
     //  return retval;
     //}
     //
-    ///*!\brief Addition operator for two Polynomial types. 
-    // */
-    //template<class Config = DefaultSimplifyConfig, class Real1, size_t M, class Real2, size_t N, char Letter>
-    //auto simplify(const AddOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f) -> Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] + f._r[0]), Letter>
-    //{
-    //  Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] + f._r[0]), Letter> retval;
-    //
-    //  for (size_t i(0); i <= std::min(N, M); ++i)
-    //	retval[i] = f._l[i] + f._r[i];
-    //  
-    //  for (size_t i(std::min(N, M)+1); i <= N; ++i)
-    //	retval[i] = f._l[i];
-    //
-    //  for (size_t i(std::min(N, M)+1); i <= M; ++i)
-    //	retval[i] = f._r[i];
-    //  
-    //  return retval;
-    //}
-    //
-    ///*! \brief Right-handed subtraction operator for Polynomial types.
-    // 
-    //  This will reorder and convert the operation to a unary negation
-    //  operator with an addition if the left-handed addition form
-    //  exists.
-    //*/
-    //template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
-    //	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    //auto simplify(const SubtractOp<Real1, Polynomial<Order, Real, Letter> >& f)
-    //  -> STATOR_AUTORETURN(simplify<Config>(f._l + (-f._r)));
-    //
-    ///*! \brief Left-handed subtraction from a Polynomial type.
-    //  
-    //  This will convert the operation to a unary negation operator
-    //  with an addition if the left-handed form exists.
-    //*/
-    //template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
-    //	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    //auto simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Real1>& f)
-    //  -> STATOR_AUTORETURN(simplify<Config>(f._l + (-f._r)));
-    //
-    //template<class Real1, class Real2, size_t N, char Letter,
-    //	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type >
-    //auto operator-(const Polynomial<N,Real1,Letter>& poly, const Real2& r) 
-    //  -> STATOR_AUTORETURN(poly + (-r))
-    //
-    ///*! \brief Subtraction between two Polynomial types. 
-    // */
-    //template<class Config = DefaultSimplifyConfig, class Real1, size_t M, class Real2, size_t N, char Letter>
-    //auto simplify(const SubtractOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f) -> Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] - f._r[0]), Letter>
-    //{
-    //  Polynomial<detail::max_order(M, N), STORETYPE(f._l[0] - f._r[0]), Letter> retval;
-    //  for (size_t i(0); i <= std::min(N, M); ++i)
-    //	retval[i] = f._l[i] - f._r[i];
-    //  
-    //  for (size_t i(std::min(N, M)+1); i <= N; ++i)
-    //	retval[i] = f._l[i];
-    //
-    //  for (size_t i(std::min(N, M)+1); i <= M; ++i)
-    //	retval[i] = -f._r[i];
-    //  
-    //  return retval;
-    //}
     //
     ///*! \brief Right-handed multiplication operation on a Polynomial.
     //  
@@ -692,19 +627,6 @@ namespace stator {
     //  Polynomial<Order, STORETYPE(f._l[0] * f._r), Letter> retval;
     //  for (size_t i(0); i <= Order; ++i)
     //	retval[i] = f._l[i] * f._r;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Multiplication between two Polynomial types.
-    // */
-    //template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, char Letter>
-    //auto simplify(const MultiplyOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter> >& f)
-    //  -> Polynomial<M + N, STORETYPE(f._l[0] * f._r[0]), Letter>
-    //{
-    //  Polynomial<M + N, STORETYPE(f._l[0] * f._r[0]), Letter> retval;
-    //  for (size_t i(0); i <= N+M; ++i)
-    //	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
-    //	  retval[i] += f._l[j] * f._r[i-j];
     //  return retval;
     //}
     //

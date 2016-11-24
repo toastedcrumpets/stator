@@ -52,7 +52,7 @@ namespace stator {
     /*! \brief A type trait to denote symbolic terms (i.e., one that
         is not yet immediately evaluable to a "normal" type)*/
     struct SymbolicOperator {};
-
+    
     template<class T>
     struct IsSymbolic {
       static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;

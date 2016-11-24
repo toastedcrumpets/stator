@@ -42,11 +42,9 @@ namespace stator {
       { return N > M ? N : M; }
     }// namespace detail
 
-    namespace { template<size_t T> struct dependent_false: std::false_type {}; }
-
     template<size_t Order, std::intmax_t num, std::intmax_t denom, char Letter>
     class Polynomial<Order, C<num, denom>, Letter> {
-      static_assert(dependent_false<Order>::value,  "Cannot use C types as the coefficients of a polynomial");
+      static_assert(stator::detail::dependent_false<C<num, denom> >::value,  "Cannot use C types as the coefficients of a polynomial");
     };
 
     /*! \brief Array representation of Polynomial.
@@ -138,7 +136,7 @@ namespace stator {
  	for (; i <= Order; ++i)
  	  Base::operator[](i) = empty_sum(Real());
       }
-
+      
       /*! \brief Unary negative operator to change the sign of a Polynomial. */
       Polynomial operator-() const {
 	Polynomial retval;
@@ -391,24 +389,24 @@ namespace stator {
     }
 
 
-    /*! \brief Enable reordering of Polynomial types. */
-    template<class R1, size_t N1, class R2, size_t N2, char Letter> 
-    struct Reorder<Polynomial<N1, R1, Letter>, Polynomial<N2, R2, Letter> > {
-      static const bool value = true;
-    };
-
-    /*! \brief Enable reordering of Polynomial types with arithmetic types. */
-    template<class R1, size_t N1, class R2, char Letter> 
-    struct Reorder<Polynomial<N1, R1, Letter>, R2 > {
-      static const bool value = std::is_arithmetic<R2>::value;
-    };
-
-    /*! \brief Enable reordering of Polynomial types with arithmetic types. */
-    template<class R1, size_t N1, class R2, char Letter> 
-    struct Reorder<R2,Polynomial<N1, R1, Letter> > {
-      static const bool value = std::is_arithmetic<R2>::value;
-    };
-
+//    /*! \brief Enable reordering of Polynomial types. */
+//    template<class R1, size_t N1, class R2, size_t N2, char Letter> 
+//    struct Reorder<Polynomial<N1, R1, Letter>, Polynomial<N2, R2, Letter> > {
+//      static const bool value = true;
+//    };
+//
+//    /*! \brief Enable reordering of Polynomial types with arithmetic types. */
+//    template<class R1, size_t N1, class R2, char Letter> 
+//    struct Reorder<Polynomial<N1, R1, Letter>, R2 > {
+//      static const bool value = std::is_arithmetic<R2>::value;
+//    };
+//
+//    /*! \brief Enable reordering of Polynomial types with arithmetic types. */
+//    template<class R1, size_t N1, class R2, char Letter> 
+//    struct Reorder<R2,Polynomial<N1, R1, Letter> > {
+//      static const bool value = std::is_arithmetic<R2>::value;
+//    };
+//
     /*! \endcond */
 
     /*! \} */
@@ -1944,5 +1942,80 @@ namespace stator {
     }
     /*! \endcond \} */
 
+    /*!\brief Addition operator for two Polynomial types. 
+     */
+    template<class Real1, size_t N, class Real2, size_t M, char Letter>
+    auto operator+(const Polynomial<N, Real1, Letter>& l, const Polynomial<M, Real2, Letter>& r) -> Polynomial<detail::max_order(M, N), decltype(store(l[0] + r[0])), Letter>
+    {
+      Polynomial<detail::max_order(M, N), decltype(store((l[0] + r[0]))), Letter> retval;
+    
+      for (size_t i(0); i <= std::min(N, M); ++i)
+    	retval[i] = l[i] + r[i];
+      
+      for (size_t i(std::min(N, M)+1); i <= N; ++i)
+    	retval[i] = l[i];
+    
+      for (size_t i(std::min(N, M)+1); i <= M; ++i)
+    	retval[i] = r[i];
+      
+      return retval;
+    }
+//    /*! \brief Right-handed subtraction operator for Polynomial types.
+//     
+//      This will reorder and convert the operation to a unary negation
+//      operator with an addition if the left-handed addition form
+//      exists.
+//    */
+//    template<class Real1, size_t Order, class Real, char Letter,
+//    	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+//    auto operator-(const Polynomial<Order, Real, Letter> >& f)
+//      -> STATOR_AUTORETURN(simplify<Config>(f._l + (-f._r)));
+//    
+//    /*! \brief Left-handed subtraction from a Polynomial type.
+//      
+//      This will convert the operation to a unary negation operator
+//      with an addition if the left-handed form exists.
+//    */
+//    template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
+//    	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
+//    auto simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Real1>& f)
+//      -> STATOR_AUTORETURN(simplify<Config>(f._l + (-f._r)));
+//    
+//    template<class Real1, class Real2, size_t N, char Letter,
+//    	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type >
+//    auto operator-(const Polynomial<N,Real1,Letter>& poly, const Real2& r) 
+//      -> STATOR_AUTORETURN(poly + (-r))
+    
+    /*! \brief Subtraction between two Polynomial types. 
+     */
+    template<class Real1, size_t M, class Real2, size_t N, char Letter>
+    auto operator-(const Polynomial<M, Real1, Letter>& l, const Polynomial<N, Real2, Letter>& r) -> Polynomial<detail::max_order(M, N), decltype(store(l[0] - r[0])), Letter>
+    {
+      Polynomial<detail::max_order(M, N), decltype(store(l[0] - r[0])), Letter> retval;
+      for (size_t i(0); i <= std::min(N, M); ++i)
+    	retval[i] = l[i] - r[i];
+      
+      for (size_t i(std::min(N, M)+1); i <= M; ++i)
+    	retval[i] = l[i];
+    
+      for (size_t i(std::min(N, M)+1); i <= N; ++i)
+    	retval[i] = -r[i];
+      
+      return retval;
+    }
+    
+    /*! \brief Multiplication between two Polynomial types.
+     */
+    template<class Real1, class Real2, size_t M, size_t N, char Letter>
+    auto operator*(const Polynomial<M, Real1, Letter>& l, const Polynomial<N, Real2, Letter>& r)
+      -> Polynomial<M + N, decltype(store(l[0] * r[0])), Letter>
+    {
+      Polynomial<M + N, decltype(store(l[0] * r[0])), Letter> retval;
+      for (size_t i(0); i <= N+M; ++i)
+    	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
+    	  retval[i] += l[j] * r[i-j];
+      return retval;
+    }
+    
   } // namespace symbolic
 } // namespace stator

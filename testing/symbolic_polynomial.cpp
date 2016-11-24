@@ -139,46 +139,57 @@ BOOST_AUTO_TEST_CASE( poly_variables )
   Polynomial<1> x{0, 1};
   Polynomial<1,double,'y'> y{0, 1};
 
-//  BOOST_CHECK(compare_expression(x * x * x, "P(1 × x³)"));
-//  BOOST_CHECK(compare_expression(y * y * y, "P(1 × y³)"));
-//  BOOST_CHECK(compare_expression(substitution(y * y * y, Variable<'y'>()==Variable<'x'>()), "P(1 × x³)"));
+  BOOST_CHECK(compare_expression(x * x * x, "P(1 × x³)"));
+  BOOST_CHECK(compare_expression(y * y * y, "P(1 × y³)"));
+  BOOST_CHECK(compare_expression(substitution(y * y * y, Variable<'y'>()==Variable<'x'>()), "P(1 × x³)"));
 }
 
-//BOOST_AUTO_TEST_CASE( poly_addition )
-//{
-//  using namespace stator::symbolic;
-//  Polynomial<1> x{0, 2.5};
-//  Polynomial<0> C{0.3};
-//  auto poly1 = simplify(x+C);
-//  BOOST_CHECK_EQUAL(poly1[0], 0.3);
-//  BOOST_CHECK_EQUAL(poly1[1], 2.5);
-//
-//  auto poly2 = simplify(x + 0.3);
-//  BOOST_CHECK_EQUAL(poly2[0], 0.3);
-//  BOOST_CHECK_EQUAL(poly2[1], 2.5);
-//}
-//
-//BOOST_AUTO_TEST_CASE( poly_multiplication )
-//{
-//  using namespace stator::symbolic;
-//  Polynomial<1> x{0, 1};
-//  auto poly1 = -2.0;
-//  auto poly2 = 2.0 - x + x * x;
-//  auto poly3 = simplify(poly2 * poly1);
-//  BOOST_CHECK_EQUAL(poly3[0], -4);
-//  BOOST_CHECK_EQUAL(poly3[1], +2);
-//  BOOST_CHECK_EQUAL(poly3[2], -2);
-//
-//  CHECK_TYPE((Null() * Polynomial<2>{1,2,3}), Null);
-//  CHECK_TYPE((Polynomial<2>{1,2,3}) * Null(), Null);
-//
-//  static_assert(std::is_same<decltype(Null() * Polynomial<2>{1,2,3}), Null>::value, "Null multiply is not cancelling the polynomial");
-//  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Null()), Null>::value, "Null multiply is not cancelling the polynomial");
-//
-//  CHECK_TYPE((Unity() * Polynomial<2>{1,2,3}), Polynomial<2>);
-//  CHECK_TYPE((Polynomial<2>{1,2,3} * Unity()), Polynomial<2>);
-//}
-//
+BOOST_AUTO_TEST_CASE( poly_addition )
+{
+  using namespace stator::symbolic;
+  Polynomial<1> x{0, 2.5};
+  Polynomial<0> C{0.3};
+  auto poly1 = x+C;
+  BOOST_CHECK_EQUAL(poly1[0], 0.3);
+  BOOST_CHECK_EQUAL(poly1[1], 2.5);
+
+  poly1 = C+x;
+  BOOST_CHECK_EQUAL(poly1[0], 0.3);
+  BOOST_CHECK_EQUAL(poly1[1], 2.5);
+
+  auto poly2 = expand(x + 0.3);
+  BOOST_CHECK_EQUAL(poly2[0], 0.3);
+  BOOST_CHECK_EQUAL(poly2[1], 2.5);
+
+  poly2 = expand(0.3 + x);
+  BOOST_CHECK_EQUAL(poly2[0], 0.3);
+  BOOST_CHECK_EQUAL(poly2[1], 2.5);
+}
+
+BOOST_AUTO_TEST_CASE( poly_multiplication )
+{
+  using namespace stator::symbolic;
+  Polynomial<1> x{0, 1};
+  auto poly1 = -2.0;
+  auto poly2 = 2.0 - x + x * x;
+  //std::cout << poly2 * poly1 << std::endl;
+  //std::cout << expand(poly2 * poly1) << std::endl;
+  //throw std::exception();
+  auto poly3 = expand(poly2 * poly1);
+  BOOST_CHECK_EQUAL(poly3[0], -4);
+  BOOST_CHECK_EQUAL(poly3[1], +2);
+  BOOST_CHECK_EQUAL(poly3[2], -2);
+
+  CHECK_TYPE((Null() * Polynomial<2>{1,2,3}), Null);
+  CHECK_TYPE((Polynomial<2>{1,2,3}) * Null(), Null);
+
+  static_assert(std::is_same<decltype(Null() * Polynomial<2>{1,2,3}), Null>::value, "Null multiply is not cancelling the polynomial");
+  static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Null()), Null>::value, "Null multiply is not cancelling the polynomial");
+
+  //  CHECK_TYPE((Unity() * Polynomial<2>{1,2,3}), Polynomial<2>);
+  //  CHECK_TYPE((Polynomial<2>{1,2,3} * Unity()), Polynomial<2>);
+}
+
 //BOOST_AUTO_TEST_CASE( poly_division )
 //{
 //  using namespace stator::symbolic;

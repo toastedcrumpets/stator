@@ -385,7 +385,7 @@ namespace stator {
 	return RetType(Polynomial<Order1, Real, Letter>{std::numeric_limits<Real>::infinity()}, 
 		       Polynomial<0, Real, Letter>{empty_sum(Real())});
 
-      return RetType(f * (1.0 / g[0]), Polynomial<0, Real, Letter>{empty_sum(Real())});
+      return RetType(expand(f * (1.0 / g[0])), Polynomial<0, Real, Letter>{empty_sum(Real())});
     }
 
 
@@ -830,7 +830,7 @@ namespace stator {
 	return StackVector<double, 2>{std::min(-f[1], 0.0), std::max(-f[1], 0.0)};
 
       //Scale the constant of x^2 to 1
-      f = f / f[2];
+      f = expand(f / f[2]);
       
       static const double maxSqrt = std::sqrt(std::numeric_limits<double>::max());
       if (std::abs(f[1]) > maxSqrt) {
@@ -906,7 +906,7 @@ namespace stator {
 	return deflate_and_solve_polynomial(f_original, 0.0);
 
       //Convert to a cubic with a unity high-order coefficient
-      auto f = f_original / f_original[3];
+      auto f = expand(f_original / f_original[3]);
       
       if ((f[2] == 0) && (f[1] == 0))
 	//Special case where f(x) = x^3 + f[0]
@@ -1121,7 +1121,7 @@ namespace stator {
 	 */
 	template<class Real2>
 	size_t sign_change_helper(const int last_sign, const Real2& x) const {
-	  const Real currentx = eval(_p_n, Variable<Letter>() == x);
+	  const Real currentx = substitution(_p_n, Variable<Letter>() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 
@@ -1168,7 +1168,7 @@ namespace stator {
 
 	template<class Real2>
 	size_t sign_change_helper(const int last_sign, const Real2& x) const {
-	  const Real currentx = eval(_p_n, Variable<Letter>() == x);
+	  const Real currentx = substitution(_p_n, Variable<Letter>() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 	  return sign_change;
@@ -1613,7 +1613,7 @@ namespace stator {
 	  continue; //Start again
 	}
 
-	if (std::abs(eval(f, Variable<Letter>() == 1.0)) <= (100 * precision(f, 1.0))) {
+	if (std::abs(substitution(f, Variable<Letter>() == 1.0)) <= (100 * precision(f, 1.0))) {
 	  //There is probably a root near x=1.0 as its approached zero
 	  //closely (compared to the precision of the polynomial
 	  //evaluation). Rather than trying to divide it out or do
@@ -1831,7 +1831,7 @@ namespace stator {
 	  if (try_toms748){
 	    try {
 	      boost::uintmax_t iter = 100;
-	      auto root = boost::math::tools::toms748_solve([&](Real x) { return eval(f, Variable<Letter>() == x); }, xmin, xmid, boost::math::tools::eps_tolerance<Real>(100), iter);
+	      auto root = boost::math::tools::toms748_solve([&](Real x) { return substitution(f, Variable<Letter>() == x); }, xmin, xmid, boost::math::tools::eps_tolerance<Real>(100), iter);
 	      retval.push_back((root.first + root.second) / 2);
 	    } catch(...) {
 	      regions.push_back(std::make_tuple(xmin, xmid, rootsa));
@@ -1847,7 +1847,7 @@ namespace stator {
 	  if (try_toms748){
 	    try {
 	      boost::uintmax_t iter = 100;
-	      auto root = boost::math::tools::toms748_solve([&](Real x) { return eval(f, Variable<Letter>() == x); }, xmid, xmax, boost::math::tools::eps_tolerance<Real>(100), iter);
+	      auto root = boost::math::tools::toms748_solve([&](Real x) { return substitution(f, Variable<Letter>() == x); }, xmid, xmax, boost::math::tools::eps_tolerance<Real>(100), iter);
 	      retval.push_back((root.first + root.second) / 2);
 	    } catch(...) {
 	      regions.push_back(std::make_tuple(xmid, xmax, rootsb));
@@ -1889,14 +1889,14 @@ namespace stator {
 	case PolyRootBisector::BISECTION: 
 	  {
 	    boost::uintmax_t iter = 100;
-	    auto root = boost::math::tools::bisect([&](Real x) { return eval(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Real>(100), iter);
+	    auto root = boost::math::tools::bisect([&](Real x) { return substitution(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Real>(100), iter);
 	    retval.push_back((root.first + root.second) / 2);
 	    break;
 	  }
 	case PolyRootBisector::TOMS748: 
 	  {
 	    boost::uintmax_t iter = 100;
-	    auto root = boost::math::tools::toms748_solve([&](Real x) { return eval(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Real>(100), iter);
+	    auto root = boost::math::tools::toms748_solve([&](Real x) { return substitution(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Real>(100), iter);
 	    retval.push_back((root.first + root.second) / 2);
 	    break;
 	  }

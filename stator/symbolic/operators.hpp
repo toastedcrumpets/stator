@@ -34,7 +34,7 @@ namespace stator {
     
     template<class LHS, class RHS, class Derived>
     inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, RHS, Derived>& op) {
-      os << "(" << op._l << ") " << Derived::_str <<  " (" << op._r << ")";
+      os << "(" << op._l << " " << Derived::_str <<  " " << op._r << ")";
       return os;
     }
 

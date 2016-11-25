@@ -270,306 +270,38 @@ namespace stator {
       return retval;
     }
 
+    /*! \brief A converter to arithmetic types
+     */
+    template<class T,
+	     typename = typename std::enable_if<std::is_arithmetic<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
+      auto toArithmetic(T val) -> STATOR_AUTORETURN_BYVALUE(val);
+
+    template<class T,
+	     typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+      auto toArithmetic(std::complex<T> val) -> STATOR_AUTORETURN_BYVALUE(val);
+    
+    template<std::intmax_t n1, std::intmax_t d1,
+    	     typename = typename std::enable_if<!(n1 % d1)>::type> 
+    std::intmax_t toArithmetic(C<n1,d1> val) { return n1 / d1; }
+    
+    template<std::intmax_t n1, std::intmax_t d1, 
+    	     typename = typename std::enable_if<n1 % d1>::type>
+    double toArithmetic(C<n1,d1> val) { return double(n1) / double(d1); }
+
     /*! \brief Simplification of a Polynomial operating with a
       constant RHS. */
     template<class Config, char Letter, size_t Order, class Real, class Op, class Real2,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
       auto simplify_BinaryOp(const BinaryOp<Polynomial<Order, Real, Letter>, Real2, Op>& f, detail::last_choice)
-      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, Polynomial<0, Real2, Letter>{f._r})));
+      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, Polynomial<0, decltype(toArithmetic(f._r)), Letter>{toArithmetic(f._r)})));
     
     /*! \brief Simplification of a Polynomial operating with a
       constant LHS. */
     template<class Config, char Letter, size_t Order, class Real, class Op, class Real2,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
       auto simplify_BinaryOp(const BinaryOp<Real2, Polynomial<Order, Real, Letter>, Op>& f, detail::last_choice)
-      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(Polynomial<0, Real2, Letter>{f._l}, f._r)));
-        
-    ///*! \brief Simplification of a Polynomial LHS added to a
-    //  PowerOp of the Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
-    //Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> > & f)
-    //{
-    //  Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._l);
-    //  retval[POrder] += 1;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial RHS added to a
-    //  PowerOp of the Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
-    //Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> > & f)
-    //{
-    //  Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._r);
-    //  retval[POrder] += 1;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial LHS subtracted from a
-    //  PowerOp of the Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
-    //Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> >& f)
-    //{
-    //  Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._r);
-    //  retval[POrder] -= 1;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial RHS subtracted from a
-    //  PowerOp of the Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
-    //Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const SubtractOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> >& f)
-    //{
-    //  Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(-f._r);
-    //  retval[POrder] += Real(1);
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial LHS multiplied by a
-    //  PowerOp of a Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
-    //Polynomial<Order+POrder, Real, Letter> simplify(const MultiplyOp<PowerOp<Variable<Letter>, POrder>, Polynomial<Order, Real, Letter> >& f)
-    //{
-    //  Polynomial<Order+POrder, Real, Letter> retval;
-    //  std::copy(f._r.begin(), f._r.end(), retval.begin() + POrder);
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial RHS multiplied by a
-    //  PowerOp of a Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
-    //Polynomial<Order+POrder, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, PowerOp<Variable<Letter>, POrder> >& f)
-    //{
-    //  Polynomial<Order+POrder, Real, Letter> retval;
-    //  std::copy(f._l.begin(), f._l.end(), retval.begin() + POrder);
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial LHS added to a
-    //  PowerOp of the Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, size_t POrder>
-    //Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> simplify(const AddOp<Polynomial<Order, Real, Letter>, Unity> & f)
-    //{
-    //  Polynomial<((Order > POrder) ? Order : POrder), Real, Letter> retval(f._l);
-    //  retval[0] += 1;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial RHS added to a
-    //  PowerOp of the Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order, Real, Letter> simplify(const AddOp<Unity, Polynomial<Order, Real, Letter> > & f)
-    //{
-    //  Polynomial<Order, Real, Letter> retval(f._r);
-    //  retval[0] += 1;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial LHS subtracted by a
-    //  PowerOp of the Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order, Real, Letter> simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Unity> & f)
-    //{
-    //  Polynomial<Order, Real, Letter> retval(f._l);
-    //  retval[0] -= 1;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Simplification of a Polynomial RHS subtracted by a
-    //  PowerOp of the Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //Polynomial<Order, Real, Letter> simplify(const SubtractOp<Unity, Polynomial<Order, Real, Letter> > & f)
-    //{
-    //  Polynomial<Order, Real, Letter> retval(-f._r);
-    //  retval[0] += 1;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Conversion of PowerOp RHS multiplied by a constant to a
-    //  Polynomial. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
-    //simplify(const MultiplyOp<PowerOp<Variable<Letter>, Order>, Real>& f)
-    //{
-    //  Polynomial<Order, Real, Letter> retval;
-    //  retval[Order] = f._r;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Conversion of PowerOp LHS multiplied by a constant to a
-    //  Polynomial. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, Real, Letter> >::type 
-    //simplify(const MultiplyOp<Real, PowerOp<Variable<Letter>, Order> >& f)
-    //{
-    //  Polynomial<Order, Real, Letter> retval;
-    //  retval[Order] = f._l;
-    //  return retval;
-    //}
-    //
-    ///*! \brief Conversion of Variable RHS multiplied by a constant to a
-    //  Polynomial. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type
-    //simplify(const MultiplyOp<Variable<Letter>, Real> & f)
-    //{ return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(empty_sum(f._r)), toArithmetic(f._r)}; }
-    //
-    ///*! \brief Conversion of Variable LHS multiplied by a constant to a
-    //  Polynomial. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value && !std::is_same<Real, Unity>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type 
-    //simplify(const MultiplyOp<Real, Variable<Letter> > & f)
-    //{ return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{empty_sum(f._l), f._l}; }
-    //
-    ///*! \brief Conversion of PowerOp LHS added with a constant to a
-    //  Polynomial. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> >::type 
-    //simplify(const AddOp<PowerOp<Variable<Letter>, Order>, Real>& f)
-    //{ 
-    //  Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> retval;
-    //  retval[Order] = 1;
-    //  retval[0] = toArithmetic(f._r);
-    //  return retval;
-    //}
-    //
-    ///*! \brief Conversion of PowerOp LHS added with a constant to a
-    //  Polynomial. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> >::type 
-    //simplify(const AddOp<Real, PowerOp<Variable<Letter>, Order> >& f)
-    //{ 
-    //  Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> retval;
-    //  retval[Order] = 1;
-    //  retval[0] = toArithmetic(f._r);
-    //  return retval;
-    //}
-    //
-    ///*! \brief Conversion of PowerOp LHS subtracted with a constant to a
-    //  Polynomial. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> >::type 
-    //simplify(const SubtractOp<PowerOp<Variable<Letter>, Order>, Real>& f)
-    //{
-    //  Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> retval;
-    //  retval[Order] = 1;
-    //  retval[0] = -toArithmetic(f._r);
-    //  return retval;
-    //}
-    //
-    ///*! \brief Conversion of PowerOp LHS subtracted with a constant to a
-    //  Polynomial. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> >::type 
-    //simplify(const SubtractOp<Real, PowerOp<Variable<Letter>, Order> >& f)
-    //{
-    //  Polynomial<Order, STORETYPE(toArithmetic(Real())), Letter> retval;
-    //  retval[Order] = -1;
-    //  retval[0] = toArithmetic(f._l);
-    //  return retval;
-    //}
-    //
-    ///*! \brief Conversion of a Variable RHS added with a constant. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type
-    //simplify(const AddOp<Variable<Letter>, Real>& f)
-    //{ return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(f._r), Real(1)}; }
-    //
-    ///*! \brief Conversion of a Variable LHS added with a constant. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type 
-    //simplify(const AddOp<Real, Variable<Letter> >& f)
-    //{ return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(f._r), Real(1)}; }
-    //
-    //
-    ///*! \brief Conversion of a Variable added with a Variable. */
-    //template<class Config = DefaultSimplifyConfig, char Letter>
-    //Polynomial<1, int, Letter>
-    //simplify(const AddOp<Variable<Letter>, Variable<Letter> >& f)
-    //{ return Polynomial<1, int, Letter>{0, 2}; }
-    //
-    //
-    ///*! \brief Conversion of a Variable RHS subtracted with a constant. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type 
-    //simplify(const SubtractOp<Variable<Letter>, Real>& f)
-    //{ return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{-toArithmetic(f._r), Real(1)}; }
-    //
-    ///*! \brief Conversion of a Variable LHS subtracted with a constant. */
-    //template<class Config = DefaultSimplifyConfig, char Letter, class Real>
-    //typename std::enable_if<detail::IsConstant<Real>::value, Polynomial<1, STORETYPE(toArithmetic(Real())), Letter> >::type
-    //simplify(const SubtractOp<Real, Variable<Letter> >& f)
-    //{ return Polynomial<1, STORETYPE(toArithmetic(Real())), Letter>{toArithmetic(f._l), Real(-1)}; }
-    //
-    ///*! \brief Right-handed addition operation on a Polynomial.
-    //  
-    //  This operator is only enabled if the type of the Polynomial
-    //  coefficients and the type being added is marked as compatitble
-    //  for distribution over the Polnomial coefficients. This is tested
-    //  using detail::distribute_poly.
-    //*/
-    //template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
-    //	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    //auto simplify(const AddOp<Real1, Polynomial<Order, Real, Letter> >& f) -> Polynomial<Order, STORETYPE(f._l + f._r[0]), Letter>
-    //{
-    //  Polynomial<Order, STORETYPE(f._l + f._r[0]), Letter> retval(f._r);
-    //  retval[0] += f._l;
-    //  return retval;
-    //}
-    //
-    //
-    ///*!\brief Left-handed addition operator for Polynomials 
-    //
-    //  This operator is only enabled if the type of the Polynomial
-    //  coefficients and the type being added is marked as compatitble
-    //  for distribution over the Polnomial coefficients. This is tested
-    //  using detail::distribute_poly.
-    //*/
-    //template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
-    //	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    //auto simplify(const AddOp<Polynomial<Order, Real, Letter>, Real1>& f) -> Polynomial<Order, STORETYPE(f._l[0] + f._r), Letter>
-    //{
-    //  Polynomial<Order, STORETYPE(f._l[0] + f._r), Letter> retval(f._l);
-    //  retval[0] += f._r;
-    //  return retval;
-    //}
-    //
-    //
-    ///*! \brief Right-handed multiplication operation on a Polynomial.
-    //  
-    //  This operator is only enabled if the type of the Polynomial
-    //  coefficients and the type being added is marked as compatitble
-    //  for distribution over the Polnomial coefficients. This is tested
-    //  using detail::distribute_poly.
-    //*/
-    //template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
-    //	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    //auto simplify(const MultiplyOp<Real1, Polynomial<Order, Real, Letter> >& f) -> Polynomial<Order, STORETYPE(f._l * f._r[0]), Letter>
-    //{
-    //  Polynomial<Order, STORETYPE(f._l * f._r[0]), Letter> retval;
-    //
-    //  for (size_t i(0); i <= Order; ++i)
-    //	retval[i] = f._l * f._r[i];
-    //
-    //  return retval;
-    //}
-    //
-    ///*! \brief Left-handed multiplication on a Polynomial.
-    //
-    //  This operator is only enabled if the type of the Polynomial
-    //  coefficients and the type being added is marked as compatitble
-    //  for distribution over the Polnomial coefficients. This is tested
-    //  using detail::distribute_poly.
-    //*/
-    //template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
-    //	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-    //auto simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Real1>& f) -> Polynomial<Order, STORETYPE(f._l[0] * f._r), Letter>
-    //{
-    //  Polynomial<Order, STORETYPE(f._l[0] * f._r), Letter> retval;
-    //  for (size_t i(0); i <= Order; ++i)
-    //	retval[i] = f._l[i] * f._r;
-    //  return retval;
-    //}
-    //
+      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(Polynomial<0, decltype(toArithmetic(f._l)), Letter>{toArithmetic(f._l)}, f._r)));
+
     ///*! \brief Specialisation for squares of matrix expressions. */
     //template<class Config = DefaultSimplifyConfig, size_t Power, class Matrix, size_t N, char Letter,
     //         typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Matrix>, Matrix>::value>::type>

@@ -60,26 +60,26 @@ namespace stator {
     /*! \brief Output operator for compile-time constant (\ref C types).*/
     template<std::intmax_t Num, std::intmax_t Denom>
     inline std::ostream& operator<<(std::ostream& os, const C<Num, Denom>) {
-      os << "C<" << Num;
+      os << "©" << Num;
       if (Denom != 1)
-	os << ", " << Denom;
-      return os << ">()";
+	os << "/" << Denom;
+      return os ;
     }
     
     /*! \brief Output operator specialised for one quarter.*/
     inline std::ostream& operator<<(std::ostream& os, const C<1,4>) {
-      return (os << "¼");
+      return (os << "©¼");
       
     }
 
     /*! \brief Output operator specialised for one half.*/
     inline std::ostream& operator<<(std::ostream& os, const C<1,2>) {
-      return (os << "½");
+      return (os << "©½");
     }
 
     /*! \brief Output operator specialised for three quarters.*/
     inline std::ostream& operator<<(std::ostream& os, const C<3,4>) {
-      return (os << "¾");
+      return (os << "©¾");
     }
     
     /*! \brief Specialized output operator for \f$\pi\f$.*/

@@ -33,6 +33,7 @@
 // C++
 #include <complex>
 #include <ratio>
+#include <type_traits>
 
 #include "stator/symbolic/constants.hpp"
 #include "stator/orphan/template_config.hpp"
@@ -57,20 +58,6 @@ namespace stator {
     struct IsSymbolic {
       static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
     };
-
-    /*! \brief A converter to arithmetic types
-     */
-    template<class T,
-	     typename = typename std::enable_if<std::is_arithmetic<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
-    const T& toArithmetic(const T& val) { return val; }
-    
-    template<std::intmax_t n1, std::intmax_t d1,
-    	     typename = typename std::enable_if<!(n1 % d1)>::type> 
-    std::intmax_t toArithmetic(C<n1,d1> val) { return n1 / d1; }
-    
-    template<std::intmax_t n1, std::intmax_t d1, 
-    	     typename = typename std::enable_if<n1 % d1>::type>
-    double toArithmetic(C<n1,d1> val) { return double(n1) / double(d1); }
 
     /*!\brief Compile-time symbolic representation of a variable
       substitution.
@@ -101,14 +88,11 @@ namespace stator {
 	specialised functions to these types.
       */
       template<class T>
-      struct IsConstant {
-	static const bool value = std::is_arithmetic<T>::value || is_C<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value;
-      };
+      struct IsConstant : std::conditional<std::is_arithmetic<T>::value || is_C<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value, std::true_type, std::false_type>::type {};
 
       template<class T>
-      struct IsConstant<std::complex<T> > {
-	static const bool value = IsConstant<T>::value;
-      };
+      struct IsConstant<std::complex<T> > : IsConstant<T> {};
+      
     }// namespace detail
 
     /*! \brief Returns the empty sum of a type.
@@ -280,6 +264,6 @@ namespace stator {
     */
     template<size_t Order, char Letter, class F, class Real>
     auto taylor_series(const F& f, Real a, Variable<Letter>) 
-      -> STATOR_AUTORETURN((try_simplify<>(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a))));
+      -> STATOR_AUTORETURN(try_simplify(detail::TaylorSeriesWorker<0, Order, Letter>::eval(f, a)));
   } // namespace symbolic
 }// namespace stator

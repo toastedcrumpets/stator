@@ -523,9 +523,8 @@ BOOST_AUTO_TEST_CASE( poly_cubic_single_roots )
 	    root1val(root1, 0),
 	    root2val(root2real, root2im),
 	    root3val(root2real, -root2im);
-	  
+
 	  auto poly_c = expand((x - root1val) * (x - root2val) * (x - root3val));
-	  
 	  Polynomial<3, double> f = {poly_c[0].real(), poly_c[1].real(), poly_c[2].real(), poly_c[3].real()};
 
 	  auto roots = solve_real_roots(f);
@@ -974,16 +973,6 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 	      }
 }
 
-BOOST_AUTO_TEST_CASE( derivative_addition )
-{
-  using namespace stator::symbolic;
-
-  //Test Polynomial derivatives on addition Operation types
-  Variable<'x'> x;
-
-  BOOST_CHECK(compare_expression(derivative(2 * x * x + x, x), (C<2>()*x)*2+C<1>())); 
-}
-
 BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
 {
   using namespace stator::symbolic;
@@ -1016,24 +1005,31 @@ BOOST_AUTO_TEST_CASE( function_poly_derivatives_special )
   BOOST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Variable<'x'>()), Null()));
 }
 
+template<class T> auto d(T a) -> STATOR_AUTORETURN(stator::symbolic::derivative(a, stator::symbolic::Variable<'y'>()));
+
 BOOST_AUTO_TEST_CASE( poly_taylor )
 { 
   using namespace stator::symbolic;
   Variable<'y'> y;
 
-  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Variable<'x'>()), y*y*y));
+  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Variable<'x'>()), simplify(y*y*y)));
   
-  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), y), y*y*y));
+  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), y), simplify(y*y*y)));
 
   //Test truncation of PowerOp expressions when the original order is too high
   CHECK_TYPE(taylor_series<2>(y*y*y, Null(), y), Null);
-    
-  detail::TaylorSeriesWorker<2, 6, 'y'>::eval(derivative(derivative(sin(y), Variable<'y'>()), Variable<'y'>()), Null());
+  
+  std::cout << "\n##\n" << detail::TaylorSeriesWorker<6, 6, 'y'>::eval(d(d(d(d(d(d(sin(y))))))), Null()) << "\n##\n" << std::endl;
+  std::cout << "\n##\n" << detail::TaylorSeriesWorker<5, 6, 'y'>::eval(d(d(d(d(d(sin(y)))))), Null()) << "\n##\n" << std::endl;
+  std::cout << "\n##\n" << detail::TaylorSeriesWorker<4, 6, 'y'>::eval(d(d(d(d(sin(y))))), Null()) << "\n##\n" << std::endl;
+  std::cout << "\n##\n" << detail::TaylorSeriesWorker<3, 6, 'y'>::eval(d(d(d(sin(y)))), Null()) << "\n##\n" << std::endl;
+  std::cout << "\n##\n" << detail::TaylorSeriesWorker<2, 6, 'y'>::eval(d(d(sin(y))), Null()) << "\n##\n" << std::endl;
+  std::cout << "\n##\n" << detail::TaylorSeriesWorker<1, 6, 'y'>::eval(d(sin(y)), Null()) << "\n##\n" << std::endl;
+  std::cout << "\n##\n" << detail::TaylorSeriesWorker<0, 6, 'y'>::eval(sin(y), Null()) << "\n##\n" << std::endl;
 
-  //expand(y + C<2>());
   //Test simple Taylor expansion of sine 
-  BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), simplify((1.0/120) * y*y*y*y*y - (1.0/6) * y*y*y + y)));
-  BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), simplify(- (1.0/6) * y*y*y*y*y*y + y*y)));
+  BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), simplify(y - C<1,6>() * y*y*y + C<1,120>() * y*y*y*y*y)));
+  BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), simplify(y*y - C<1,6>() * y*y*y*y*y*y)));
   
   //Test Taylor expansion of a complex expression at zero
   Variable<'x'> x;

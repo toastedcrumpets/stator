@@ -311,3 +311,13 @@ BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )
   BOOST_CHECK(compare_expression(simplify(pow<5>(arbsign(x))), arbsign(pow<5>(x))));
   BOOST_CHECK(compare_expression(simplify(pow<6>(arbsign(x))), pow<6>(x)));
 }
+
+BOOST_AUTO_TEST_CASE( derivative_addition )
+{
+  using namespace stator::symbolic;
+
+  //Test Polynomial derivatives on addition Operation types
+  Variable<'x'> x;
+
+  BOOST_CHECK(compare_expression(simplify(derivative(simplify(C<2>() * x * x + x), x)), C<4>() * x + C<1>()));
+}

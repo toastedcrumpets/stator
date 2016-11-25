@@ -1025,25 +1025,25 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   
   //Test Taylor expansion of a complex expression at zero
   Variable<'x'> x;
-  auto f = sin(cos(x)+2*x*x - x + 3);
-  auto ffinal = simplify((3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0));
-
-  //std::cout << expand(f) << std::endl;
-
-  //We compare the expressions as Polynomials using the expand
-  //  BOOST_CHECK(compare_expression(taylor_series<3>(expand(f), Null(), x), expand(ffinal)));
+//  auto f = sin(cos(x)+2*x*x - x + 3);
+//  auto ffinal = simplify((3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0));
+//
+//  std::cout << expand(f) << std::endl;
+//
+//  //We compare the expressions as Polynomials using the expand
+//  BOOST_CHECK(compare_expression(taylor_series<3>(expand(f), Null(), x), expand(ffinal)));
 
   //Test Taylor expansion again at a non-zero location
-//  BOOST_CHECK(compare_expression(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x), simplify(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
-//
-//  //Partially truncate a Polynomial through expansion
-//  BOOST_CHECK(compare_expression(taylor_series<2>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y), Polynomial<2,int,'y'>{1,2,3}));
-//  
-//  //Keep the order the same
-//  BOOST_CHECK(compare_expression(taylor_series<3>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y), Polynomial<3,int,'y'>{1,2,3,4}));
-//  
-//  //Taylor simplify at a higher order
-//  BOOST_CHECK(compare_expression(taylor_series<4>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y), Polynomial<3,int,'y'>{1,2,3,4})); 
+  BOOST_CHECK(compare_expression(expand(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x)), expand(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
+
+  //Partially truncate a Polynomial through expansion
+  BOOST_CHECK(compare_expression(expand(taylor_series<2>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y)), Polynomial<2,int,'y'>{1,2,3}));
+  
+  //Keep the order the same
+  BOOST_CHECK(compare_expression(expand(taylor_series<3>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y)), Polynomial<3,int,'y'>{1,2,3,4}));
+  
+  //Taylor simplify at a higher order
+  BOOST_CHECK(compare_expression(expand(taylor_series<4>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y)), Polynomial<3,int,'y'>{1,2,3,4})); 
 }
 
 BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )

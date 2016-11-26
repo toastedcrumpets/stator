@@ -37,11 +37,6 @@
 
 namespace stator {
   namespace symbolic {
-    namespace detail {
-      constexpr size_t max_order(size_t N, size_t M)
-      { return N > M ? N : M; }
-    }// namespace detail
-
     template<size_t Order, std::intmax_t num, std::intmax_t denom, char Letter>
     class Polynomial<Order, C<num, denom>, Letter> {
       static_assert(stator::detail::dependent_false<C<num, denom> >::value,  "Cannot use C types as the coefficients of a polynomial");
@@ -1941,105 +1936,6 @@ namespace stator {
       return roots;
     }
     /*! \endcond \} */
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    /*!\brief Addition operator for two Polynomial types. 
-     */
-    template<class Real1, size_t N, class Real2, size_t M, char Letter>
-    auto operator+(const Polynomial<N, Real1, Letter>& l, const Polynomial<M, Real2, Letter>& r) -> Polynomial<detail::max_order(M, N), decltype(store(l[0] + r[0])), Letter>
-    {
-      Polynomial<detail::max_order(M, N), decltype(store((l[0] + r[0]))), Letter> retval;
-    
-      for (size_t i(0); i <= std::min(N, M); ++i)
-    	retval[i] = l[i] + r[i];
-      
-      for (size_t i(std::min(N, M)+1); i <= N; ++i)
-    	retval[i] = l[i];
-    
-      for (size_t i(std::min(N, M)+1); i <= M; ++i)
-    	retval[i] = r[i];
-      
-      return retval;
-    }
-//    /*! \brief Right-handed subtraction operator for Polynomial types.
-//     
-//      This will reorder and convert the operation to a unary negation
-//      operator with an addition if the left-handed addition form
-//      exists.
-//    */
-//    template<class Real1, size_t Order, class Real, char Letter,
-//    	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-//    auto operator-(const Polynomial<Order, Real, Letter> >& f)
-//      -> STATOR_AUTORETURN(simplify<Config>(f._l + (-f._r)));
-//    
-//    /*! \brief Left-handed subtraction from a Polynomial type.
-//      
-//      This will convert the operation to a unary negation operator
-//      with an addition if the left-handed form exists.
-//    */
-//    template<class Config = DefaultSimplifyConfig, class Real1, size_t Order, class Real, char Letter,
-//    	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real>::value>::type>
-//    auto simplify(const SubtractOp<Polynomial<Order, Real, Letter>, Real1>& f)
-//      -> STATOR_AUTORETURN(simplify<Config>(f._l + (-f._r)));
-//    
-//    template<class Real1, class Real2, size_t N, char Letter,
-//    	     typename = typename std::enable_if<detail::distribute_poly<Real1, Real2>::value>::type >
-//    auto operator-(const Polynomial<N,Real1,Letter>& poly, const Real2& r) 
-//      -> STATOR_AUTORETURN(poly + (-r))
-    
-    /*! \brief Subtraction between two Polynomial types. 
-     */
-    template<class Real1, size_t M, class Real2, size_t N, char Letter>
-    auto operator-(const Polynomial<M, Real1, Letter>& l, const Polynomial<N, Real2, Letter>& r) -> Polynomial<detail::max_order(M, N), decltype(store(l[0] - r[0])), Letter>
-    {
-      Polynomial<detail::max_order(M, N), decltype(store(l[0] - r[0])), Letter> retval;
-      for (size_t i(0); i <= std::min(N, M); ++i)
-    	retval[i] = l[i] - r[i];
-      
-      for (size_t i(std::min(N, M)+1); i <= M; ++i)
-    	retval[i] = l[i];
-    
-      for (size_t i(std::min(N, M)+1); i <= N; ++i)
-    	retval[i] = -r[i];
-      
-      return retval;
-    }
-    
-    /*! \brief Multiplication between two Polynomial types.
-     */
-    template<class Real1, class Real2, size_t M, size_t N, char Letter>
-    auto operator*(const Polynomial<M, Real1, Letter>& l, const Polynomial<N, Real2, Letter>& r)
-      -> Polynomial<M + N, decltype(store(l[0] * r[0])), Letter>
-    {
-      Polynomial<M + N, decltype(store(l[0] * r[0])), Letter> retval;
-      for (size_t i(0); i <= N+M; ++i)
-    	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
-    	  retval[i] += l[j] * r[i-j];
-      return retval;
-    }
-
-    /*! \brief Divisioln between two Polynomial types.
-     */
-    template<class Real1, class Real2, size_t M, char Letter>
-    auto operator/(const Polynomial<M, Real1, Letter>& l, const Polynomial<0, Real2, Letter>& r)
-      -> Polynomial<M, decltype(store(l[0] / r[0])), Letter>
-    {
-      Polynomial<M, decltype(store(l[0] / r[0])), Letter> retval;
-      for (size_t i(0); i <= M; ++i)
-    	  retval[i] += l[i] / r[0];
-      return retval;
-    }
 
   } // namespace symbolic
 } // namespace stator

@@ -302,6 +302,74 @@ namespace stator {
       auto simplify_BinaryOp(const BinaryOp<Real2, Polynomial<Order, Real, Letter>, Op>& f, detail::last_choice)
       -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(Polynomial<0, decltype(toArithmetic(f._l)), Letter>{toArithmetic(f._l)}, f._r)));
 
+    namespace detail {
+      constexpr size_t max_order(size_t N, size_t M)
+      { return N > M ? N : M; }
+    }// namespace detail
+
+    /*!\brief Addition operator for two Polynomial types. 
+     */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t N, class Real2, size_t M, char Letter>
+    auto simplify(const BinaryOp<Polynomial<N, Real1, Letter>, Polynomial<M, Real2, Letter>, detail::Add> & f)
+      -> Polynomial<detail::max_order(M, N), decltype(store(f._l[0] + f._r[0])), Letter>
+    {
+      Polynomial<detail::max_order(M, N), decltype(store((f._l[0] + f._r[0]))), Letter> retval;
+    
+      for (size_t i(0); i <= std::min(N, M); ++i)
+    	retval[i] = f._l[i] + f._r[i];
+      
+      for (size_t i(std::min(N, M)+1); i <= N; ++i)
+    	retval[i] = f._l[i];
+    
+      for (size_t i(std::min(N, M)+1); i <= M; ++i)
+    	retval[i] = f._r[i];
+      
+      return retval;
+    }    
+    /*! \brief Subtraction between two Polynomial types. 
+     */
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t M, class Real2, size_t N, char Letter>
+    auto simplify(const BinaryOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter>, detail::Subtract>& f)
+      -> Polynomial<detail::max_order(M, N), decltype(store(f._l[0] - f._r[0])), Letter>
+    {
+      Polynomial<detail::max_order(M, N), decltype(store(f._l[0] - f._r[0])), Letter> retval;
+      for (size_t i(0); i <= std::min(N, M); ++i)
+    	retval[i] = f._l[i] - f._r[i];
+      
+      for (size_t i(std::min(N, M)+1); i <= M; ++i)
+    	retval[i] = f._l[i];
+    
+      for (size_t i(std::min(N, M)+1); i <= N; ++i)
+    	retval[i] = -f._r[i];
+      
+      return retval;
+    }
+    
+    /*! \brief Multiplication between two Polynomial types.
+     */
+    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, char Letter>
+    auto simplify(const BinaryOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter>, detail::Multiply>& f)
+      -> Polynomial<M + N, decltype(store(f._l[0] * f._r[0])), Letter>
+    {
+      Polynomial<M + N, decltype(store(f._l[0] * f._r[0])), Letter> retval;
+      for (size_t i(0); i <= N+M; ++i)
+    	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
+    	  retval[i] += f._l[j] * f._r[i-j];
+      return retval;
+    }
+
+    /*! \brief Division between two Polynomial types.
+     */
+    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, char Letter>
+    auto simplify(const BinaryOp<Polynomial<M, Real1, Letter>, Polynomial<0, Real2, Letter>, detail::Divide>& f)
+      -> Polynomial<M, decltype(store(f._l[0] / f._r[0])), Letter>
+    {
+      Polynomial<M, decltype(store(f._l[0] / f._r[0])), Letter> retval;
+      for (size_t i(0); i <= M; ++i)
+    	  retval[i] += f._l[i] / f._r[0];
+      return retval;
+    }
+    
     ///*! \brief Specialisation for squares of matrix expressions. */
     //template<class Config = DefaultSimplifyConfig, size_t Power, class Matrix, size_t N, char Letter,
     //         typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Matrix>, Matrix>::value>::type>
@@ -376,6 +444,6 @@ namespace stator {
     template<class Config = DefaultSimplifyConfig, class Arg, size_t Power>
     auto simplify(const PowerOp<arbsignF<Arg>,Power>& f)
       -> typename std::enable_if<Power % 2, decltype(arbsign(pow<Power>(f._arg._arg)))>::type
-    { return arbsign(pow<Power>(f._arg._arg)); }    
+    { return arbsign(pow<Power>(f._arg._arg)); }
   }
 }

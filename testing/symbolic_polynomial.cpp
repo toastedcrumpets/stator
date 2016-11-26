@@ -139,9 +139,9 @@ BOOST_AUTO_TEST_CASE( poly_variables )
   Polynomial<1> x{0, 1};
   Polynomial<1,double,'y'> y{0, 1};
 
-  BOOST_CHECK(compare_expression(x * x * x, "P(1 × x³)"));
-  BOOST_CHECK(compare_expression(y * y * y, "P(1 × y³)"));
-  BOOST_CHECK(compare_expression(substitution(y * y * y, Variable<'y'>()==Variable<'x'>()), "P(1 × x³)"));
+  BOOST_CHECK(compare_expression(expand(x * x * x), "P(1 × x³)"));
+  BOOST_CHECK(compare_expression(expand(y * y * y), "P(1 × y³)"));
+  BOOST_CHECK(compare_expression(expand(substitution(y * y * y, Variable<'y'>()==Variable<'x'>())), "P(1 × x³)"));
 }
 
 BOOST_AUTO_TEST_CASE( poly_addition )
@@ -149,11 +149,11 @@ BOOST_AUTO_TEST_CASE( poly_addition )
   using namespace stator::symbolic;
   Polynomial<1> x{0, 2.5};
   Polynomial<0> C{0.3};
-  auto poly1 = x+C;
+  auto poly1 = expand(x+C);
   BOOST_CHECK_EQUAL(poly1[0], 0.3);
   BOOST_CHECK_EQUAL(poly1[1], 2.5);
 
-  poly1 = C+x;
+  poly1 = expand(C+x);
   BOOST_CHECK_EQUAL(poly1[0], 0.3);
   BOOST_CHECK_EQUAL(poly1[1], 2.5);
 
@@ -205,11 +205,11 @@ BOOST_AUTO_TEST_CASE( poly_vector )
   using namespace stator::symbolic;
   Polynomial<1, Vector> x{Vector{0,0,0}, Vector{1,2,3}};
   Polynomial<0, Vector> C{Vector{3,2,1}};
-  auto poly1 = x+C;
+  auto poly1 = expand(x+C);
   BOOST_CHECK_EQUAL(poly1[0], (Vector{3,2,1}));
   BOOST_CHECK_EQUAL(poly1[1], (Vector{1,2,3}));
 
-  //auto poly2 = dot(poly1, poly1);
+  auto poly2 = dot(poly1, poly1);
   //BOOST_CHECK_EQUAL(poly2[0], 14);
   //BOOST_CHECK_EQUAL(poly2[1], 20);
   //BOOST_CHECK_EQUAL(poly2[2], 14);
@@ -261,27 +261,27 @@ BOOST_AUTO_TEST_CASE( poly_eval_limits )
   Polynomial<1> x{0, 1};
 
   {//Check even positive polynomials
-    auto f = x*x-x+3;
+    auto f = expand(x * x - x + 3);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==0), 3);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==+HUGE_VAL), +HUGE_VAL);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==-HUGE_VAL), +HUGE_VAL);
   }
 
   {//Check even negative polynomials
-    auto f = -x*x+x+3;
+    auto f = expand(-x * x + x + 3);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==0), 3);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==+HUGE_VAL), -HUGE_VAL);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd positive polynomials
-    auto f = x*x*x + x + 3;
+    auto f = expand(x * x * x + x + 3);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==+HUGE_VAL), +HUGE_VAL);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd negative polynomials
-    auto f = -x*x*x + x + 3;
+    auto f = expand(-x * x * x + x + 3);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==+HUGE_VAL), -HUGE_VAL);
     BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==-HUGE_VAL), +HUGE_VAL);
   }
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE( poly_derivative )
   using namespace stator::symbolic;
   Polynomial<1> x{0, 1};
 
-  auto poly1 = x + x*x + x*x*x + x*x*x*x;
+  auto poly1 = expand(x + x*x + x*x*x + x*x*x*x);
   auto poly2 = derivative(poly1, Variable<'x'>());
   BOOST_CHECK_EQUAL(poly2[0], 1);
   BOOST_CHECK_EQUAL(poly2[1], 2);
@@ -659,7 +659,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto q = expand(x * x * x + 3 * x - 2);
     auto g = expand(x * x - 2 * x);
     auto r = expand(4 * x - 2);
-    auto f = q * g + r;
+    auto f = expand(q * g + r);
     auto euclid = euclidean_division(f, g);  
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
     BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
@@ -668,7 +668,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto q = expand(x * x * x + 3 * x - 2);
     auto g = expand(x * x - 2 * x);
     auto r = Polynomial<0>{0};
-    auto f = q * g + r;
+    auto f = simplify(q * g + r);
     auto euclid = euclidean_division(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
@@ -679,7 +679,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto q = expand(x * x * x + 3 * x - 2);
     auto g = expand(0 * x*x*x + x*x - 2 * x);
     auto r = Polynomial<0>{0};
-    auto f = q * g + r;
+    auto f = expand(q * g + r);
     auto euclid = euclidean_division(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
@@ -690,7 +690,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto q = expand(x * x * x + 3 * x - 2);
     auto g = Polynomial<0>{0.5};
     auto r = Polynomial<0>{0};
-    auto f = q * g + r;
+    auto f = expand(q * g + r);
     auto euclid = euclidean_division(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
@@ -701,7 +701,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto q = expand(x * x * x + 3 * x - 2);
     auto g = Polynomial<3>{0.25};
     auto r = Polynomial<0>{0};
-    auto f = q * g + r;
+    auto f = expand(q * g + r);
     auto euclid = euclidean_division(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
@@ -1084,8 +1084,8 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
       BOOST_CHECK(std::abs(err[2]) < errlvl);
     }
 
-  BOOST_CHECK(toArithmetic(Vector{1,2,3}) == (Vector{1,2,3}));
-  //BOOST_CHECK(dot(Vector{1,2,3} , Vector{4,5,6}, stator::symbolic::detail::select_overload{}) == 32);
+  BOOST_CHECK((toArithmetic(Vector{1,2,3}) == Vector{1,2,3}));
+  BOOST_CHECK(dot(Vector{1,2,3} , Vector{4,5,6}) == 32);
 }
 
 //BOOST_AUTO_TEST_CASE( generic_solve_real_roots )

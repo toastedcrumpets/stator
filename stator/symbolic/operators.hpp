@@ -94,9 +94,6 @@ namespace stator {
     template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, RHS, detail::Divide>;
     template<class LHS, class RHS> using DotOp      = BinaryOp<LHS, RHS, detail::Dot>;
 
-    template<class LHS, class RHS>
-    auto dot(const LHS& l, const RHS& r) -> STATOR_AUTORETURN((DotOp<decltype(store(l)), decltype(store(r))>(l, r)));
-
     template <class Op, class OverOp>
     struct left_distributive { static constexpr bool value = false; };
 
@@ -160,6 +157,17 @@ namespace stator {
     auto operator/(const LHS& l, const RHS& r) 
     -> STATOR_AUTORETURN((DivideOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
+    /*! \brief Symbolic dot operator. */
+    template<class LHS, class RHS,
+	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
+    auto dot(const LHS& l, const RHS& r) 
+    -> STATOR_AUTORETURN((DotOp<decltype(store(l)), decltype(store(r))>(l, r)));
+
+    template<class LHS, class RHS,
+	     typename = typename std::enable_if<!ApplySymbolicOps<LHS, RHS>::value>::type>
+    auto dot(const LHS& l, const RHS& r) 
+      -> STATOR_AUTORETURN(detail::Dot::apply(l, r));
+    
     /*! \brief Derivatives of AddOp operations.
      */
     template<char dVariable, class LHS, class RHS>

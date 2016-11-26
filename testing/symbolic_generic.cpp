@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE( vector_symbolic )
     }
 
   BOOST_CHECK(toArithmetic(Vector{1,2,3}) == (Vector{1,2,3}));
-  BOOST_CHECK(simplify(dot(Vector{1,2,3} , Vector{4,5,6})) == 32);
+  BOOST_CHECK(dot(Vector{1,2,3} , Vector{4,5,6}) == 32);
 }
 
 BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )

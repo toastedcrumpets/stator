@@ -19,6 +19,7 @@
 
 
 //C++
+#include <iostream>
 #include <vector>
 #include <cmath>
 #include <complex>
@@ -635,12 +636,12 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
   {//PowerOp quartic
     auto f1 = expand(pow<2>(30 * x * x + x - 23));
 
-    //auto roots = solve_real_roots(f1);
+    auto roots = solve_real_roots(f1);
     //FIX THIS UNIT TEST!
-    //BOOST_CHECK(roots.size() == 2);
+    BOOST_CHECK(roots.size() == 2);
     ////NOTE THESE ROOTS ARE DOUBLE ROOTS (roots.size() may equal 2,3, or 4)
-    //BOOST_CHECK_CLOSE(roots[0], -0.8924203103613100773375343963347855860436, 1e-7);
-    //BOOST_CHECK_CLOSE(roots[1], -0.8924203103613100773375343963347855860436, 1e-7);
+    BOOST_CHECK_CLOSE(roots[0], -0.8924203103613100773375343963347855860436, 1e-7);
+    BOOST_CHECK_CLOSE(roots[1], -0.8924203103613100773375343963347855860436, 1e-7);
 
     auto droots = solve_real_roots(derivative(f1, Variable<'x'>()));
     BOOST_CHECK(droots.size() == 3);
@@ -650,7 +651,7 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
   }
 }
 
-BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
+BOOST_AUTO_TEST_CASE( poly_gcd )
 {
   using namespace stator::symbolic;
   const Polynomial<1> x{0, 1};
@@ -660,7 +661,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto g = expand(x * x - 2 * x);
     auto r = expand(4 * x - 2);
     auto f = expand(q * g + r);
-    auto euclid = euclidean_division(f, g);  
+    auto euclid = gcd(f, g);  
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
     BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
   }
@@ -669,7 +670,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto g = expand(x * x - 2 * x);
     auto r = Polynomial<0>{0};
     auto f = simplify(q * g + r);
-    auto euclid = euclidean_division(f, g);
+    auto euclid = gcd(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
     BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
@@ -680,7 +681,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto g = expand(0 * x*x*x + x*x - 2 * x);
     auto r = Polynomial<0>{0};
     auto f = expand(q * g + r);
-    auto euclid = euclidean_division(f, g);
+    auto euclid = gcd(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
     BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
@@ -691,7 +692,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto g = Polynomial<0>{0.5};
     auto r = Polynomial<0>{0};
     auto f = expand(q * g + r);
-    auto euclid = euclidean_division(f, g);
+    auto euclid = gcd(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
     BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
@@ -702,7 +703,7 @@ BOOST_AUTO_TEST_CASE( poly_Euclidean_division )
     auto g = Polynomial<3>{0.25};
     auto r = Polynomial<0>{0};
     auto f = expand(q * g + r);
-    auto euclid = euclidean_division(f, g);
+    auto euclid = gcd(f, g);
     
     BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
     BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
@@ -1088,22 +1089,11 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
   BOOST_CHECK(dot(Vector{1,2,3} , Vector{4,5,6}) == 32);
 }
 
-//BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
-//{
-//  using namespace stator::symbolic;
-//  const Polynomial<1> x{0, 1};
-//  std::cout.precision(20);
-//
-//  auto f1 = (x +1e5) * (x +1e5) * (x +1e5) * (x +1e5) * (x - 1e7);
-//  //Test where 5 roots of a 7th order Polynomial are real
-//  auto f2 = f1 * (x * x - 3 * x + 4);
-//  std::cout << solve_real_roots(f2) << std::endl;
-////  //Test where all 5 roots of a 5th order Polynomial are real
-////  StackVector<double, 5> roots{-100.0, 0.1, 0.1, 5.0, 10.0};
-////  auto f1 = (x - roots[0]) * (x - roots[1]) * (x - roots[2]) * (x - roots[3]) * (x - roots[4]);
-////  //Test the default implementation (VAS + TOMS748)
-////  std::cout << VAS_real_root_bounds(f1) << std::endl;
-////  std::cout << VCA_real_root_bounds(f1) << std::endl;
-////  
-////  LinBairstowSolve(Polynomial<4>{6,4,3,1,1}, 1e-16);
-//}
+BOOST_AUTO_TEST_CASE( generic_solve_real_roots_2 )
+{
+  using namespace stator::symbolic;
+  const Polynomial<1> x{0, 1};
+  std::cout.precision(20);
+
+  std::cout << LinBairstowSolve(Polynomial<4>{6,4,3,1,1}, 1e-14) << std::endl;
+}

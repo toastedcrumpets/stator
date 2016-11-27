@@ -17,6 +17,7 @@
   along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <iostream>
 //stator
 #include <stator/symbolic/symbolic.hpp>
 

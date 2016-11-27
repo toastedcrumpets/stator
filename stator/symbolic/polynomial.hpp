@@ -61,13 +61,13 @@ namespace stator {
 
       \tparam Order The order of the Polynomial.
 
-      \tparam Real The type of the coefficients of the
+      \tparam Coeff_t The type of the coefficients of the
       Polynomial.
     */ 
-    template<size_t Order, class Real, char Letter>
-    class Polynomial : public std::array<Real, Order+1>, SymbolicOperator
+    template<size_t Order, class Coeff_t, char Letter>
+    class Polynomial : public std::array<Coeff_t, Order+1>, SymbolicOperator
     {
-      typedef std::array<Real, Order+1> Base;
+      typedef std::array<Coeff_t, Order+1> Base;
 
     public:
       using Base::operator[];
@@ -76,11 +76,11 @@ namespace stator {
  	This initialises all Polynomial orders to be equivalent to
  	zero.
       */
-      Polynomial() { Base::fill(empty_sum(Real())); }
+      Polynomial() { Base::fill(empty_sum(Coeff_t())); }
 
       Polynomial(const PowerOp<Variable<Letter>, Order>&) { 
-	Base::fill(empty_sum(Real()));
-	Base::operator[](Order) = Real(1);
+	Base::fill(empty_sum(Coeff_t()));
+	Base::operator[](Order) = Coeff_t(1);
       }
     
       /*! \brief List initializer for simple Polynomial construction. 
@@ -93,7 +93,7 @@ namespace stator {
  	\endcode
 	
       */
-      Polynomial(std::initializer_list<Real> _list) {
+      Polynomial(std::initializer_list<Coeff_t> _list) {
  	if (_list.size() > Order+1)
  	  throw std::length_error("initializer list too long");
     
@@ -102,7 +102,7 @@ namespace stator {
  	  Base::operator[](i) = *it;
 
  	for (; i <= Order; ++i)
- 	  Base::operator[](i) = empty_sum(Real());
+ 	  Base::operator[](i) = empty_sum(Coeff_t());
       }
 
       template<class InputIt>
@@ -116,20 +116,20 @@ namespace stator {
 	  stator_throw() << "Polynomial type too short to hold this range of coefficients";
 
  	for (; i <= Order; ++i)
- 	  Base::operator[](i) = empty_sum(Real());
+ 	  Base::operator[](i) = empty_sum(Coeff_t());
       }
 
       /*! \brief Constructor for constructing higher-order Polynomial
           types from lower order Polynomial types. 
       */
-      template<size_t N, class Real2,
+      template<size_t N, class Coeff_t2,
 	       typename = typename std::enable_if<(N <= Order)>::type >
-	       Polynomial(const Polynomial<N, Real2, Letter>& poly) {
+	       Polynomial(const Polynomial<N, Coeff_t2, Letter>& poly) {
  	size_t i(0);
  	for (; i <= N; ++i)
  	  Base::operator[](i) = poly[i];
  	for (; i <= Order; ++i)
- 	  Base::operator[](i) = empty_sum(Real());
+ 	  Base::operator[](i) = empty_sum(Coeff_t());
       }
       
       /*! \brief Unary negative operator to change the sign of a Polynomial. */
@@ -146,10 +146,10 @@ namespace stator {
       This can be dangerous, as if the order of a polynomial is
       lowered high order terms are simply truncated.
     */
-    template<size_t NewOrder, size_t Order, class Real, char Letter>
-    Polynomial<NewOrder, Real, Letter> change_order(const Polynomial<Order, Real, Letter>& f) {
+    template<size_t NewOrder, size_t Order, class Coeff_t, char Letter>
+    Polynomial<NewOrder, Coeff_t, Letter> change_order(const Polynomial<Order, Coeff_t, Letter>& f) {
       //The default constructor blanks Polynomial coefficients to zero
-      Polynomial<NewOrder, Real, Letter> retval;
+      Polynomial<NewOrder, Coeff_t, Letter> retval;
       //Just copy the coefficients which overlap between the new and old polynomial orders.
       std::copy(f.begin(), f.begin() + std::min(Order, NewOrder) + 1, retval.begin());
       return retval;
@@ -165,9 +165,9 @@ namespace stator {
       The empty sum is a term whose multiplicative action is null (can
       be ignored).
     */
-    template<size_t Order, class Real, char Letter>
-    constexpr Polynomial<Order, Real, Letter> empty_sum(const Polynomial<Order, Real, Letter>&)
-    { return Polynomial<Order, Real, Letter>{}; }
+    template<size_t Order, class Coeff_t, char Letter>
+    constexpr Polynomial<Order, Coeff_t, Letter> empty_sum(const Polynomial<Order, Coeff_t, Letter>&)
+    { return Polynomial<Order, Coeff_t, Letter>{}; }
 
     /*! \} */
     
@@ -185,14 +185,14 @@ namespace stator {
     /*! \brief Optimised Polynomial substitution which performs an
         exchange of the Polynomial Variable.
      */
-    template<class Real, size_t Order, char Var1, char Var2>
-    Polynomial<Order, Real, Var2> substitution(const Polynomial<Order, Real, Var1>& f, const VariableSubstitution<Var1, Variable<Var2> >& x_container)
-    { return Polynomial<Order, Real, Var2>(f.begin(), f.end()); }
+    template<class Coeff_t, size_t Order, char Var1, char Var2>
+    Polynomial<Order, Coeff_t, Var2> substitution(const Polynomial<Order, Coeff_t, Var1>& f, const VariableSubstitution<Var1, Variable<Var2> >& x_container)
+    { return Polynomial<Order, Coeff_t, Var2>(f.begin(), f.end()); }
 
     /*! \brief Optimised Polynomial substitution for Null
         insertions. */
-    template<size_t Order, class Real, char Letter>
-    Real substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Null>&)
+    template<size_t Order, class Coeff_t, char Letter>
+    Coeff_t substitution(const Polynomial<Order, Coeff_t, Letter>& f, const VariableSubstitution<Letter, Null>&)
     { return f[0]; }
 
     /*! \brief Numerically Evaluates a Polynomial expression at a
@@ -204,12 +204,12 @@ namespace stator {
       x). This behaviour is crucial as it is used in the evaluation of
       Sturm chains.
     */
-    template<class Real, size_t Order, char Letter, class Real2,
-	     typename = typename std::enable_if<(std::is_arithmetic<Real2>::value
-                                                 && !std::is_base_of<Eigen::EigenBase<Real>, Real>::value
-                                                 && !std::is_base_of<Eigen::EigenBase<Real2>, Real2>::value)>::type>
-    decltype(store(Real() * Real2()))
-    substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
+    template<class Coeff_t, size_t Order, char Letter, class Coeff_t2,
+	     typename = typename std::enable_if<(std::is_arithmetic<Coeff_t2>::value
+                                                 && !std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value
+                                                 && !std::is_base_of<Eigen::EigenBase<Coeff_t2>, Coeff_t2>::value)>::type>
+    decltype(store(Coeff_t() * Coeff_t2()))
+    substitution(const Polynomial<Order, Coeff_t, Letter>& f, const VariableSubstitution<Letter, Coeff_t2>& x_container)
     {
       //Handle the case where this is actually a constant and not a
       //Polynomial. This is free to evaluate now as Order is a
@@ -227,11 +227,11 @@ namespace stator {
 	    //Determine if this is an odd or even function of x
 	    if (Order % 2)
 	      //This is an odd function of x.
-	      return (1 - 2 * (std::signbit(f[i]) ^ std::signbit(x))) * std::numeric_limits<Real>::infinity();
+	      return (1 - 2 * (std::signbit(f[i]) ^ std::signbit(x))) * std::numeric_limits<Coeff_t>::infinity();
 	    else
 	      //This is an even function of x, the sign of x doesn't
 	      //matter!
-	      return (1 - 2 * std::signbit(f[i])) * std::numeric_limits<Real>::infinity();
+	      return (1 - 2 * std::signbit(f[i])) * std::numeric_limits<Coeff_t>::infinity();
 	  };
 	//All terms in x have zero as their coefficient
 	return f[0];
@@ -239,7 +239,7 @@ namespace stator {
 
       
       
-      typedef decltype(store(Real() * Real2())) RetType;
+      typedef decltype(store(Coeff_t() * Coeff_t2())) RetType;
       RetType sum = RetType();
       for(size_t i = Order; i > 0; --i)
 	sum = sum * x + f[i];
@@ -253,8 +253,8 @@ namespace stator {
        */
       template<size_t Stage>
       struct PolySubWorker {
-	template<size_t Order, char Letter, class Real, class X>
-	static auto eval(const Polynomial<Order, Real, Letter>& f, const X& x) 
+	template<size_t Order, char Letter, class Coeff_t, class X>
+	static auto eval(const Polynomial<Order, Coeff_t, Letter>& f, const X& x) 
           -> STATOR_AUTORETURN(f[Order - Stage] + x * PolySubWorker<Stage - 1>::eval(f, x));
       };
       
@@ -265,8 +265,8 @@ namespace stator {
        */
       template<>
       struct PolySubWorker<0> {
-	template<size_t Order, char Letter, class Real, class X>
-	static auto eval(const Polynomial<Order, Real, Letter>& f, const X& x) 
+	template<size_t Order, char Letter, class Coeff_t, class X>
+	static auto eval(const Polynomial<Order, Coeff_t, Letter>& f, const X& x) 
           -> STATOR_AUTORETURN(f[Order]);
       };
     }
@@ -280,12 +280,12 @@ namespace stator {
       The method used to evaluate the polynomial is known as Horner's
       method.
      */
-    template<class Real, size_t Order, char Letter, class Real2,
-	     typename = typename std::enable_if<!std::is_arithmetic<Real2>::value
-                                                || (std::is_base_of<Eigen::EigenBase<Real2>, Real2>::value && std::is_arithmetic<Real2>::value)
-                                                || (std::is_base_of<Eigen::EigenBase<Real>, Real>::value && std::is_arithmetic<Real2>::value)
+    template<class Coeff_t, size_t Order, char Letter, class Coeff_t2,
+	     typename = typename std::enable_if<!std::is_arithmetic<Coeff_t2>::value
+                                                || (std::is_base_of<Eigen::EigenBase<Coeff_t2>, Coeff_t2>::value && std::is_arithmetic<Coeff_t2>::value)
+                                                || (std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value && std::is_arithmetic<Coeff_t2>::value)
                                                 >::type>
-    auto substitution(const Polynomial<Order, Real, Letter>& f, const VariableSubstitution<Letter, Real2>& x_container)
+    auto substitution(const Polynomial<Order, Coeff_t, Letter>& f, const VariableSubstitution<Letter, Coeff_t2>& x_container)
      -> STATOR_AUTORETURN(detail::PolySubWorker<Order>::eval(f, x_container._val))
 
     /*! \brief Fast evaluation of multiple derivatives of a
@@ -295,11 +295,11 @@ namespace stator {
       without symbolically taking the derivative (causing a copy of
       the coefficients).
     */
-    template<size_t D, size_t Order, class Real, char Letter, class Real2>
-    std::array<Real, D+1> eval_derivatives(const Polynomial<Order, Real, Letter>& f, const Real2& x)
+    template<size_t D, size_t Order, class Coeff_t, char Letter, class Coeff_t2>
+    std::array<Coeff_t, D+1> eval_derivatives(const Polynomial<Order, Coeff_t, Letter>& f, const Coeff_t2& x)
     {
-      std::array<Real, D+1> retval;
-      retval.fill(empty_sum(Real()));
+      std::array<Coeff_t, D+1> retval;
+      retval.fill(empty_sum(Coeff_t()));
       retval[0] = f[Order];
       for (size_t i(Order); i>0; --i) {
 	for (size_t j = std::min(D, Order-(i-1)); j>0; --j)
@@ -307,7 +307,7 @@ namespace stator {
 	retval[0] = retval[0] * x + f[i-1];
       }
 
-      Real cnst(1.0);
+      Coeff_t cnst(1.0);
       for (size_t i(2); i <= D; ++i) {
 	cnst *= i;
 	retval[i] *= cnst;
@@ -337,23 +337,23 @@ namespace stator {
       As g(x) may contain leading order coefficients which are zero,
       we cannot lower the order of the quotient polynomial returned.
     */
-    template<size_t Order1, class Real, char Letter, size_t Order2>
-    std::tuple<Polynomial<Order1, Real, Letter>, Polynomial<Order2 - 1, Real, Letter> >
-    euclidean_division(const Polynomial<Order1, Real, Letter>& f, const Polynomial<Order2, Real, Letter>& g)
+    template<size_t Order1, class Coeff_t, char Letter, size_t Order2>
+    std::tuple<Polynomial<Order1, Coeff_t, Letter>, Polynomial<Order2 - 1, Coeff_t, Letter> >
+    gcd(const Polynomial<Order1, Coeff_t, Letter>& f, const Polynomial<Order2, Coeff_t, Letter>& g)
     {
       static_assert(Order2 < Order1, "Cannot perform division when the order of the denominator is larger than the numerator using this routine");
       static_assert(Order2 > 0, "Constant division fails with these loops");
-      typedef std::tuple<Polynomial<Order1, Real, Letter>, Polynomial<Order2 - 1, Real, Letter> > RetType;
+      typedef std::tuple<Polynomial<Order1, Coeff_t, Letter>, Polynomial<Order2 - 1, Coeff_t, Letter> > RetType;
       //If the leading term of g is zero, drop to a lower order
       //euclidean division.
       if (g[Order2] == 0) {
-	auto lower_order_op = euclidean_division(f, change_order<Order2 - 1>(g));
+	auto lower_order_op = gcd(f, change_order<Order2 - 1>(g));
 	return RetType(std::get<0>(lower_order_op), std::get<1>(lower_order_op));
       }
 
       //The quotient and remainder.
-      Polynomial<Order1, Real, Letter> r(f);
-      Polynomial<Order1, Real, Letter> q;
+      Polynomial<Order1, Coeff_t, Letter> r(f);
+      Polynomial<Order1, Coeff_t, Letter> q;
 
       //Loop from the highest order coefficient of f, down to where we
       //have a polynomial one order lower than g.
@@ -371,16 +371,16 @@ namespace stator {
     /*!  \cond Specializations
       \brief Specialisation for division by a constant.
      */
-    template<size_t Order1, class Real, char Letter>
-    std::tuple<Polynomial<Order1, Real, Letter>, Polynomial<0, Real, Letter> >
-    euclidean_division(const Polynomial<Order1, Real, Letter>& f, const Polynomial<0, Real, Letter>& g)
+    template<size_t Order1, class Coeff_t, char Letter>
+    std::tuple<Polynomial<Order1, Coeff_t, Letter>, Polynomial<0, Coeff_t, Letter> >
+    gcd(const Polynomial<Order1, Coeff_t, Letter>& f, const Polynomial<0, Coeff_t, Letter>& g)
     {
-      typedef std::tuple<Polynomial<Order1, Real, Letter>, Polynomial<0, Real, Letter> > RetType;
+      typedef std::tuple<Polynomial<Order1, Coeff_t, Letter>, Polynomial<0, Coeff_t, Letter> > RetType;
       if (g[0] == 0)
-	return RetType(Polynomial<Order1, Real, Letter>{std::numeric_limits<Real>::infinity()}, 
-		       Polynomial<0, Real, Letter>{empty_sum(Real())});
+	return RetType(Polynomial<Order1, Coeff_t, Letter>{std::numeric_limits<Coeff_t>::infinity()}, 
+		       Polynomial<0, Coeff_t, Letter>{empty_sum(Coeff_t())});
 
-      return RetType(expand(f * (1.0 / g[0])), Polynomial<0, Real, Letter>{empty_sum(Real())});
+      return RetType(expand(f * (1.0 / g[0])), Polynomial<0, Coeff_t, Letter>{empty_sum(Coeff_t())});
     }
 
 
@@ -417,10 +417,10 @@ namespace stator {
       the correct variable AND the Order of the Polynomial is greater
       than zero.
      */
-    template<char Letter, class Real, size_t N, char dLetter,
+    template<char Letter, class Coeff_t, size_t N, char dLetter,
 	     typename = typename std::enable_if<(Letter==dLetter) && (N > 0)>::type>
-      inline Polynomial<N-1, Real, Letter> derivative(const Polynomial<N, Real, Letter>& f, Variable<dLetter>) {
-      Polynomial<N-1, Real, Letter> retval;
+      inline Polynomial<N-1, Coeff_t, Letter> derivative(const Polynomial<N, Coeff_t, Letter>& f, Variable<dLetter>) {
+      Polynomial<N-1, Coeff_t, Letter> retval;
       for (size_t i(0); i < N; ++i) {
 	retval[i] = f[i+1] * (i+1);
       }
@@ -432,9 +432,9 @@ namespace stator {
       This specialisation is only activated if this is a derivative in
       the incorrect variable.
      */
-    template<char Letter, class Real, size_t N, char dLetter,
+    template<char Letter, class Coeff_t, size_t N, char dLetter,
 	     typename = typename std::enable_if<(Letter!=dLetter) || (N==0)>::type>
-      Null derivative(const Polynomial<N, Real, Letter>& f, Variable<dLetter>) 
+      Null derivative(const Polynomial<N, Coeff_t, Letter>& f, Variable<dLetter>) 
     { return Null(); }
 
     /*! \endcond \} */
@@ -472,8 +472,8 @@ namespace stator {
       \{
     */
     /*! \brief Writes a human-readable representation of the Polynomial to the output stream. */
-    template<class Real, size_t N, char Letter>
-    inline std::ostream& operator<<(std::ostream& os, const Polynomial<N, Real, Letter>& poly) {
+    template<class Coeff_t, size_t N, char Letter>
+    inline std::ostream& operator<<(std::ostream& os, const Polynomial<N, Coeff_t, Letter>& poly) {
       std::ostringstream oss;
       oss.precision(os.precision());
       size_t terms = 0;
@@ -540,14 +540,14 @@ namespace stator {
       eval_derivatives function to actually calculate the derivatives
       while avoiding the factorial term.
      */
-    template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order, double, Letter> shift_function(const Polynomial<Order, Real, Letter>& f, const double t) 
+    template<size_t Order, class Coeff_t, char Letter>
+    inline Polynomial<Order, double, Letter> shift_function(const Polynomial<Order, Coeff_t, Letter>& f, const double t) 
     {
       //Check for the simple case where t == 0, nothing to be done
       if (t == 0) return f;
 
       Polynomial<Order, double, Letter> retval;
-      retval.fill(empty_sum(Real()));
+      retval.fill(empty_sum(Coeff_t()));
       retval[0] = f[Order];
       for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)
@@ -563,10 +563,10 @@ namespace stator {
       shift is unity. See \ref shift_function for more
       implementation details.
      */
-    template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order, Real, Letter> shift_function(const Polynomial<Order, Real, Letter>& f, Unity) {
-      Polynomial<Order, Real, Letter> retval;
-      retval.fill(empty_sum(Real()));
+    template<size_t Order, class Coeff_t, char Letter>
+    inline Polynomial<Order, Coeff_t, Letter> shift_function(const Polynomial<Order, Coeff_t, Letter>& f, Unity) {
+      Polynomial<Order, Coeff_t, Letter> retval;
+      retval.fill(empty_sum(Coeff_t()));
       retval[0] = f[Order];
       for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)
@@ -614,10 +614,10 @@ namespace stator {
 	implementation of \ref shift_polynomial and substitute in a
 	shift value of 1 to arrive at this implementation.
      */
-    template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order, Real, Letter> invert_taylor_shift(const Polynomial<Order, Real, Letter>& f) {
-      Polynomial<Order, Real, Letter> retval;
-      retval.fill(empty_sum(Real()));
+    template<size_t Order, class Coeff_t, char Letter>
+    inline Polynomial<Order, Coeff_t, Letter> invert_taylor_shift(const Polynomial<Order, Coeff_t, Letter>& f) {
+      Polynomial<Order, Coeff_t, Letter> retval;
+      retval.fill(empty_sum(Coeff_t()));
       retval[0] = f[0];
       for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)
@@ -629,9 +629,9 @@ namespace stator {
 
     /*! \brief Returns a polynomial \f$g(x)=f\left(-x\right)\f$.
      */
-    template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order, Real, Letter> reflect_poly(const Polynomial<Order, Real, Letter>& f) {
-      Polynomial<Order, Real, Letter> g(f);
+    template<size_t Order, class Coeff_t, char Letter>
+    inline Polynomial<Order, Coeff_t, Letter> reflect_poly(const Polynomial<Order, Coeff_t, Letter>& f) {
+      Polynomial<Order, Coeff_t, Letter> g(f);
       for (size_t i(1); i <= Order; i+=2)
 	g[i] = -g[i];
       return g;
@@ -640,10 +640,10 @@ namespace stator {
     /*! \brief Returns a polynomial \f$g(x)=f\left(a\,x\right)\f$
         where \f$a\f$ is the scaling factor.
      */
-    template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order, Real, Letter> scale_poly(const Polynomial<Order, Real, Letter>& f, const Real& a) {
-      Polynomial<Order, Real, Letter> g(f);
-      Real factor = 1;
+    template<size_t Order, class Coeff_t, char Letter>
+    inline Polynomial<Order, Coeff_t, Letter> scale_poly(const Polynomial<Order, Coeff_t, Letter>& f, const Coeff_t& a) {
+      Polynomial<Order, Coeff_t, Letter> g(f);
+      Coeff_t factor = 1;
       for (size_t i(1); i <= Order; ++i)
 	g[i] *= (factor *= a);
       return g;
@@ -664,8 +664,8 @@ namespace stator {
 	mathematics" vol.1. It is useful for setting accuracy limits
 	while calculating roots.
      */
-    template<class Real, size_t Order, class Real2, char Letter>
-    Real precision(const Polynomial<Order, Real, Letter>& f, const Real2& x)
+    template<class Coeff_t, size_t Order, class Coeff_t2, char Letter>
+    Coeff_t precision(const Polynomial<Order, Coeff_t, Letter>& f, const Coeff_t2& x)
     {
       if (std::isinf(x))
 	return 0.0;
@@ -673,13 +673,13 @@ namespace stator {
       if (Order == 0)
 	return 0;
 
-      static_assert(std::is_floating_point<Real>::value, "This has only been implemented for floating point types");
-      static_assert(std::numeric_limits<Real>::radix == 2, "This has only been implemented for base-2 floating point types");
-      const int mantissa_digits = std::numeric_limits<Real>::digits;
-      const Real eps = 1.06 / std::pow(2, mantissa_digits);
+      static_assert(std::is_floating_point<Coeff_t>::value, "This has only been implemented for floating point types");
+      static_assert(std::numeric_limits<Coeff_t>::radix == 2, "This has only been implemented for base-2 floating point types");
+      const int mantissa_digits = std::numeric_limits<Coeff_t>::digits;
+      const Coeff_t eps = 1.06 / std::pow(2, mantissa_digits);
 
-      Real sum = f[0];
-      Real2 xn = std::abs(x);
+      Coeff_t sum = f[0];
+      Coeff_t2 xn = std::abs(x);
       for(size_t i = 1; i <= Order; ++i) {
 	sum += (2 * i + 1) * std::abs(f[i]) * xn;
 	xn *= std::abs(x);
@@ -745,12 +745,12 @@ namespace stator {
       \param f The Polynomial to factor a root out of.
       \param root The root to remove.
     */
-    template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order-1, Real, Letter> deflate_polynomial(const Polynomial<Order, Real, Letter>& a, const double root) {
-      if (root == Real())
+    template<size_t Order, class Coeff_t, char Letter>
+    inline Polynomial<Order-1, Coeff_t, Letter> deflate_polynomial(const Polynomial<Order, Coeff_t, Letter>& a, const double root) {
+      if (root == Coeff_t())
 	return deflate_polynomial(a, Null());
       
-      Polynomial<Order-1, Real, Letter> b;
+      Polynomial<Order-1, Coeff_t, Letter> b;
       //Calculate the highest and lowest order coefficients using
       //these stable approaches
       b[Order-1] = a[Order];
@@ -759,7 +759,7 @@ namespace stator {
       size_t i_t = Order-2;
       size_t i_b = 1;
       while (i_t >= i_b) {
-	const Real d = root * b[i_t + 1];	
+	const Coeff_t d = root * b[i_t + 1];	
 	if (subtraction_precision(b[i_b], a[i_b]) > addition_precision(a[i_t+1], d)) {
 	  b[i_b] = (b[i_b-1] - a[i_b]) / root;
 	  ++i_b;
@@ -778,9 +778,9 @@ namespace stator {
 	constant term is zero, there is no residual and the division
 	becomes a simple shifted copy.
     */
-    template<size_t Order, class Real, char Letter>
-    inline Polynomial<Order-1, Real, Letter> deflate_polynomial(const Polynomial<Order, Real, Letter>& a, Null) {
-      Polynomial<Order-1, Real, Letter> b;
+    template<size_t Order, class Coeff_t, char Letter>
+    inline Polynomial<Order-1, Coeff_t, Letter> deflate_polynomial(const Polynomial<Order, Coeff_t, Letter>& a, Null) {
+      Polynomial<Order-1, Coeff_t, Letter> b;
       std::copy(a.begin()+1, a.end(), b.begin());
       return b;
     }
@@ -864,9 +864,9 @@ namespace stator {
 	however, do not assume this function will behave well with
 	inaccurate roots.
       */
-      template<size_t Order, class Real, char Letter>
-      inline StackVector<Real, Order> deflate_and_solve_polynomial(const Polynomial<Order, Real, Letter>& f, Real root) {
-	StackVector<Real, Order> roots = solve_real_roots(deflate_polynomial(f, root));
+      template<size_t Order, class Coeff_t, char Letter>
+      inline StackVector<Coeff_t, Order> deflate_and_solve_polynomial(const Polynomial<Order, Coeff_t, Letter>& f, Coeff_t root) {
+	StackVector<Coeff_t, Order> roots = solve_real_roots(deflate_polynomial(f, root));
 	//The roots obtained through deflation are not the roots of
 	//the original equation.  They will need polishing using the
 	//original function:
@@ -1043,35 +1043,35 @@ namespace stator {
       /*! \brief Calculates the negative of the remainder of the
           division of \f$f(x)\f$ by \f$g(x)\f$.
        */
-      template<size_t Order, class Real, char Letter>
-      Polynomial<Order-2, Real, Letter> 
-	mrem(const Polynomial<Order, Real, Letter>& f, const Polynomial<Order-1, Real, Letter>&g)
+      template<size_t Order, class Coeff_t, char Letter>
+      Polynomial<Order-2, Coeff_t, Letter> 
+	mrem(const Polynomial<Order, Coeff_t, Letter>& f, const Polynomial<Order-1, Coeff_t, Letter>&g)
       {
-	Polynomial<Order-2, Real, Letter> rem;
-	std::tie(std::ignore, rem) = euclidean_division(f, g);
+	Polynomial<Order-2, Coeff_t, Letter> rem;
+	std::tie(std::ignore, rem) = gcd(f, g);
 	return -rem;
       }
 
       /*! \brief A collection of Polynomials which form a Sturm chain. 
        */
-      template<size_t Order, class Real, char Letter>
+      template<size_t Order, class Coeff_t, char Letter>
       struct SturmChain {
 	/*! \brief Constructor if is the first Polynomial in the
             chain. 
 	*/
-	SturmChain(const Polynomial<Order, Real, Letter>& p_n):
+	SturmChain(const Polynomial<Order, Coeff_t, Letter>& p_n):
 	  _p_n(p_n), _p_nminus1(p_n, derivative(p_n, Variable<Letter>()))
 	{}
 
 	/*! \brief Constructor if is an intermediate Polynomial in the
             chain.
 	*/
-	SturmChain(const Polynomial<Order+1, Real, Letter>& p_nplus1, const Polynomial<Order, Real, Letter>& p_n):
+	SturmChain(const Polynomial<Order+1, Coeff_t, Letter>& p_nplus1, const Polynomial<Order, Coeff_t, Letter>& p_n):
 	  _p_n(p_n), _p_nminus1(p_n, mrem(p_nplus1, p_n))
 	{}
 
-	Polynomial<Order, Real, Letter> _p_n;
-	SturmChain<Order-1, Real, Letter> _p_nminus1;
+	Polynomial<Order, Coeff_t, Letter> _p_n;
+	SturmChain<Order-1, Coeff_t, Letter> _p_nminus1;
 	
 	/*! Accessor function for the ith Polynomial in the Sturm
             chain.
@@ -1080,7 +1080,7 @@ namespace stator {
 	    the original order of the Polynomial as this is done at
 	    runtime.
 	*/
-	Polynomial<Order, Real, Letter> get(size_t i) const {
+	Polynomial<Order, Coeff_t, Letter> get(size_t i) const {
 	  if (i == 0)
 	    return _p_n;
 	  else
@@ -1093,13 +1093,13 @@ namespace stator {
 	  This actually uses a helper function sign_change_helper to
 	  carry out the calculation.
 	*/
-	template<class Real2>
-	size_t sign_changes(const Real2& x) const {
+	template<class Coeff_t2>
+	size_t sign_changes(const Coeff_t2& x) const {
 	  return sign_change_helper(0, x);
 	}
 
-	template<class Real2>
-	size_t roots(const Real2& a, const Real2& b) const {
+	template<class Coeff_t2>
+	size_t roots(const Coeff_t2& a, const Coeff_t2& b) const {
 	  return std::abs(int(sign_changes(a)) - int(sign_changes(b)));
 	}
 	
@@ -1114,9 +1114,9 @@ namespace stator {
 	    previous polynomials were zero or this is the first
 	    polynomial in the chain).
 	 */
-	template<class Real2>
-	size_t sign_change_helper(const int last_sign, const Real2& x) const {
-	  const Real currentx = substitution(_p_n, Variable<Letter>() == x);
+	template<class Coeff_t2>
+	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
+	  const Coeff_t currentx = substitution(_p_n, Variable<Letter>() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 
@@ -1133,37 +1133,37 @@ namespace stator {
       /*! \brief Specialisation for a container holding the last Sturm
           chain Polynomial.
       */
-      template<class Real, char Letter>
-      struct SturmChain<0, Real, Letter> {
+      template<class Coeff_t, char Letter>
+      struct SturmChain<0, Coeff_t, Letter> {
 	/*! \brief Constructor  is the first and last Polynomial in
             the chain.
 	*/
-	SturmChain(const Polynomial<0, Real, Letter>& p_n):
+	SturmChain(const Polynomial<0, Coeff_t, Letter>& p_n):
 	  _p_n(p_n)
 	{}
 
 	/*! \brief Constructor if this is the last Polynomial in the
             chain.
 	*/
-	SturmChain(const Polynomial<1, Real, Letter>& p_nplus1, const Polynomial<0, Real, Letter>& p_n):
+	SturmChain(const Polynomial<1, Coeff_t, Letter>& p_nplus1, const Polynomial<0, Coeff_t, Letter>& p_n):
 	  _p_n(p_n) {}
 
-	Polynomial<0, Real, Letter> get(size_t i) const {
+	Polynomial<0, Coeff_t, Letter> get(size_t i) const {
 	  if (i == 0)
 	    return _p_n;
-	  return Polynomial<0, Real, Letter>{};
+	  return Polynomial<0, Coeff_t, Letter>{};
 	}
 
-	template<class Real2>
-	size_t sign_changes(const Real2& x) const {
+	template<class Coeff_t2>
+	size_t sign_changes(const Coeff_t2& x) const {
 	  return 0;
 	}
 
-	Polynomial<0, Real, Letter> _p_n;
+	Polynomial<0, Coeff_t, Letter> _p_n;
 
-	template<class Real2>
-	size_t sign_change_helper(const int last_sign, const Real2& x) const {
-	  const Real currentx = substitution(_p_n, Variable<Letter>() == x);
+	template<class Coeff_t2>
+	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
+	  const Coeff_t currentx = substitution(_p_n, Variable<Letter>() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 	  return sign_change;
@@ -1174,8 +1174,8 @@ namespace stator {
 	}
       };
       
-      template<size_t Order, class Real, char Letter>
-      std::ostream& operator<<(std::ostream& os, const SturmChain<Order, Real, Letter>& c) {
+      template<size_t Order, class Coeff_t, char Letter>
+      std::ostream& operator<<(std::ostream& os, const SturmChain<Order, Coeff_t, Letter>& c) {
 	os << "SturmChain{p_0=" << c._p_n;
 	c._p_nminus1.output_helper(os, Order);
 	os << "}";
@@ -1206,7 +1206,7 @@ namespace stator {
       \f}
       
       where \f$\mathrm{rem}(p_{n+2},\,p_{n+1})\f$ returns the
-      remainder polynomial from a \ref euclidean_division of
+      remainder polynomial from a \ref gcd of
       \f$p_{n+2}\f$ over \f$p_{n+1}\f$. This sequence terminates at
       \f$p_N\f$, where \f$N\f$ is the order of the original
       Polynomial, \f$f(x)\f$.
@@ -1239,9 +1239,9 @@ namespace stator {
       VAS_real_root_bounds) are preferred as they are more
       computationally efficient.
     */
-    template<size_t Order, class Real, char Letter>
-    detail::SturmChain<Order, Real, Letter> sturm_chain(const Polynomial<Order, Real, Letter>& f) {
-      return detail::SturmChain<Order, Real, Letter>(f);
+    template<size_t Order, class Coeff_t, char Letter>
+    detail::SturmChain<Order, Coeff_t, Letter> sturm_chain(const Polynomial<Order, Coeff_t, Letter>& f) {
+      return detail::SturmChain<Order, Coeff_t, Letter>(f);
     }
 
     /*! \brief Calculates an upper bound estimate for the number of
@@ -1254,8 +1254,8 @@ namespace stator {
       count is less, it is less by an even number. Therefore, the
       values 0 or 1 are exact.
      */
-    template<size_t Order, class Real, char Letter>
-    size_t descartes_rule_of_signs(const Polynomial<Order, Real, Letter>& f) {
+    template<size_t Order, class Coeff_t, char Letter>
+    size_t descartes_rule_of_signs(const Polynomial<Order, Coeff_t, Letter>& f) {
       //Count the sign changes
       size_t sign_changes(0);
       int last_sign = 0;      
@@ -1291,8 +1291,8 @@ namespace stator {
 	\return An upper bound on the number of real roots in the
 	interval \f$(0,\,1)\f$.
      */
-    template<size_t Order, class Real, char Letter>
-    size_t budan_01_test(const Polynomial<Order, Real, Letter>& f) {
+    template<size_t Order, class Coeff_t, char Letter>
+    size_t budan_01_test(const Polynomial<Order, Coeff_t, Letter>& f) {
       return descartes_rule_of_signs(invert_taylor_shift(f));
     }
 
@@ -1306,8 +1306,8 @@ namespace stator {
 	that \f$x=1\f$ corresponds to \f$b\f$, before Budan's test is
 	called on the transformed Polynomial.
     */
-    template<size_t Order, class Real, char Letter>
-    size_t alesina_galuzzi_test(const Polynomial<Order, Real, Letter>& f, const Real& a, const Real& b) {
+    template<size_t Order, class Coeff_t, char Letter>
+    size_t alesina_galuzzi_test(const Polynomial<Order, Coeff_t, Letter>& f, const Coeff_t& a, const Coeff_t& b) {
       return budan_01_test(scale_poly(shift_function(f, a), b - a));
     }
     
@@ -1320,11 +1320,11 @@ namespace stator {
 	arbitrary sign on the highest order coefficient, and to allow
 	high-order coefficients with zero values.
      */
-    template<class Real, size_t Order, char Letter>
-    Real LMQ_upper_bound(const Polynomial<Order, Real, Letter>& f) {
+    template<class Coeff_t, size_t Order, char Letter>
+    Coeff_t LMQ_upper_bound(const Polynomial<Order, Coeff_t, Letter>& f) {
       std::array<size_t, Order+1> times_used;
       times_used.fill(1);
-      Real ub = Real();
+      Coeff_t ub = Coeff_t();
 
       size_t real_order = Order;
       while ((real_order > 0) && (f[real_order] == 0))
@@ -1332,11 +1332,11 @@ namespace stator {
 
       for (int m(real_order-1); m >= 0; --m)
 	if (std::signbit(f[m]) != std::signbit(f[real_order])) {
-	  Real tempub = std::numeric_limits<Real>::infinity();
+	  Coeff_t tempub = std::numeric_limits<Coeff_t>::infinity();
 	  for (int k(real_order); k > m; --k)
 	    if (std::signbit(f[k]) != std::signbit(f[m]))
 	      {
-		Real temp = std::pow(-(1 << times_used[k]) * f[m] / f[k], 1.0 / (k - m));
+		Coeff_t temp = std::pow(-(1 << times_used[k]) * f[m] / f[k], 1.0 / (k - m));
 		++times_used[k];
 		tempub = std::min(temp, tempub);
 	      }
@@ -1362,9 +1362,9 @@ namespace stator {
       adapted from the thesis "Upper bounds on the values of the
       positive roots of polynomials" by Panagiotis S. Vigklas (2010).
     */
-    template<class Real, size_t Order, char Letter>
-    Real LMQ_lower_bound(const Polynomial<Order, Real, Letter>& f) {
-      return 1.0 / LMQ_upper_bound(Polynomial<Order, Real, Letter>(f.rbegin(), f.rend()));
+    template<class Coeff_t, size_t Order, char Letter>
+    Coeff_t LMQ_lower_bound(const Polynomial<Order, Coeff_t, Letter>& f) {
+      return 1.0 / LMQ_upper_bound(Polynomial<Order, Coeff_t, Letter>(f.rbegin(), f.rend()));
     }
 
     /*! \cond Specializations
@@ -1373,8 +1373,8 @@ namespace stator {
       estimation for real roots of a Polynomial, where the Polynomial
       is a constant.
     */
-    template<class Real, char Letter>
-    Real LMQ_upper_bound(const Polynomial<0, Real, Letter>& f) {
+    template<class Coeff_t, char Letter>
+    Coeff_t LMQ_upper_bound(const Polynomial<0, Coeff_t, Letter>& f) {
       return 0;
     }
 
@@ -1383,8 +1383,8 @@ namespace stator {
       lower-bound estimation for real roots of a Polynomial, where the
       Polynomial is a constant.
     */
-    template<class Real, char Letter>
-    Real LMQ_lower_bound(const Polynomial<0, Real, Letter>& f) {
+    template<class Coeff_t, char Letter>
+    Coeff_t LMQ_lower_bound(const Polynomial<0, Coeff_t, Letter>& f) {
       return HUGE_VAL;
     }
 
@@ -1395,17 +1395,17 @@ namespace stator {
       assumes that the polynomial has a non-zero constant term and
       leading order coefficient term.
     */
-    template<size_t Order, class Real, char Letter>
-    StackVector<std::pair<Real,Real>, Order> 
-    VCA_real_root_bounds_worker(const Polynomial<Order, Real, Letter>& f) {
+    template<size_t Order, class Coeff_t, char Letter>
+    StackVector<std::pair<Coeff_t,Coeff_t>, Order> 
+    VCA_real_root_bounds_worker(const Polynomial<Order, Coeff_t, Letter>& f) {
       //Test how many roots are in the range (0,1)
       switch (budan_01_test(f)) {
       case 0:
 	//No roots, return empty
-	return StackVector<std::pair<Real,Real>, Order>();
+	return StackVector<std::pair<Coeff_t,Coeff_t>, Order>();
       case 1:
 	//One root! the bound is (0,1)
-	return StackVector<std::pair<Real,Real>, Order>{std::make_pair(Real(0), Real(1))};
+	return StackVector<std::pair<Coeff_t,Coeff_t>, Order>{std::make_pair(Coeff_t(0), Coeff_t(1))};
       default:
 	//Possibly multiple roots, so divide the range [0,1] in half
 	//and recursively explore it.
@@ -1416,7 +1416,7 @@ namespace stator {
 	//(even though a division by 2 usually cheap), we actually
 	//generate this function \f$p1(x) = 2^{Order}\,f(x/2)\f$. This
 	//transforms this to a multiplication op which is always cheap.
-	Polynomial<Order, Real, Letter> p1(f);
+	Polynomial<Order, Coeff_t, Letter> p1(f);
 	for (size_t i(0); i <= Order; ++i)
 	  p1[i] *= (1 << (Order-i)); //This gives (2^Order) / (2^i)
 
@@ -1425,7 +1425,7 @@ namespace stator {
 	//p2(x) = 2^Order f(x/2 + 0.5) 
 	//
 	//in terms of the original function, f(x).
-	const Polynomial<Order, Real, Letter> p2 = shift_function(p1, Unity());
+	const Polynomial<Order, Coeff_t, Letter> p2 = shift_function(p1, Unity());
 
 	//Now that we have two scaled and shifted polynomials where
 	//the roots in f in the range x=[0,0.5] are in p1 over the
@@ -1460,14 +1460,14 @@ namespace stator {
 	then simply scales the Polynomial so that all roots lie in the
 	range (0,1) before passing it to \ref VCA_real_root_bounds_worker.
      */
-    template<size_t Order, class Real, char Letter>
-    StackVector<std::pair<Real,Real>, Order> 
-    VCA_real_root_bounds(const Polynomial<Order, Real, Letter>& f) {
+    template<size_t Order, class Coeff_t, char Letter>
+    StackVector<std::pair<Coeff_t,Coeff_t>, Order> 
+    VCA_real_root_bounds(const Polynomial<Order, Coeff_t, Letter>& f) {
       //Calculate the upper bound on the polynomial real roots, and
       //return if no roots are detected
-      const Real upper_bound = LMQ_upper_bound(f);
+      const Coeff_t upper_bound = LMQ_upper_bound(f);
       if (upper_bound == 0)
-	return StackVector<std::pair<Real,Real>, Order>();
+	return StackVector<std::pair<Coeff_t,Coeff_t>, Order>();
       
       //Scale the polynomial so that all roots lie in the region
       //(0,1), then solve for its roots
@@ -1498,19 +1498,19 @@ namespace stator {
 	we can map between the original polynomial x and the
 	transformed x.
      */
-    template<class Real>
-    struct MobiusTransform: public std::array<Real, 4> {
-      typedef std::array<Real, 4> Base;
+    template<class Coeff_t>
+    struct MobiusTransform: public std::array<Coeff_t, 4> {
+      typedef std::array<Coeff_t, 4> Base;
       /*! \brief Constructor for the Mobius transformation.
        */
-      MobiusTransform(Real a, Real b, Real c, Real d):
+      MobiusTransform(Coeff_t a, Coeff_t b, Coeff_t c, Coeff_t d):
 	Base{{a,b,c,d}}
       {}
       
       /*! \brief Evaluate the Mobius transformation at the transformed
           \f$x\f$.
        */
-      Real eval(Real x) {
+      Coeff_t eval(Coeff_t x) {
 	//Catch the special case that there is no x term
 	if (((*this)[0] == 0) && ((*this)[2] == 0))
 	  return (*this)[1] / (*this)[3];
@@ -1520,11 +1520,11 @@ namespace stator {
 	  return (*this)[0] / (*this)[2];
 
 	//We have to be careful not to do 0 * inf.
-	Real numerator = (*this)[1];
+	Coeff_t numerator = (*this)[1];
 	if ((*this)[0] != 0)
 	  numerator += x * (*this)[0];
 	
-	Real denominator = (*this)[3];
+	Coeff_t denominator = (*this)[3];
 	if ((*this)[2] != 0)
 	  denominator += x * (*this)[2];
 	
@@ -1534,7 +1534,7 @@ namespace stator {
       /*!\brief Add the effect of a \ref shift_poly operation
          to the Mobius transform.
        */
-      void shift(Real x) {
+      void shift(Coeff_t x) {
 	(*this)[1] += (*this)[0] * x;
 	(*this)[3] += (*this)[2] * x;
       }
@@ -1542,7 +1542,7 @@ namespace stator {
       /*!\brief Add the effect of a \ref scale_poly operation to the
          Mobius transform.
        */
-      void scale(Real x) {
+      void scale(Coeff_t x) {
 	(*this)[0] *= x;
 	(*this)[2] *= x;
       }
@@ -1551,7 +1551,7 @@ namespace stator {
          Mobius transform.
        */
       void invert_taylor_shift() {
-	Base::operator=(std::array<Real, 4>{{(*this)[1], (*this)[0] + (*this)[1], (*this)[3], (*this)[2] + (*this)[3]}});
+	Base::operator=(std::array<Coeff_t, 4>{{(*this)[1], (*this)[0] + (*this)[1], (*this)[3], (*this)[2] + (*this)[3]}});
       }
     };
 
@@ -1566,9 +1566,9 @@ namespace stator {
       coefficients {a,b,c,d}. By default it is a direct mapping to the
       original Polynomial.
      */
-    template<size_t Order, class Real, char Letter>
-    StackVector<std::pair<Real,Real>, Order> 
-    VAS_real_root_bounds_worker(Polynomial<Order, Real, Letter> f, MobiusTransform<Real> M) {
+    template<size_t Order, class Coeff_t, char Letter>
+    StackVector<std::pair<Coeff_t,Coeff_t>, Order> 
+    VAS_real_root_bounds_worker(Polynomial<Order, Coeff_t, Letter> f, MobiusTransform<Coeff_t> M) {
       //This while loop is only used to allow restarting the method
       //without recursion, as this may recurse a large number of
       //times.
@@ -1578,11 +1578,11 @@ namespace stator {
 	
 	if (sign_changes == 0)
 	  //No roots, return empty
-	  return StackVector<std::pair<Real,Real>, Order>();
+	  return StackVector<std::pair<Coeff_t,Coeff_t>, Order>();
 	
 	if (sign_changes == 1)
 	  //One root! the bounds are M(0) and M(\infty)
-	  return StackVector<std::pair<Real,Real>, Order>{std::make_pair(M.eval(0), M.eval(HUGE_VAL))};
+	  return StackVector<std::pair<Coeff_t,Coeff_t>, Order>{std::make_pair(M.eval(0), M.eval(HUGE_VAL))};
 	
 	auto lb = LMQ_lower_bound(f);
 	
@@ -1617,21 +1617,21 @@ namespace stator {
 	  //
 	  //This is needed as we are using finite precision math
 	  //(floating point)
-	  const Real scale = 2.0;
+	  const Coeff_t scale = 2.0;
 	  f = scale_poly(f, scale);
 	  M.scale(scale);
 	  continue; //Start again
 	}
 
 	//Check for a root at x=0. If there is one, divide it out!
-	StackVector<std::pair<Real,Real>, Order> retval;
+	StackVector<std::pair<Coeff_t,Coeff_t>, Order> retval;
 	if (f[0] == 0) {
 	  retval.push_back(std::make_pair(M.eval(0), M.eval(0)));
 	  f = deflate_polynomial(f, Null());
 	}
 
 	//Create and solve the polynomial for [0, 1]
-	Polynomial<Order, Real, Letter> p01 = invert_taylor_shift(f);
+	Polynomial<Order, Coeff_t, Letter> p01 = invert_taylor_shift(f);
 	auto M01 = M;
 	M01.invert_taylor_shift();
 	auto first_range = VAS_real_root_bounds_worker(p01, M01);
@@ -1639,7 +1639,7 @@ namespace stator {
 	  retval.push_back(bound);
 	
 	//Create and solve the polynomial for [1, \infty]
-	Polynomial<Order, Real, Letter> p1inf = shift_function(f, Unity());
+	Polynomial<Order, Coeff_t, Letter> p1inf = shift_function(f, Unity());
 	auto M1inf = M;
 	M1inf.shift(1);
 	auto second_range = VAS_real_root_bounds_worker(p1inf, M1inf);
@@ -1650,10 +1650,10 @@ namespace stator {
       }
     }
     
-    template<class Real, char Letter>
-    StackVector<std::pair<Real,Real>, 1> 
-    VAS_real_root_bounds_worker(const Polynomial<0, Real, Letter>& f, MobiusTransform<Real> M) {
-      return StackVector<std::pair<Real,Real>, 1>();
+    template<class Coeff_t, char Letter>
+    StackVector<std::pair<Coeff_t,Coeff_t>, 1> 
+    VAS_real_root_bounds_worker(const Polynomial<0, Coeff_t, Letter>& f, MobiusTransform<Coeff_t> M) {
+      return StackVector<std::pair<Coeff_t,Coeff_t>, 1>();
     }
 
     /*! \endcond */
@@ -1666,16 +1666,16 @@ namespace stator {
     	coefficients. This function enforces these conditions before
     	passing it to \ref VAS_real_root_bounds_worker.
      */
-    template<size_t Order, class Real, char Letter>
-    StackVector<std::pair<Real,Real>, Order> 
-    VAS_real_root_bounds(const Polynomial<Order, Real, Letter>& f) {
+    template<size_t Order, class Coeff_t, char Letter>
+    StackVector<std::pair<Coeff_t,Coeff_t>, Order> 
+    VAS_real_root_bounds(const Polynomial<Order, Coeff_t, Letter>& f) {
       //Calculate the upper bound on the polynomial real roots, and
       //return if no roots are detected
-      const Real upper_bound = LMQ_upper_bound(f);
+      const Coeff_t upper_bound = LMQ_upper_bound(f);
       if (upper_bound == 0)
-    	return StackVector<std::pair<Real,Real>, Order>();
+    	return StackVector<std::pair<Coeff_t,Coeff_t>, Order>();
       
-      auto bounds = VAS_real_root_bounds_worker(f, MobiusTransform<Real>(1,0,0,1));
+      auto bounds = VAS_real_root_bounds_worker(f, MobiusTransform<Coeff_t>(1,0,0,1));
       for (auto& bound: bounds) {
 	//Sort the bound values correctly
 	if (bound.first > bound.second)
@@ -1701,62 +1701,60 @@ namespace stator {
       BISECTION, TOMS748
     };
 
-    /*! \brief Solve for a quadratic factor of a Polynomial using the LinBairstow method.
+    /*! \brief Solve for a quadratic factor of the passed Polynomial
+        using the LinBairstow method.
 
       This function is part of a generic polynomial root finding
       technique. It returns a quadratic factor of the passed
       polynomial. The tolerance is the convergence criterion on the
       coefficients of the factor.
      */
-    template<size_t Order, class Real, char Letter>
-    Polynomial<2, Real, Letter>
-    LinBairstowSolve(Polynomial<Order, Real, Letter> f, Real tolerance) {
-      if (f[Order] == Real()) 
+    template<size_t Order, class Coeff_t, char Letter, typename = typename std::enable_if<(Order > 2)>::type>
+    Polynomial<2, Coeff_t, Letter>
+    LinBairstowSolve(Polynomial<Order, Coeff_t, Letter> f, Coeff_t tolerance, Polynomial<2, Coeff_t, Letter> guess = {0,0,1}) {
+      if (f[Order] == Coeff_t()) 
 	return LinBairstowSolve(change_order<Order-1>(f), tolerance);
 
-      size_t nIterations = 0;
-      Eigen::Matrix<Real, 2, 1> dFactor{0, 0};
-
-      //We're trying to find the quadratic factor that divides the
-      //polynomial and leaves no remainder.:
-      Polynomial<2, Real, Letter> factor{0,0,1};
-
-      //Now loop solving for the quadratic factor
-      do {
-	++nIterations;
-	  
-	Polynomial<2, Real, Letter> rem1, rem2;
-	Polynomial<Order, Real, Letter> p1;
+      Eigen::Matrix<Coeff_t, 2, 1> dGuess{0, 0};
+      //Now loop solving for the quadratic guess
+      for (size_t it(0); it < 20; ++it) {
+	Polynomial<2, Coeff_t, Letter> rem1, rem2;
+	Polynomial<Order, Coeff_t, Letter> p1;
 	//Determine the error (the actual remainder)
-	std::tie(p1, rem1) = euclidean_division(f, factor);
+	std::tie(p1, rem1) = gcd(f, guess);
 
 	//Also determine the gradient of the error with respect to the
-	//lowest order coefficients of the factor. These are related
+	//lowest order coefficients of the guess. These are related
 	//to the remainder of a second division
-	std::tie(std::ignore, rem2) = euclidean_division(p1, factor);
+	std::tie(std::ignore, rem2) = gcd(p1, guess);
 	  
-	//Perform a Newton-Raphson step in the remainder, while varying the factor
-	Eigen::Matrix<Real, 2, 1> F{rem1[0], rem1[1]}; //{S, R}	
-	Eigen::Matrix<Real, 2, 2> J{-rem2[0], factor[0] * rem2[1], -rem2[1], factor[1]*rem2[1] - rem2[0]}; //{dS/dC, dS/dB, dR/dC, dR/dB}
-	  
-	//New factor is calculated
-	dFactor = J.inverse() * (-F);
-	factor[0] = factor[0] + dFactor[0];
-	factor[1] = factor[1] + dFactor[1];
-      } while (dFactor.nrm2() > tolerance*tolerance);
+	//Perform a Newton-Raphson step in the remainder, while varying the guess
+	Eigen::Matrix<Coeff_t, 2, 1> F;
+	F << rem1[0] , rem1[1]; //{S, R}  
+	Eigen::Matrix<Coeff_t, 2, 2> J;
+	J << -rem2[0], guess[0] * rem2[1], -rem2[1], guess[1] * rem2[1] - rem2[0]; //{dS/dC, dS/dB, dR/dC, dR/dB}
+	
+	//New guess is calculated
+	dGuess = J.inverse() * (-F);
+	guess[0] = guess[0] + dGuess[0];
+	guess[1] = guess[1] + dGuess[1];
+	//std::cout << guess << "  2 " << dGuess.squaredNorm() << std::endl;
+	if (dGuess.squaredNorm() <= tolerance*tolerance)
+	  return guess;
+      }
       
-      return factor;
+      throw std::runtime_error("Iteration count exceeded");
     }
 
-    template<class Real, char Letter>
-    Polynomial<2, Real, Letter>
-    LinBairstowSolve(Polynomial<2, Real, Letter> f, Real tolerance) {
-      return f;
-    }
-
-    template<class Real, char Letter>
-    Polynomial<1, Real, Letter>
-    LinBairstowSolve(Polynomial<1, Real, Letter> f, Real tolerance) {
+    /*! \brief Solve for a quadratic factor of the passed Polynomial
+        using the LinBairstow method.
+	
+	This specialisation is for low-order polynomials, where there
+	is no factorisation to be done and the original
+    */
+    template<class Coeff_t, char Letter, size_t Order, typename = typename std::enable_if<(Order <= 2)>::type>
+    Polynomial<2, Coeff_t, Letter>
+    LinBairstowSolve(Polynomial<Order, Coeff_t, Letter> f, Coeff_t tolerance, Polynomial<2, Coeff_t, Letter> guess = {0,0,1}) {
       return f;
     }
 
@@ -1764,32 +1762,32 @@ namespace stator {
         bisection and Sturm chains.
 	
      */
-    template<class Real, size_t Order, char Letter>
-    StackVector<Real, Order>
-    solve_real_positive_roots_poly_sturm(const Polynomial<Order, Real, Letter>& f, const size_t tol_bits=56) {
+    template<class Coeff_t, size_t Order, char Letter>
+    StackVector<Coeff_t, Order>
+    solve_real_positive_roots_poly_sturm(const Polynomial<Order, Coeff_t, Letter>& f, const size_t tol_bits=56) {
       //Establish bounds on the positive roots
-      const Real max = LMQ_upper_bound(f);
-      const Real min = LMQ_lower_bound(f);
+      const Coeff_t max = LMQ_upper_bound(f);
+      const Coeff_t min = LMQ_lower_bound(f);
       
       //If there are no roots, then return
-      if (min > max) return StackVector<Real, Order>();
+      if (min > max) return StackVector<Coeff_t, Order>();
       
       //Construct the Sturm chain and bisect it
       auto chain = sturm_chain(f);
       
-      StackVector<std::tuple<Real,Real,size_t>, Order> regions{std::make_tuple(min, max, chain.roots(min, max))};
-      StackVector<Real, Order> retval;
+      StackVector<std::tuple<Coeff_t,Coeff_t,size_t>, Order> regions{std::make_tuple(min, max, chain.roots(min, max))};
+      StackVector<Coeff_t, Order> retval;
       
-      const Real eps = std::max(Real(std::ldexp(1.0, 1-tol_bits)), Real(2*std::numeric_limits<Real>::epsilon()));
+      const Coeff_t eps = std::max(Coeff_t(std::ldexp(1.0, 1-tol_bits)), Coeff_t(2*std::numeric_limits<Coeff_t>::epsilon()));
 
       bool try_toms748 = true;
       while(!regions.empty()) {
 	auto range = regions.pop_back();
-	const Real xmin = std::get<0>(range); 
-	const Real xmax = std::get<1>(range); 
+	const Coeff_t xmin = std::get<0>(range); 
+	const Coeff_t xmax = std::get<1>(range); 
 	const size_t roots = std::get<2>(range);
 
-	Real xmid = (xmin + xmax) / 2;
+	Coeff_t xmid = (xmin + xmax) / 2;
 
 	//Check if we have reached the tolerance of the calculations via Sturm bisection
 	if (std::abs(xmin - xmax) <= (eps * std::min(std::abs(xmin), std::abs(xmax)))) {
@@ -1826,7 +1824,7 @@ namespace stator {
 	  if (try_toms748){
 	    try {
 	      boost::uintmax_t iter = 100;
-	      auto root = boost::math::tools::toms748_solve([&](Real x) { return substitution(f, Variable<Letter>() == x); }, xmin, xmid, boost::math::tools::eps_tolerance<Real>(100), iter);
+	      auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return substitution(f, Variable<Letter>() == x); }, xmin, xmid, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
 	      retval.push_back((root.first + root.second) / 2);
 	    } catch(...) {
 	      regions.push_back(std::make_tuple(xmin, xmid, rootsa));
@@ -1842,7 +1840,7 @@ namespace stator {
 	  if (try_toms748){
 	    try {
 	      boost::uintmax_t iter = 100;
-	      auto root = boost::math::tools::toms748_solve([&](Real x) { return substitution(f, Variable<Letter>() == x); }, xmid, xmax, boost::math::tools::eps_tolerance<Real>(100), iter);
+	      auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return substitution(f, Variable<Letter>() == x); }, xmid, xmax, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
 	      retval.push_back((root.first + root.second) / 2);
 	    } catch(...) {
 	      regions.push_back(std::make_tuple(xmid, xmax, rootsb));
@@ -1863,10 +1861,10 @@ namespace stator {
 	This function assumes that the polynomial has non-zero high
 	and constant coefficients.
      */
-    template<PolyRootBounder BoundMode, PolyRootBisector BisectionMode, size_t Order, class Real, char Letter>
-    StackVector<Real, Order>
-    solve_real_positive_roots_poly(const Polynomial<Order, Real, Letter>& f) {
-      StackVector<std::pair<Real,Real>, Order> bounds;
+    template<PolyRootBounder BoundMode, PolyRootBisector BisectionMode, size_t Order, class Coeff_t, char Letter>
+    StackVector<Coeff_t, Order>
+    solve_real_positive_roots_poly(const Polynomial<Order, Coeff_t, Letter>& f) {
+      StackVector<std::pair<Coeff_t,Coeff_t>, Order> bounds;
 
       switch (BoundMode) {
       case PolyRootBounder::STURM: return solve_real_positive_roots_poly_sturm(f); break;
@@ -1875,23 +1873,23 @@ namespace stator {
       }
             
       //Now bisect to calculate the roots to full precision
-      StackVector<Real, Order> retval;
+      StackVector<Coeff_t, Order> retval;
       
       for (const auto& bound : bounds) {
-	const Real& a = bound.first;
-	const Real& b = bound.second;
+	const Coeff_t& a = bound.first;
+	const Coeff_t& b = bound.second;
 	switch(BisectionMode) {
 	case PolyRootBisector::BISECTION: 
 	  {
 	    boost::uintmax_t iter = 100;
-	    auto root = boost::math::tools::bisect([&](Real x) { return substitution(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Real>(100), iter);
+	    auto root = boost::math::tools::bisect([&](Coeff_t x) { return substitution(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
 	    retval.push_back((root.first + root.second) / 2);
 	    break;
 	  }
 	case PolyRootBisector::TOMS748: 
 	  {
 	    boost::uintmax_t iter = 100;
-	    auto root = boost::math::tools::toms748_solve([&](Real x) { return substitution(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Real>(100), iter);
+	    auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return substitution(f, Variable<Letter>() == x); }, a, b, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
 	    retval.push_back((root.first + root.second) / 2);
 	    break;
 	  }
@@ -1912,21 +1910,21 @@ namespace stator {
 
       Roots are always returned sorted lowest-first.
      */
-    template<PolyRootBounder BoundMode = PolyRootBounder::STURM, PolyRootBisector BisectionMode = PolyRootBisector::TOMS748, size_t Order, class Real, char Letter>
-    StackVector<Real, Order>
-    solve_real_roots(const Polynomial<Order, Real, Letter>& f) {
+    template<PolyRootBounder BoundMode = PolyRootBounder::STURM, PolyRootBisector BisectionMode = PolyRootBisector::TOMS748, size_t Order, class Coeff_t, char Letter>
+    StackVector<Coeff_t, Order>
+    solve_real_roots(const Polynomial<Order, Coeff_t, Letter>& f) {
       //Handle special cases 
       //The constant coefficient is zero: deflate the polynomial
-      if (f[0] == Real())
+      if (f[0] == Coeff_t())
 	return solve_real_roots(deflate_polynomial(f, Null()));
       
       //The highest order coefficient is zero: drop to lower order
       //solvers
-      if (f[Order] == Real())
+      if (f[Order] == Coeff_t())
 	return solve_real_roots(change_order<Order-1>(f));
 
-      auto roots = solve_real_positive_roots_poly<BoundMode, BisectionMode, Order, Real, Letter>(f);
-      auto neg_roots = solve_real_positive_roots_poly<BoundMode, BisectionMode, Order, Real, Letter>(reflect_poly(f));
+      auto roots = solve_real_positive_roots_poly<BoundMode, BisectionMode, Order, Coeff_t, Letter>(f);
+      auto neg_roots = solve_real_positive_roots_poly<BoundMode, BisectionMode, Order, Coeff_t, Letter>(reflect_poly(f));
 
       //We need to flip the sign on the negative roots
       for (const auto& root: neg_roots)

@@ -309,52 +309,36 @@ namespace stator {
 
     /*!\brief Addition operator for two Polynomial types. 
      */
-    template<class Config = DefaultSimplifyConfig, class Real1, size_t N, class Real2, size_t M, char Letter>
-    auto simplify(const BinaryOp<Polynomial<N, Real1, Letter>, Polynomial<M, Real2, Letter>, detail::Add> & f)
-      -> Polynomial<detail::max_order(M, N), decltype(store(f._l[0] + f._r[0])), Letter>
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t N, class Real2, size_t M, char Letter, class Op,
+	     typename = typename std::enable_if<std::is_same<Op,detail::Add>::value || std::is_same<Op,detail::Subtract>::value>::type>
+    auto simplify(const BinaryOp<Polynomial<N, Real1, Letter>, Polynomial<M, Real2, Letter>, Op> & f)
+      -> Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0],f._r[0]))), Letter>
     {
-      Polynomial<detail::max_order(M, N), decltype(store((f._l[0] + f._r[0]))), Letter> retval;
+      Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0], f._r[0]))), Letter> retval;
     
       for (size_t i(0); i <= std::min(N, M); ++i)
-    	retval[i] = f._l[i] + f._r[i];
+    	retval[i] = Op::apply(f._l[i], f._r[i]);
       
       for (size_t i(std::min(N, M)+1); i <= N; ++i)
-    	retval[i] = f._l[i];
+    	retval[i] = Op::apply(f._l[i], empty_sum(f._l[i]));
     
       for (size_t i(std::min(N, M)+1); i <= M; ++i)
-    	retval[i] = f._r[i];
+    	retval[i] = Op::apply(empty_sum(f._r[i]), f._r[i]);
       
       return retval;
     }    
-    /*! \brief Subtraction between two Polynomial types. 
-     */
-    template<class Config = DefaultSimplifyConfig, class Real1, size_t M, class Real2, size_t N, char Letter>
-    auto simplify(const BinaryOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter>, detail::Subtract>& f)
-      -> Polynomial<detail::max_order(M, N), decltype(store(f._l[0] - f._r[0])), Letter>
-    {
-      Polynomial<detail::max_order(M, N), decltype(store(f._l[0] - f._r[0])), Letter> retval;
-      for (size_t i(0); i <= std::min(N, M); ++i)
-    	retval[i] = f._l[i] - f._r[i];
-      
-      for (size_t i(std::min(N, M)+1); i <= M; ++i)
-    	retval[i] = f._l[i];
-    
-      for (size_t i(std::min(N, M)+1); i <= N; ++i)
-    	retval[i] = -f._r[i];
-      
-      return retval;
-    }
     
     /*! \brief Multiplication between two Polynomial types.
      */
-    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, char Letter>
-    auto simplify(const BinaryOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter>, detail::Multiply>& f)
-      -> Polynomial<M + N, decltype(store(f._l[0] * f._r[0])), Letter>
+    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, char Letter, class Op,
+	     typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value || std::is_same<Op,detail::Dot>::value>::type>
+    auto simplify(const BinaryOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter>, Op>& f)
+      -> Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), Letter>
     {
-      Polynomial<M + N, decltype(store(f._l[0] * f._r[0])), Letter> retval;
+      Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), Letter> retval;
       for (size_t i(0); i <= N+M; ++i)
     	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
-    	  retval[i] += f._l[j] * f._r[i-j];
+    	  retval[i] += Op::apply(f._l[j], f._r[i-j]);
       return retval;
     }
 

@@ -102,16 +102,15 @@ namespace stator {
       only applies for selected types and assumes that their default
       constructors create the empty sum.
     */
-    template<class T>
-    typename std::enable_if<detail::IsConstant<T>::value && !std::is_base_of<Eigen::EigenBase<T>, T>::value, T>::type empty_sum(const T&) {
-      return T();
-    }
+    template<class T, typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+    C<0> empty_sum(const T&) { return {}; }
+
+    template<class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
+    T empty_sum(const T&) { return T::Zero(); }
 
     template<class T>
-    typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value, T>::type empty_sum(const T&) {
-      return T::Zero();
-    }
-
+    T empty_sum(const std::complex<T>&) { return {}; }
+    
     /*! \brief Default implementation of substitution of a symbolic
       expression at a given point.
       

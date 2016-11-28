@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6 FATAL_ERROR)
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "No build type selected, default to Release")
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release" FORCE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo" FORCE)
 endif()
 
 project(stator) #Project name

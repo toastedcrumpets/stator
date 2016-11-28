@@ -35,25 +35,6 @@ namespace stator {
       using value = T<C>;
     };
 
-    template<typename D, typename... Args>
-    struct get_value_int;
-
-    template<typename D>
-    struct get_value_int<D> : std::integral_constant<int, D::value> {};
-
-    template<typename D, typename T2, typename... Args>
-    struct get_value_int<D, T2, Args...> {
-      template<typename D2, typename T22, typename Enable = void>
-      struct impl 
-	: std::integral_constant<int, get_value_int<D, Args...>::value> {};
-
-      template<typename D2, typename T22>
-      struct impl <D2, T22, typename std::enable_if<std::is_same<typename D2::type_id, typename T22::type_id>::value>::type> 
-	: std::integral_constant<int, T22::value> {};
-
-      static constexpr const int value = impl<D, T2>::value;
-    };
-
 
     template<typename D, typename... Args>
     struct get_value;

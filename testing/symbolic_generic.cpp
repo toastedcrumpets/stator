@@ -63,7 +63,7 @@ bool compare_expression(const T1& f, const T2& g, bool output_error=true) {
 
 BOOST_AUTO_TEST_CASE( symbolic_C )
 {
-  Variable<'x'> x;
+  Variable<> x;
   Check_Type<decltype(Unity() * Unity()), Unity>();
   Check_Type<decltype(Unity() + Unity()), C<2>>();
   Check_Type<decltype(Unity() + Null()), Unity>();
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE( symbolic_C )
   Check_Type<decltype(cos(C<8>()*pi())), Unity>();
   Check_Type<decltype(cos(C<5,2>()*pi())), Null>();
 
-  Variable<'y'> y;
+  Variable<vidx<'y'>> y;
   Check_Type<std::decay<decltype(substitution(Null(), y==100))>::type, Null>();
   Check_Type<decltype(derivative(Null(), x)), Null>();
   Check_Type<decltype(derivative(Unity(),x)), Null>();
@@ -111,9 +111,9 @@ BOOST_AUTO_TEST_CASE( Unity_tests )
 
 
   //Check derivatives of Unity
-  BOOST_CHECK(compare_expression(derivative(Unity(), Variable<'x'>()), Null()));
+  BOOST_CHECK(compare_expression(derivative(Unity(), Variable<>()), Null()));
 
-  Variable<'x'> x;
+  Variable<> x;
   //Check simplification of multiplication with Unity
   BOOST_CHECK(compare_expression(Unity() * Unity(), Unity()));
   BOOST_CHECK(compare_expression(Unity() * 2, 2));
@@ -125,15 +125,15 @@ BOOST_AUTO_TEST_CASE( Unity_tests )
 
 BOOST_AUTO_TEST_CASE( Substitution_of_variables )
 {
-  Variable<'x'> x;
-  Variable<'y'> y;
+  Variable<> x;
+  Variable<vidx<'y'>> y;
 
-  Check_Type<std::decay<decltype(substitution(x, x==y))>::type, Variable<'y'>>();
+  Check_Type<std::decay<decltype(substitution(x, x==y))>::type, Variable<vidx<'y'>>>();
 }
 
 BOOST_AUTO_TEST_CASE( function_basic )
 {
-  Variable<'x'> x;
+  Variable<> x;
   //Check basic Function operation
   BOOST_CHECK_CLOSE(substitution(2 * x, x==0.5), 1.0, 1e-10);
     
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE( function_basic )
 
 BOOST_AUTO_TEST_CASE( function_multiplication )
 {
-  Variable<'x'> x;
+  Variable<> x;
   //Check function and Polynomial multiplication
   auto poly1 = sin(x + x) * x;
   BOOST_CHECK_CLOSE(substitution(poly1, x==0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE( function_multiplication )
 
 BOOST_AUTO_TEST_CASE( function_derivatives )
 {
-  Variable<'x'> x;
+  Variable<> x;
   //Check function and Polynomial derivatives
   auto f1 = derivative(x * sin(x), x);
   BOOST_CHECK_CLOSE(substitution(f1, x==0.5), std::sin(0.5) + 0.5 * std::cos(0.5), 1e-10);
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE( function_derivatives )
 
 BOOST_AUTO_TEST_CASE( power_basic )
 {
-  Variable<'x'> x;
+  Variable<> x;
   BOOST_CHECK(pow<3>(3) == 27);
   BOOST_CHECK(pow<2>(Vector{0,1,2}) == 5);
 
@@ -180,19 +180,19 @@ BOOST_AUTO_TEST_CASE( power_basic )
   BOOST_CHECK_CLOSE(substitution(pow<3>(x) * x, x==0.75), std::pow(0.75, 3) * 0.75, 1e-10);
 
   //Check special case derivatives
-  Check_Type<decltype(derivative(pow<1>(x), Variable<'x'>())), Unity>();
+  Check_Type<decltype(derivative(pow<1>(x), Variable<>())), Unity>();
 }
 
 BOOST_AUTO_TEST_CASE( Var_tests )
 {
-  Variable<'x'> x;
-  Variable<'y'> y;
+  Variable<> x;
+  Variable<vidx<'y'>> y;
 
   BOOST_CHECK(compare_expression(x, "x")); 
   BOOST_CHECK(compare_expression(y, "y"));
-  BOOST_CHECK(compare_expression(derivative(x, Variable<'x'>()), Unity()));
-  BOOST_CHECK(compare_expression(derivative(y, Variable<'x'>()), Null()));
-  BOOST_CHECK(compare_expression(derivative(y, Variable<'y'>()), Unity()));
+  BOOST_CHECK(compare_expression(derivative(x, Variable<>()), Unity()));
+  BOOST_CHECK(compare_expression(derivative(y, Variable<>()), Null()));
+  BOOST_CHECK(compare_expression(derivative(y, Variable<vidx<'y'>>()), Unity()));
   BOOST_CHECK(compare_expression(substitution(x, x == 3.14159265), 3.14159265));
 
   //Check that substitutions in the wrong variable do nothing
@@ -202,17 +202,17 @@ BOOST_AUTO_TEST_CASE( Var_tests )
   BOOST_CHECK(compare_expression(substitution(y, x == 3.14159265), "y"));
 
   //Check that Var derivatives are correct
-  BOOST_CHECK(compare_expression(simplify(derivative(sin(x), Variable<'x'>())), cos(x)));
+  BOOST_CHECK(compare_expression(simplify(derivative(sin(x), Variable<>())), cos(x)));
 
   //Check derivatives of Unity
-  BOOST_CHECK(compare_expression(derivative(Unity(), Variable<'x'>()), Null()));
-  BOOST_CHECK(compare_expression(derivative(x, Variable<'x'>()), Unity()));
-  BOOST_CHECK(compare_expression(simplify(derivative(x * sin(x), Variable<'x'>())), sin(x) + x * cos(x)));
+  BOOST_CHECK(compare_expression(derivative(Unity(), Variable<>()), Null()));
+  BOOST_CHECK(compare_expression(derivative(x, Variable<>()), Unity()));
+  BOOST_CHECK(compare_expression(simplify(derivative(x * sin(x), Variable<>())), sin(x) + x * cos(x)));
 }
 
 BOOST_AUTO_TEST_CASE( reorder_operations )
 {
-  Variable<'x'> x;
+  Variable<> x;
   //Check the specialised multiply operators are consistently
   //simplifying statements.
 
@@ -229,8 +229,8 @@ BOOST_AUTO_TEST_CASE( reorder_operations )
   //Here we check that constants (such as 2) will become Null
   //types when the derivative is taken, causing their terms to be
   //eliminated.
-  BOOST_CHECK(compare_expression(simplify(derivative(C<2>() * cos(x), Variable<'x'>())), C<-2>() * sin(x)));
-  BOOST_CHECK(compare_expression(simplify(derivative(2 * sin(x), Variable<'x'>())), 2 * cos(x)));
+  BOOST_CHECK(compare_expression(simplify(derivative(C<2>() * cos(x), Variable<>())), C<-2>() * sin(x)));
+  BOOST_CHECK(compare_expression(simplify(derivative(2 * sin(x), Variable<>())), 2 * cos(x)));
 }
 
 BOOST_AUTO_TEST_CASE( Factorial_test )
@@ -251,11 +251,11 @@ BOOST_AUTO_TEST_CASE( vector_symbolic )
 {
   static_assert(stator::symbolic::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
   
-  BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<'x'>()), Null()));
+  BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<>()), Null()));
   BOOST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
   BOOST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
 
-  Variable<'x'> x;
+  Variable<> x;
 
   const size_t testcount = 100;
   const double errlvl = 1e-10;
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE( vector_symbolic )
 
 BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )
 {
-  Variable<'x'> x;
+  Variable<> x;
 
   BOOST_CHECK(compare_expression(abs(x), "|x|"));
   BOOST_CHECK_EQUAL(substitution(abs(x*x - 5*x), x==2), 6);
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )
   BOOST_CHECK(compare_expression(abs(Null()), Null()));
   BOOST_CHECK(compare_expression(abs(Null()), Null()));
   BOOST_CHECK(compare_expression(simplify(derivative(arbsign(x), x)), arbsign(Unity())));
-  BOOST_CHECK(compare_expression(derivative(arbsign(x), Variable<'y'>()), Null()));
+  BOOST_CHECK(compare_expression(derivative(arbsign(x), Variable<vidx<'y'>>()), Null()));
 
   BOOST_CHECK(compare_expression(simplify(x * arbsign(x)), arbsign(pow<2>(x))));
   BOOST_CHECK(compare_expression(simplify(arbsign(x) * x), arbsign(pow<2>(x))));
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE( derivative_addition )
   using namespace stator::symbolic;
 
   //Test Polynomial derivatives on addition Operation types
-  Variable<'x'> x;
+  Variable<> x;
 
   BOOST_CHECK(compare_expression(simplify(derivative(simplify(C<2>() * x * x + x), x)), C<4>() * x + C<1>()));
 }

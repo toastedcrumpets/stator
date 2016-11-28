@@ -38,8 +38,8 @@ namespace stator {
       return os;
     }
 
-    template<class LHS, class RHS, class Op, char Letter, class Arg> 
-    auto substitution(BinaryOp<LHS, RHS, Op> f, VariableSubstitution<Letter, Arg> x)
+    template<class LHS, class RHS, class Op, class Variable, class Arg> 
+    auto substitution(BinaryOp<LHS, RHS, Op> f, VariableSubstitution<Variable, Arg> x)
       -> STATOR_AUTORETURN_BYVALUE(Op::apply(substitution(f._l, x), substitution(f._r, x)));
     
     namespace detail {
@@ -170,21 +170,21 @@ namespace stator {
     
     /*! \brief Derivatives of AddOp operations.
      */
-    template<char dVariable, class LHS, class RHS>
-    auto derivative(const AddOp<LHS, RHS>& f, Variable<dVariable>)
-      -> STATOR_AUTORETURN(derivative(f._l, Variable<dVariable>()) + derivative(f._r, Variable<dVariable>()))
+    template<class Variable, class LHS, class RHS>
+    auto derivative(const AddOp<LHS, RHS>& f, Variable)
+      -> STATOR_AUTORETURN(derivative(f._l, Variable()) + derivative(f._r, Variable()))
 
     /*! \brief Derivatives of SubtractOp operations.
      */
-    template<char dVariable, class LHS, class RHS>
-    auto derivative(const SubtractOp<LHS, RHS>& f, Variable<dVariable>) 
-      -> STATOR_AUTORETURN(derivative(f._l, Variable<dVariable>()) - derivative(f._r, Variable<dVariable>()))
+    template<class Variable, class LHS, class RHS>
+    auto derivative(const SubtractOp<LHS, RHS>& f, Variable) 
+      -> STATOR_AUTORETURN(derivative(f._l, Variable()) - derivative(f._r, Variable()))
 
     /*! \brief Derivatives of MultiplyOp operations.
      */
-    template<char dVariable, class LHS, class RHS>
-    auto derivative(const MultiplyOp<LHS, RHS>& f, Variable<dVariable>) 
-    -> STATOR_AUTORETURN(derivative(f._l, Variable<dVariable>()) * f._r + f._l * derivative(f._r, Variable<dVariable>()))
+    template<class Variable, class LHS, class RHS>
+    auto derivative(const MultiplyOp<LHS, RHS>& f, Variable) 
+    -> STATOR_AUTORETURN(derivative(f._l, Variable()) * f._r + f._l * derivative(f._r, Variable()))
 
     /*! \} */
 
@@ -229,8 +229,8 @@ namespace stator {
       argument is an arithmetic type. If this is the case, the
       evaluation is passed to std::pow.
     */
-    template<class Arg1, size_t Power, class Arg2, char Letter>
-    constexpr auto substitution(const PowerOp<Arg1, Power>& f, const VariableSubstitution<Letter, Arg2>& x)
+    template<class Arg1, size_t Power, class Arg2, class Variable>
+    constexpr auto substitution(const PowerOp<Arg1, Power>& f, const VariableSubstitution<Variable, Arg2>& x)
       -> typename std::enable_if<std::is_arithmetic<decltype(substitution(f._arg, x))>::value,
 				 decltype(std::pow(substitution(f._arg, x), Power))>::type
     { return std::pow(substitution(f._arg, x), Power); }
@@ -239,8 +239,8 @@ namespace stator {
       
       This is the general implementation for PowerOp.
     */
-    template<class Arg1, size_t Power, class Arg2, char Letter>
-    auto substitution(const PowerOp<Arg1, Power>& f, const VariableSubstitution<Letter, Arg2>& x)
+    template<class Arg1, size_t Power, class Arg2, class Variable>
+    auto substitution(const PowerOp<Arg1, Power>& f, const VariableSubstitution<Variable, Arg2>& x)
       -> typename std::enable_if<!std::is_arithmetic<decltype(substitution(f._arg, x))>::value,
 				 decltype(PowerOpSubstitution<Power>::eval(substitution(f._arg, x)))>::type
     { return PowerOpSubstitution<Power>::eval(substitution(f._arg, x)); }
@@ -288,21 +288,21 @@ namespace stator {
 
     /*! \brief Derivatives of PowerOp operations.
      */
-    template<char dVariable, class Arg, size_t Power>
-    auto derivative(const PowerOp<Arg, Power>& f, Variable<dVariable>) 
-      -> STATOR_AUTORETURN((C<Power>() * derivative(f._arg, Variable<dVariable>()) * PowerOp<Arg, Power-1>(f._arg)))
+    template<class Variable, class Arg, size_t Power>
+    auto derivative(const PowerOp<Arg, Power>& f, Variable) 
+      -> STATOR_AUTORETURN((C<Power>() * derivative(f._arg, Variable()) * PowerOp<Arg, Power-1>(f._arg)))
 
-    template<char dVariable, class Arg>
-    Null derivative(const PowerOp<Arg, 0>& f, Variable<dVariable>)
+    template<class Variable, class Arg>
+    Null derivative(const PowerOp<Arg, 0>& f, Variable)
     { return Null(); }
 
-    template<char dVariable, class Arg>
-    auto derivative(const PowerOp<Arg, 1>& f, Variable<dVariable>) 
-      -> STATOR_AUTORETURN(derivative(f._arg, Variable<dVariable>()))
+    template<class Variable, class Arg>
+    auto derivative(const PowerOp<Arg, 1>& f, Variable) 
+      -> STATOR_AUTORETURN(derivative(f._arg, Variable()))
 
-    template<char dVariable, class Arg>
-    auto derivative(const PowerOp<Arg, 2>& f, Variable<dVariable>) 
-      -> STATOR_AUTORETURN(C<2>() * derivative(f._arg, Variable<dVariable>()) * f._arg)
+    template<class Variable, class Arg>
+    auto derivative(const PowerOp<Arg, 2>& f, Variable) 
+      -> STATOR_AUTORETURN(C<2>() * derivative(f._arg, Variable()) * f._arg)
     /*! \}*/
   }
 }

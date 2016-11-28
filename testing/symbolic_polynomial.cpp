@@ -73,9 +73,9 @@ struct RootData {
   size_t multiplicity;
 };
 
-template<class Real1, class Real2, size_t N, char Letter>
-stator::symbolic::Polynomial<N, Real1, Letter> convert_poly(const stator::symbolic::Polynomial<N, Real2, Letter>& p) {
-  stator::symbolic::Polynomial<N, Real1, Letter> f;
+template<class Real1, class Real2, size_t N, class PolyVar>
+stator::symbolic::Polynomial<N, Real1, PolyVar> convert_poly(const stator::symbolic::Polynomial<N, Real2, PolyVar>& p) {
+  stator::symbolic::Polynomial<N, Real1, PolyVar> f;
   for (size_t i(0); i <= N; ++i)
     f[i] = Real1(p[i]);
   return f;
@@ -138,11 +138,12 @@ BOOST_AUTO_TEST_CASE( poly_variables )
 {
   using namespace stator::symbolic;
   Polynomial<1> x{0, 1};
-  Polynomial<1,double,'y'> y{0, 1};
+  Polynomial<1,double, Variable<vidx<'y'> > > y{0, 1};
+  BOOST_CHECK(compare_expression(substitution(y, Variable<vidx<'y'> >()==Variable<vidx<'x'> >()), "P(1 × x)"));
 
   BOOST_CHECK(compare_expression(expand(x * x * x), "P(1 × x³)"));
   BOOST_CHECK(compare_expression(expand(y * y * y), "P(1 × y³)"));
-  BOOST_CHECK(compare_expression(expand(substitution(y * y * y, Variable<'y'>()==Variable<'x'>())), "P(1 × x³)"));
+  BOOST_CHECK(compare_expression(substitution(expand(y * y * y), Variable<vidx<'y'> >()==Variable<vidx<'x'> >()), "P(1 × x³)"));
 }
 
 BOOST_AUTO_TEST_CASE( poly_addition )
@@ -229,20 +230,20 @@ BOOST_AUTO_TEST_CASE( poly_lower_order )
   BOOST_CHECK_EQUAL(poly4[0], 2);
   BOOST_CHECK_EQUAL(poly4[1], -1);
   BOOST_CHECK_EQUAL(poly4[2], 1);
-  BOOST_CHECK_EQUAL(substitution(poly3, Variable<'x'>()==123), substitution(poly4, Variable<'x'>()==123));
+  BOOST_CHECK_EQUAL(substitution(poly3, Variable<vidx<'x'> >()==123), substitution(poly4, Variable<vidx<'x'> >()==123));
 }
 
 BOOST_AUTO_TEST_CASE( poly_simplify )
 {
   using namespace stator::symbolic;
-  Variable<'x'> x;
+  Variable<vidx<'x'> > x;
   //Test that simplify creates polynomials from Variables
   auto poly1 = expand(2 * x * x);
   BOOST_CHECK_EQUAL(poly1[0], 0);
   BOOST_CHECK_EQUAL(poly1[1], 0);
   BOOST_CHECK_EQUAL(poly1[2], 2);
 
-  Variable<'y'> y;
+  Variable<vidx<'y'> > y;
   //Check that Polynomial simplifications exist for these functions
   expand(y+y);
   expand(y+y+y);
@@ -263,28 +264,28 @@ BOOST_AUTO_TEST_CASE( poly_eval_limits )
 
   {//Check even positive polynomials
     auto f = expand(x * x - x + 3);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==0), 3);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==+HUGE_VAL), +HUGE_VAL);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==-HUGE_VAL), +HUGE_VAL);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==0), 3);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==+HUGE_VAL), +HUGE_VAL);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==-HUGE_VAL), +HUGE_VAL);
   }
 
   {//Check even negative polynomials
     auto f = expand(-x * x + x + 3);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==0), 3);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==+HUGE_VAL), -HUGE_VAL);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==-HUGE_VAL), -HUGE_VAL);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==0), 3);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==+HUGE_VAL), -HUGE_VAL);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd positive polynomials
     auto f = expand(x * x * x + x + 3);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==+HUGE_VAL), +HUGE_VAL);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==-HUGE_VAL), -HUGE_VAL);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==+HUGE_VAL), +HUGE_VAL);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd negative polynomials
     auto f = expand(-x * x * x + x + 3);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==+HUGE_VAL), -HUGE_VAL);
-    BOOST_CHECK_EQUAL(substitution(f, Variable<'x'>()==-HUGE_VAL), +HUGE_VAL);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==+HUGE_VAL), -HUGE_VAL);
+    BOOST_CHECK_EQUAL(substitution(f, Variable<vidx<'x'> >()==-HUGE_VAL), +HUGE_VAL);
   }
 }
 
@@ -294,35 +295,35 @@ BOOST_AUTO_TEST_CASE( poly_derivative )
   Polynomial<1> x{0, 1};
 
   auto poly1 = expand(x + x*x + x*x*x + x*x*x*x);
-  auto poly2 = derivative(poly1, Variable<'x'>());
+  auto poly2 = derivative(poly1, Variable<>());
   BOOST_CHECK_EQUAL(poly2[0], 1);
   BOOST_CHECK_EQUAL(poly2[1], 2);
   BOOST_CHECK_EQUAL(poly2[2], 3);  
   BOOST_CHECK_EQUAL(poly2[3], 4);  
 
-  BOOST_CHECK_CLOSE(substitution(poly2, Variable<'x'>()==3.14159), eval_derivatives<1>(poly1, 3.14159)[1], 1e-10);
+  BOOST_CHECK_CLOSE(substitution(poly2, Variable<>()==3.14159), eval_derivatives<1>(poly1, 3.14159)[1], 1e-10);
 
   auto poly3 = expand(2.0 - x + 2 * x * x);
-  auto poly4 = derivative(poly3, Variable<'x'>());
+  auto poly4 = derivative(poly3, Variable<>());
   BOOST_CHECK_EQUAL(poly4[0], -1);
   BOOST_CHECK_EQUAL(poly4[1], 4);
-  BOOST_CHECK_EQUAL(substitution(poly4, Variable<'x'>()==0), -1);
-  BOOST_CHECK_EQUAL(substitution(poly4, Variable<'x'>()==1), 3);
+  BOOST_CHECK_EQUAL(substitution(poly4, Variable<>()==0), -1);
+  BOOST_CHECK_EQUAL(substitution(poly4, Variable<>()==1), 3);
 
-  C<2>() * derivative(x, Variable<'x'>()) * PowerOp<decltype(x), 1>(x);
-  //derivative(pow<2>(x), Variable<'x'>());
+  C<2>() * derivative(x, Variable<>()) * PowerOp<decltype(x), 1>(x);
+  //derivative(pow<2>(x), Variable<vidx<'x'> >());
   
-  BOOST_CHECK(compare_expression(simplify(derivative(pow<2>(x), Variable<'x'>())), C<2>()* Polynomial<1>{0,1}));
+  BOOST_CHECK(compare_expression(simplify(derivative(pow<2>(x), Variable<>())), C<2>()* Polynomial<1>{0,1}));
 }
 
 BOOST_AUTO_TEST_CASE( poly_zero_derivative)
 {
   using namespace stator::symbolic;
   const Polynomial<1> x{0, 1};
-  const auto poly1 = derivative(x, Variable<'x'>());
+  const auto poly1 = derivative(x, Variable<>());
   BOOST_CHECK_EQUAL(poly1[0], 1);
 
-  const auto poly2 = derivative(poly1, Variable<'x'>());
+  const auto poly2 = derivative(poly1, Variable<>());
   BOOST_CHECK(compare_expression(poly2, Null()));
 }
 
@@ -377,8 +378,8 @@ BOOST_AUTO_TEST_CASE( poly_shift)
 	for (double shift : {-1.0, 2.0, 1e3, 3.14159265, -1e5}) {
 	  auto g = shift_function(f, shift);
 	  
-	  BOOST_CHECK_CLOSE(substitution(g, Variable<'x'>() == 0), substitution(f, Variable<'x'>() == shift), 1e-10);
-	  BOOST_CHECK_CLOSE(substitution(g, Variable<'x'>() == 1e3), substitution(f, Variable<'x'>() == 1e3 + shift), 1e-10);
+	  BOOST_CHECK_CLOSE(substitution(g, Variable<vidx<'x'> >() == 0), substitution(f, Variable<vidx<'x'> >() == shift), 1e-10);
+	  BOOST_CHECK_CLOSE(substitution(g, Variable<vidx<'x'> >() == 1e3), substitution(f, Variable<vidx<'x'> >() == 1e3 + shift), 1e-10);
 	}
       }
 }
@@ -599,7 +600,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
     BOOST_CHECK_CLOSE(roots[2], 1.340780792994259598314974448015366224371799690462e153, 1e-10);
   }
 }
-//
+
 BOOST_AUTO_TEST_CASE( poly_root_tests)
 {
   using namespace stator::symbolic;
@@ -612,7 +613,7 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
     BOOST_CHECK(roots.size() == 1);
     BOOST_CHECK_CLOSE(roots[0], -1.472711896724616002268033950475380144341, 1e-10);
     
-    auto droots = solve_real_roots(derivative(f1, Variable<'x'>()));
+    auto droots = solve_real_roots(derivative(f1, Variable<vidx<'x'> >()));
     BOOST_CHECK(droots.size() == 2);
     BOOST_CHECK_CLOSE(droots[0], -1.0/3, 1e-10);
     BOOST_CHECK_CLOSE(droots[1], 0.5, 1e-10);
@@ -626,7 +627,7 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
     BOOST_CHECK_CLOSE(roots[0], -1.949403904489790210996459054473124835057, 1e-10);
     BOOST_CHECK_CLOSE(roots[1], +1.864235880634589025006445510389799368569, 1e-10);
 
-    auto droots = solve_real_roots(derivative(f1, Variable<'x'>()));
+    auto droots = solve_real_roots(derivative(f1, Variable<vidx<'x'> >()));
     BOOST_CHECK_EQUAL(droots.size(),3);
     BOOST_CHECK_CLOSE(droots[0], -1.262818836058599076329128653113014315066, 1e-10);
     BOOST_CHECK_CLOSE(droots[1], 0, 1e-10);
@@ -643,7 +644,7 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
     BOOST_CHECK_CLOSE(roots[0], -0.8924203103613100773375343963347855860436, 1e-7);
     BOOST_CHECK_CLOSE(roots[1], -0.8924203103613100773375343963347855860436, 1e-7);
 
-    auto droots = solve_real_roots(derivative(f1, Variable<'x'>()));
+    auto droots = solve_real_roots(derivative(f1, Variable<vidx<'x'> >()));
     BOOST_CHECK(droots.size() == 3);
     BOOST_CHECK_CLOSE(droots[0], -0.8924203103613100773375343963347855860436, 1e-10);
     BOOST_CHECK_CLOSE(droots[1], -0.01666666666666666666666666666666666666667, 1e-10);
@@ -979,7 +980,7 @@ BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
   using namespace stator::symbolic;
   const Polynomial<1> x{0, 1};
   //Test Polynomial derivatives on subtraction Operation types
-  auto poly1 = expand(derivative(2*x*x - x, Variable<'x'>()));
+  auto poly1 = expand(derivative(2*x*x - x, Variable<vidx<'x'> >()));
   //derivative will automatically combine polynomials
   BOOST_CHECK_EQUAL(poly1[0], -1);
   BOOST_CHECK_EQUAL(poly1[1], 4);
@@ -1002,18 +1003,18 @@ BOOST_AUTO_TEST_CASE( function_poly_derivatives_special )
 
   //Check special case derivatives of Functions with constant
   //arguments.
-  BOOST_CHECK(compare_expression(derivative(sin(Polynomial<0>{1}), Variable<'x'>()), Null()));
-  BOOST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Variable<'x'>()), Null()));
+  BOOST_CHECK(compare_expression(derivative(sin(Polynomial<0>{1}), Variable<vidx<'x'> >()), Null()));
+  BOOST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Variable<vidx<'x'> >()), Null()));
 }
 
-template<class T> auto d(T a) -> STATOR_AUTORETURN(stator::symbolic::derivative(a, stator::symbolic::Variable<'y'>()));
+template<class T> auto d(T a) -> STATOR_AUTORETURN(stator::symbolic::derivative(a, stator::symbolic::Variable<stator::symbolic::vidx<'y'> >()));
 
 BOOST_AUTO_TEST_CASE( poly_taylor )
 { 
   using namespace stator::symbolic;
-  Variable<'y'> y;
+  Variable<vidx<'y'> > y;
 
-  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Variable<'x'>()), simplify(y*y*y)));
+  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Variable<vidx<'x'> >()), simplify(y*y*y)));
   
   BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), y), simplify(y*y*y)));
 
@@ -1025,7 +1026,7 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), pow<2>(y) * (C<1>()+(pow<4>(y)*C<-1,6>()))));
   
   //Test Taylor expansion of a complex expression at zero
-  Variable<'x'> x;
+  Variable<vidx<'x'> > x;
 //  auto f = sin(cos(x)+2*x*x - x + 3);
 //  auto ffinal = simplify((3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0));
 //
@@ -1038,13 +1039,13 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   BOOST_CHECK(compare_expression(expand(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x)), expand(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
 
   //Partially truncate a Polynomial through expansion
-  BOOST_CHECK(compare_expression(expand(taylor_series<2>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y)), Polynomial<2,int,'y'>{1,2,3}));
+  BOOST_CHECK(compare_expression(expand(taylor_series<2>(Polynomial<3,int,Variable<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<2,int,Variable<vidx<'y'> > >{1,2,3}));
   
   //Keep the order the same
-  BOOST_CHECK(compare_expression(expand(taylor_series<3>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y)), Polynomial<3,int,'y'>{1,2,3,4}));
+  BOOST_CHECK(compare_expression(expand(taylor_series<3>(Polynomial<3,int,Variable<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Variable<vidx<'y'> > >{1,2,3,4}));
   
   //Taylor simplify at a higher order
-  BOOST_CHECK(compare_expression(expand(taylor_series<4>(Polynomial<3,int,'y'>{1,2,3,4}, Null(), y)), Polynomial<3,int,'y'>{1,2,3,4})); 
+  BOOST_CHECK(compare_expression(expand(taylor_series<4>(Polynomial<3,int,Variable<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Variable<vidx<'y'> > >{1,2,3,4})); 
 }
 
 BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
@@ -1053,7 +1054,7 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
 
   static_assert(stator::symbolic::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
   
-  BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<'x'>()), Null()));
+  BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<vidx<'x'> >()), Null()));
   BOOST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
   BOOST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
 
@@ -1062,7 +1063,7 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
   const size_t testcount = 100;
   const double errlvl = 1e-10;
 
-  Vector test1 = substitution(Vector{0,1,2} * Variable<'x'>(), Variable<'x'>() == 2);
+  Vector test1 = substitution(Vector{0,1,2} * Variable<vidx<'x'> >(), Variable<vidx<'x'> >() == 2);
   BOOST_CHECK(test1[0] == 0);
   BOOST_CHECK(test1[1] == 2);
   BOOST_CHECK(test1[2] == 4);
@@ -1078,7 +1079,7 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
       
       Vector r = axis * axis.dot(start);
       auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
-      Vector err = end - substitution(f, Variable<'x'>()==angle);
+      Vector err = end - substitution(f, Variable<vidx<'x'> >()==angle);
       
       BOOST_CHECK(std::abs(err[0]) < errlvl);
       BOOST_CHECK(std::abs(err[1]) < errlvl);
@@ -1094,6 +1095,6 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots_2 )
   using namespace stator::symbolic;
   const Polynomial<1> x{0, 1};
   std::cout.precision(20);
-
+  //Roots are, -1+-i, 0.5*(1+-i\sqrt{11})
   std::cout << LinBairstowSolve(Polynomial<4>{6,4,3,1,1}, 1e-14) << std::endl;
 }

@@ -125,8 +125,9 @@ namespace stator {
       auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._r));
 
     //Special case for divide
-    template<class Config, char Letter>
-    Unity simplify_BinaryOp(const BinaryOp<Variable<Letter>, Variable<Letter>, detail::Divide>& op, detail::choice<0>)
+    template<class Config, class ...VarArgs1, class ...VarArgs2,
+	     typename = typename enable_if_var_in<Variable<VarArgs1...>, Variable<VarArgs2...> >::type>
+    Unity simplify_BinaryOp(const BinaryOp<Variable<VarArgs1...>, Variable<VarArgs2...>, detail::Divide>& op, detail::choice<0>)
     { return {};}
     
     //Special case for the subtraction binary operator becoming the unary negation operator
@@ -134,17 +135,20 @@ namespace stator {
     RHS simplify_BinaryOp(const SubtractOp<Null, RHS>& r, detail::choice<0>) { return try_simplify<Config>(-r._r); }
     
     //Transformations to power-ops where possible
-    template<class Config, char Letter>
-    auto simplify_BinaryOp(const MultiplyOp<Variable<Letter>, Variable<Letter> >&, detail::choice<0>)
-      -> STATOR_AUTORETURN((PowerOp<Variable<Letter>, 2>()));
+    template<class Config, class ...VarArgs1, class ...VarArgs2,
+	     typename = typename enable_if_var_in<Variable<VarArgs1...>, Variable<VarArgs2...> >::type>
+    auto simplify_BinaryOp(const MultiplyOp<Variable<VarArgs1...>, Variable<VarArgs2...> >&, detail::choice<0>)
+      -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Variable<VarArgs1...>, Variable<VarArgs2...> >::type, 2>()));
     
-    template<class Config, char Letter, size_t Order>
-    auto simplify_BinaryOp(const MultiplyOp<PowerOp<Variable<Letter>, Order>, Variable<Letter> >&, detail::choice<0>)
-      -> STATOR_AUTORETURN((PowerOp<Variable<Letter>, Order+1>()));
+    template<class Config, class ...VarArgs1, class ...VarArgs2, size_t Order,
+	     typename = typename enable_if_var_in<Variable<VarArgs1...>, Variable<VarArgs2...> >::type>
+    auto simplify_BinaryOp(const MultiplyOp<PowerOp<Variable<VarArgs1...>, Order>, Variable<VarArgs2...> >&, detail::choice<0>)
+      -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Variable<VarArgs1...>, Variable<VarArgs2...> >::type, Order+1>()));
     
-    template<class Config, char Letter, size_t Order>
-    auto simplify_BinaryOp(const MultiplyOp<Variable<Letter>, PowerOp<Variable<Letter>, Order> >&, detail::choice<0>)
-      -> STATOR_AUTORETURN((PowerOp<Variable<Letter>, Order+1>()));
+    template<class Config, class ...VarArgs1, class ...VarArgs2,  size_t Order,
+	     typename = typename enable_if_var_in<Variable<VarArgs1...>, Variable<VarArgs2...> >::type>
+    auto simplify_BinaryOp(const MultiplyOp<Variable<VarArgs1...>, PowerOp<Variable<VarArgs2...>, Order> >&, detail::choice<0>)
+      -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Variable<VarArgs1...>, Variable<VarArgs2...> >::type, Order+1>()));
         
     // Simplification of both arguments available
     template<class Config, class LHS, class RHS, class Derived>
@@ -211,7 +215,7 @@ namespace stator {
 
     //Disable expansion of PowerOps of variables (otherwise we will recurse to death)
     template<class T> struct PowerOpEnableExpansion { static const bool value = true; };
-    template<char Letter> struct PowerOpEnableExpansion<Variable<Letter> > { static const bool value = false; };
+    template<class ...VarArgs> struct PowerOpEnableExpansion<Variable<VarArgs...> > { static const bool value = false; };
 
     /*! \brief Expansion operator for PowerOp types. 
     
@@ -234,38 +238,40 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial LHS multiplied by a
       Variable. */
-    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
-    Polynomial<Order+1, Real, Letter> simplify(MultiplyOp<Variable<Letter>, Polynomial<Order, Real, Letter> >& f)
+    template<class Config = DefaultSimplifyConfig, class PolyVar, class ...VarArgs, size_t Order, class Real,
+	     typename = typename std::enable_if<Config::expand_to_Polynomial && variable_in<Variable<VarArgs...>, PolyVar>::value>::type>
+    Polynomial<Order+1, Real, PolyVar> simplify(MultiplyOp<Variable<VarArgs...>, Polynomial<Order, Real, PolyVar> >& f)
     {
-      Polynomial<Order+1, Real, Letter> retval;
-      retval[0] = 0;
+      Polynomial<Order+1, Real, PolyVar> retval;
+      retval[0] = empty_sum(retval[0]);
       std::copy(f._r.begin(), f._r.end(), retval.begin() + 1);
       return retval;
     }
     
     /*! \brief Simplification of a Polynomial RHS multiplied by a
       Variable. */
-    template<class Config = DefaultSimplifyConfig, char Letter, size_t Order, class Real, typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
-    Polynomial<Order+1, Real, Letter> simplify(const MultiplyOp<Polynomial<Order, Real, Letter>, Variable<Letter>>& f)
+    template<class Config = DefaultSimplifyConfig, class PolyVar, class ...VarArgs, size_t Order, class Real,
+	     typename = typename std::enable_if<(Config::expand_to_Polynomial && variable_in<Variable<VarArgs...>, PolyVar>::value)>::type>
+    Polynomial<Order+1, Real, typename variable_combine<PolyVar, Variable<VarArgs...> >::type> simplify(const MultiplyOp<Polynomial<Order, Real, PolyVar>, Variable<VarArgs...> >& f)
     {
-      Polynomial<Order+1, Real, Letter> retval;
+      Polynomial<Order+1, Real, typename variable_combine<PolyVar, Variable<VarArgs...> >::type> retval;
       retval[0] = empty_sum(retval[0]);
       std::copy(f._l.begin(), f._l.end(), retval.begin() + 1);
       return retval;
     }
 
     /*! \brief Conversion of a Variable to a polynomial if polynomial expansion is enabled. */
-    template<class Config = DefaultSimplifyConfig, char Letter,
+    template<class Config = DefaultSimplifyConfig, class ...VarArgs,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
-    auto simplify(Variable<Letter>) -> STATOR_AUTORETURN((Polynomial<1, int, Letter>{0, 1}));
+    auto simplify(Variable<VarArgs...>) -> STATOR_AUTORETURN((Polynomial<1, int, Variable<VarArgs...> >{0, 1}));
     
     /*! \brief Conversion of a PowerOp to a Polynomial when Polynomial
         expansion is enabled.
      */
-    template<class Config = DefaultSimplifyConfig, char Letter, size_t Power,
+    template<class Config = DefaultSimplifyConfig, class ...VarArgs, size_t Power,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
-    Polynomial<Power, int, Letter> simplify(const PowerOp<Variable<Letter>, Power>&) {
-      Polynomial<Power, int, Letter> retval;
+    Polynomial<Power, int, Variable<VarArgs...>> simplify(const PowerOp<Variable<VarArgs...>, Power>&) {
+      Polynomial<Power, int, Variable<VarArgs...> > retval;
       retval[Power] = 1;
       return retval;
     }
@@ -290,17 +296,17 @@ namespace stator {
 
     /*! \brief Simplification of a Polynomial operating with a
       constant RHS. */
-    template<class Config, char Letter, size_t Order, class Real, class Op, class Real2,
+    template<class Config, class PolyVar, size_t Order, class Real, class Op, class Real2,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
-      auto simplify_BinaryOp(const BinaryOp<Polynomial<Order, Real, Letter>, Real2, Op>& f, detail::last_choice)
-      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, Polynomial<0, decltype(toArithmetic(f._r)), Letter>{toArithmetic(f._r)})));
+      auto simplify_BinaryOp(const BinaryOp<Polynomial<Order, Real, PolyVar>, Real2, Op>& f, detail::last_choice)
+      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, Polynomial<0, decltype(toArithmetic(f._r)), PolyVar>{toArithmetic(f._r)})));
     
     /*! \brief Simplification of a Polynomial operating with a
       constant LHS. */
-    template<class Config, char Letter, size_t Order, class Real, class Op, class Real2,
+    template<class Config, class PolyVar, size_t Order, class Real, class Op, class Real2,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
-      auto simplify_BinaryOp(const BinaryOp<Real2, Polynomial<Order, Real, Letter>, Op>& f, detail::last_choice)
-      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(Polynomial<0, decltype(toArithmetic(f._l)), Letter>{toArithmetic(f._l)}, f._r)));
+      auto simplify_BinaryOp(const BinaryOp<Real2, Polynomial<Order, Real, PolyVar>, Op>& f, detail::last_choice)
+      -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(Polynomial<0, decltype(toArithmetic(f._l)), PolyVar>{toArithmetic(f._l)}, f._r)));
 
     namespace detail {
       constexpr size_t max_order(size_t N, size_t M)
@@ -309,12 +315,13 @@ namespace stator {
 
     /*!\brief Addition operator for two Polynomial types. 
      */
-    template<class Config = DefaultSimplifyConfig, class Real1, size_t N, class Real2, size_t M, char Letter, class Op,
-	     typename = typename std::enable_if<std::is_same<Op,detail::Add>::value || std::is_same<Op,detail::Subtract>::value>::type>
-    auto simplify(const BinaryOp<Polynomial<N, Real1, Letter>, Polynomial<M, Real2, Letter>, Op> & f)
-      -> Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0],f._r[0]))), Letter>
+    template<class Config = DefaultSimplifyConfig, class Real1, size_t N, class Real2, size_t M, class PolyVar1, class PolyVar2, class Op,
+	     typename = typename std::enable_if<std::is_same<Op,detail::Add>::value || std::is_same<Op,detail::Subtract>::value>::type,
+	     typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>
+    auto simplify(const BinaryOp<Polynomial<N, Real1, PolyVar1>, Polynomial<M, Real2, PolyVar2>, Op> & f)
+      -> Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0],f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type>
     {
-      Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0], f._r[0]))), Letter> retval;
+      Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type> retval;
     
       for (size_t i(0); i <= std::min(N, M); ++i)
     	retval[i] = Op::apply(f._l[i], f._r[i]);
@@ -326,16 +333,16 @@ namespace stator {
     	retval[i] = Op::apply(empty_sum(f._r[i]), f._r[i]);
       
       return retval;
-    }    
+    }
     
     /*! \brief Multiplication between two Polynomial types.
      */
-    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, char Letter, class Op,
+    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, class PolyVar1, class PolyVar2, class Op,
 	     typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value || std::is_same<Op,detail::Dot>::value>::type>
-    auto simplify(const BinaryOp<Polynomial<M, Real1, Letter>, Polynomial<N, Real2, Letter>, Op>& f)
-      -> Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), Letter>
+    auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, Polynomial<N, Real2, PolyVar2>, Op>& f)
+      -> Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type>
     {
-      Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), Letter> retval;
+      Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type> retval;
       for (size_t i(0); i <= N+M; ++i)
     	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
     	  retval[i] += Op::apply(f._l[j], f._r[i-j]);
@@ -344,11 +351,11 @@ namespace stator {
 
     /*! \brief Division between two Polynomial types.
      */
-    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, char Letter>
-    auto simplify(const BinaryOp<Polynomial<M, Real1, Letter>, Polynomial<0, Real2, Letter>, detail::Divide>& f)
-      -> Polynomial<M, decltype(store(f._l[0] / f._r[0])), Letter>
+    template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, class PolyVar1, class PolyVar2>
+    auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, Polynomial<0, Real2, PolyVar2>, detail::Divide>& f)
+      -> Polynomial<M, decltype(store(f._l[0] / f._r[0])), typename variable_combine<PolyVar1, PolyVar2>::type>
     {
-      Polynomial<M, decltype(store(f._l[0] / f._r[0])), Letter> retval;
+      Polynomial<M, decltype(store(f._l[0] / f._r[0])), typename variable_combine<PolyVar1, PolyVar2>::type> retval;
       for (size_t i(0); i <= M; ++i)
     	  retval[i] += f._l[i] / f._r[0];
       return retval;

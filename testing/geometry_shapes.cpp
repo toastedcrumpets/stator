@@ -59,6 +59,6 @@ BOOST_AUTO_TEST_CASE( indicator_test )
   auto bj = Ball<double, 3>(1.0, Vector<double, 3>{2,2,2});
   
 
-  stator::symbolic::Variable<'t'> t;
+  stator::symbolic::Var<'t'> t;
   std::cout << indicator(bi, bj,  Vector<double, 3>{-1,-2,-3} - t * Vector<double, 3>{1,2,3}) << std::endl;
 }

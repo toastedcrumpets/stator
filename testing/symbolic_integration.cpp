@@ -53,13 +53,13 @@ BOOST_AUTO_TEST_CASE( symbolic_integration_variable )
 { 
   using namespace sym;  
 
-  Variable<'x'> x;
-  Variable<'y'> y;
+  Var<'x'> x;
+  Var<'y'> y;
   //Check basic integration of constants
-  CHECK_TYPE(integrate(Unity(), x), Variable<'x'>);
+  CHECK_TYPE(integrate(Unity(), x), Var<'x'>);
   CHECK_TYPE(integrate(Null(), x), Null);
 
-  //Check integration of Variables
+  //Check integration of Vars
   BOOST_CHECK(compare_expression(integrate(x, x), C<1,2>() * pow<2>(x)));
   BOOST_CHECK(compare_expression(integrate(pow<3>(x), x), C<1,4>() * pow<4>(x)));
   BOOST_CHECK(compare_expression(integrate(3 * pow<3>(x), x), 3 * (C<1,4>() * pow<4>(x))));

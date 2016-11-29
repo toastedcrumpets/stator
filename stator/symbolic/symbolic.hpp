@@ -60,8 +60,8 @@ namespace sym {
   /*!\brief Compile-time symbolic representation of a variable
     substitution.
   */
-  template<class Variable, class Arg> struct VariableSubstitution {
-    VariableSubstitution(const Arg& val): _val(val) {}
+  template<class Var, class Arg> struct VarSub {
+    VarSub(const Arg& val): _val(val) {}
     const Arg& _val;
   };
 
@@ -76,12 +76,12 @@ namespace sym {
 
     This class is used to denote a variable.
   */
-  template<typename ...Args> struct Variable : SymbolicOperator {
+  template<typename ...Args> struct Var : SymbolicOperator {
     static constexpr const auto idx = stator::orphan::get_value<vidx<'x'>, Args...>::value;
     
     template<class Arg>
-    VariableSubstitution<Variable<Args...>, Arg> operator==(const Arg& a) const {
-	return VariableSubstitution<Variable<Args...>, Arg>(a);
+    VarSub<Var<Args...>, Arg> operator==(const Arg& a) const {
+	return VarSub<Var<Args...>, Arg>(a);
     }
   };
 
@@ -100,7 +100,7 @@ namespace sym {
 
   template<typename Var1, typename Var2>
   struct variable_combine {
-    typedef Variable<vidx<Var1::idx> > type;
+    typedef Var<vidx<Var1::idx> > type;
   };
   
   
@@ -148,38 +148,38 @@ namespace sym {
   */
   template<class T, class Var, class Arg,
 	     typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-  auto substitution(const T& f, const VariableSubstitution<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
+  auto substitution(const T& f, const VarSub<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
   
-  /*! \brief Evaluates a symbolic Variable at a given point.
+  /*! \brief Evaluates a symbolic Var at a given point.
     
-    This is only used if the Variable is correct 
+    This is only used if the Var is correct 
     substitution.
   */
   template<typename ...Args1, typename ...Args2, class Arg,
-	     typename = typename enable_if_var_in<Variable<Args1...>, Variable<Args2...> >::type>
-  auto substitution(const Variable<Args1...>& f, const VariableSubstitution<Variable<Args2...>, Arg>& x)
+	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
+  auto substitution(const Var<Args1...>& f, const VarSub<Var<Args2...>, Arg>& x)
    -> STATOR_AUTORETURN_BYVALUE(x._val);
 
-  /*! \brief Evaluates a symbolic Variable at a given point.
+  /*! \brief Evaluates a symbolic Var at a given point.
     
-    This is only used if the Variable is not the correct letter for the
+    This is only used if the Var is not the correct letter for the
     substitution.
   */
   template<class ...Args1, class Arg, class Var2,
-	     typename = typename enable_if_var_not_in<Variable<Args1...>, Var2>::type>
-  Variable<Args1...> substitution(const Variable<Args1...>& f, const VariableSubstitution<Var2, Arg>& x)
+	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
+  Var<Args1...> substitution(const Var<Args1...>& f, const VarSub<Var2, Arg>& x)
   { return f; }
   
-  /*! \brief Output operator for Variable types. */
+  /*! \brief Output operator for Var types. */
   template<class ...Args>
-  inline std::ostream& operator<<(std::ostream& os, const Variable<Args...>&) {
-    os << Variable<Args...>::idx;
+  inline std::ostream& operator<<(std::ostream& os, const Var<Args...>&) {
+    os << Var<Args...>::idx;
     return os;
   }
 
-  /*! \brief Output operator for VariableSubstitution types. */
+  /*! \brief Output operator for VarSub types. */
   template<class Var, class Arg>
-  inline std::ostream& operator<<(std::ostream& os, const VariableSubstitution<Var, Arg>& sub) {
+  inline std::ostream& operator<<(std::ostream& os, const VarSub<Var, Arg>& sub) {
     os << Var::idx << " <- " << sub._val;
     return os;
   }
@@ -191,7 +191,7 @@ namespace sym {
   */
   template<class T, class ...Args,
 	     typename = typename std::enable_if<detail::IsConstant<T>::value>::type>
-  Null derivative(const T&, Variable<Args...>) { return Null(); }
+  Null derivative(const T&, Var<Args...>) { return Null(); }
 
   /*! \brief Determine the derivative of a variable.
 
@@ -200,8 +200,8 @@ namespace sym {
     Unity.
   */
   template<class ...Args1, class ...Args2,
-	     typename = typename enable_if_var_in<Variable<Args1...>, Variable<Args2...> >::type>
-  Unity derivative(Variable<Args1...>, Variable<Args2...>) { return Unity(); }
+	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
+  Unity derivative(Var<Args1...>, Var<Args2...>) { return Unity(); }
 
   inline StackVector<double, 0> solve_real_roots(Null f) {
     return StackVector<double, 0>();
@@ -214,8 +214,8 @@ namespace sym {
     Null.
   */
   template<class ...Args1, class ...Args2,
-	     typename = typename enable_if_var_not_in<Variable<Args1...>, Variable<Args2...> >::type>
-  Null derivative(Variable<Args1...>, Variable<Args2...>) { return Null(); }
+	     typename = typename enable_if_var_not_in<Var<Args1...>, Var<Args2...> >::type>
+  Null derivative(Var<Args1...>, Var<Args2...>) { return Null(); }
 
   /*! \brief Shift a function forward. It returns \f$g(x)=f(x+a)\f$
 
@@ -236,7 +236,7 @@ namespace sym {
     return 0.0;
   }
 
-  template<size_t Order, class Real = double, class PolyVar = Variable<>> class Polynomial;
+  template<size_t Order, class Real = double, class PolyVar = Var<>> class Polynomial;
 }
 
 
@@ -248,7 +248,7 @@ namespace sym {
 
 namespace sym {
   namespace detail {
-    template<size_t State, size_t max_Order, class Variable>
+    template<size_t State, size_t max_Order, class Var>
     struct TaylorSeriesWorker {
 	template<class Real>
 	static Null eval(const Null& f, const Real& a)
@@ -256,14 +256,14 @@ namespace sym {
       
 	template<class F, class Real>
 	static auto eval(const F& f, const Real& a) 
-        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * substitution(f, Variable() == a) + (Variable() - a) * TaylorSeriesWorker<State+1, max_Order, Variable>::eval(derivative(f, Variable()), a)))
+        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * substitution(f, Var() == a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a)))
     };
 
-    template<size_t max_Order, class Variable>
-    struct TaylorSeriesWorker<max_Order,max_Order, Variable> {
+    template<size_t max_Order, class Var>
+    struct TaylorSeriesWorker<max_Order,max_Order, Var> {
 	template<class F, class Real>
 	static auto eval(const F& f, const Real& a)
-        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * substitution(f, Variable() == a)));
+        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * substitution(f, Var() == a)));
       
 	template<class Real>
 	static Null eval(const Null& f, const Real& a)
@@ -275,8 +275,8 @@ namespace sym {
     \brief Generate a Taylor series representation of a Symbolic
     expression.
   */
-  template<size_t Order, class Variable, class F, class Real>
-  auto taylor_series(const F& f, Real a, Variable) 
-    -> STATOR_AUTORETURN(try_simplify(detail::TaylorSeriesWorker<0, Order, Variable>::eval(f, a)));
+  template<size_t Order, class Var, class F, class Real>
+  auto taylor_series(const F& f, Real a, Var) 
+    -> STATOR_AUTORETURN(try_simplify(detail::TaylorSeriesWorker<0, Order, Var>::eval(f, a)));
 } // namespace symbolic
 

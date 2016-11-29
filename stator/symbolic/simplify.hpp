@@ -124,8 +124,8 @@ namespace sym {
 
   //Special case for divide
   template<class Config, class ...VarArgs1, class ...VarArgs2,
-	     typename = typename enable_if_var_in<Variable<VarArgs1...>, Variable<VarArgs2...> >::type>
-  Unity simplify_BinaryOp(const BinaryOp<Variable<VarArgs1...>, Variable<VarArgs2...>, detail::Divide>& op, detail::choice<0>)
+	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
+  Unity simplify_BinaryOp(const BinaryOp<Var<VarArgs1...>, Var<VarArgs2...>, detail::Divide>& op, detail::choice<0>)
   { return {};}
   
   //Special case for the subtraction binary operator becoming the unary negation operator
@@ -134,19 +134,19 @@ namespace sym {
   
   //Transformations to power-ops where possible
   template<class Config, class ...VarArgs1, class ...VarArgs2,
-	     typename = typename enable_if_var_in<Variable<VarArgs1...>, Variable<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<Variable<VarArgs1...>, Variable<VarArgs2...> >&, detail::choice<0>)
-    -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Variable<VarArgs1...>, Variable<VarArgs2...> >::type, 2>()));
+	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
+  auto simplify_BinaryOp(const MultiplyOp<Var<VarArgs1...>, Var<VarArgs2...> >&, detail::choice<0>)
+    -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type, 2>()));
   
   template<class Config, class ...VarArgs1, class ...VarArgs2, size_t Order,
-	     typename = typename enable_if_var_in<Variable<VarArgs1...>, Variable<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<PowerOp<Variable<VarArgs1...>, Order>, Variable<VarArgs2...> >&, detail::choice<0>)
-    -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Variable<VarArgs1...>, Variable<VarArgs2...> >::type, Order+1>()));
+	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
+  auto simplify_BinaryOp(const MultiplyOp<PowerOp<Var<VarArgs1...>, Order>, Var<VarArgs2...> >&, detail::choice<0>)
+    -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type, Order+1>()));
   
   template<class Config, class ...VarArgs1, class ...VarArgs2,  size_t Order,
-	     typename = typename enable_if_var_in<Variable<VarArgs1...>, Variable<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<Variable<VarArgs1...>, PowerOp<Variable<VarArgs2...>, Order> >&, detail::choice<0>)
-    -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Variable<VarArgs1...>, Variable<VarArgs2...> >::type, Order+1>()));
+	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
+  auto simplify_BinaryOp(const MultiplyOp<Var<VarArgs1...>, PowerOp<Var<VarArgs2...>, Order> >&, detail::choice<0>)
+    -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type, Order+1>()));
       
   // Simplification of both arguments available
   template<class Config, class LHS, class RHS, class Derived>
@@ -213,7 +213,7 @@ namespace sym {
 
   //Disable expansion of PowerOps of variables (otherwise we will recurse to death)
   template<class T> struct PowerOpEnableExpansion { static const bool value = true; };
-  template<class ...VarArgs> struct PowerOpEnableExpansion<Variable<VarArgs...> > { static const bool value = false; };
+  template<class ...VarArgs> struct PowerOpEnableExpansion<Var<VarArgs...> > { static const bool value = false; };
 
   /*! \brief Expansion operator for PowerOp types. 
   
@@ -235,10 +235,10 @@ namespace sym {
     */
 
   /*! \brief Simplification of a Polynomial LHS multiplied by a
-    Variable. */
+    Var. */
   template<class Config = DefaultSimplifyConfig, class PolyVar, class ...VarArgs, size_t Order, class Real,
-	     typename = typename std::enable_if<Config::expand_to_Polynomial && variable_in<Variable<VarArgs...>, PolyVar>::value>::type>
-  Polynomial<Order+1, Real, PolyVar> simplify(MultiplyOp<Variable<VarArgs...>, Polynomial<Order, Real, PolyVar> >& f)
+	     typename = typename std::enable_if<Config::expand_to_Polynomial && variable_in<Var<VarArgs...>, PolyVar>::value>::type>
+  Polynomial<Order+1, Real, PolyVar> simplify(MultiplyOp<Var<VarArgs...>, Polynomial<Order, Real, PolyVar> >& f)
   {
     Polynomial<Order+1, Real, PolyVar> retval;
     retval[0] = empty_sum(retval[0]);
@@ -247,29 +247,29 @@ namespace sym {
   }
   
   /*! \brief Simplification of a Polynomial RHS multiplied by a
-    Variable. */
+    Var. */
   template<class Config = DefaultSimplifyConfig, class PolyVar, class ...VarArgs, size_t Order, class Real,
-	     typename = typename std::enable_if<(Config::expand_to_Polynomial && variable_in<Variable<VarArgs...>, PolyVar>::value)>::type>
-  Polynomial<Order+1, Real, typename variable_combine<PolyVar, Variable<VarArgs...> >::type> simplify(const MultiplyOp<Polynomial<Order, Real, PolyVar>, Variable<VarArgs...> >& f)
+	     typename = typename std::enable_if<(Config::expand_to_Polynomial && variable_in<Var<VarArgs...>, PolyVar>::value)>::type>
+  Polynomial<Order+1, Real, typename variable_combine<PolyVar, Var<VarArgs...> >::type> simplify(const MultiplyOp<Polynomial<Order, Real, PolyVar>, Var<VarArgs...> >& f)
   {
-    Polynomial<Order+1, Real, typename variable_combine<PolyVar, Variable<VarArgs...> >::type> retval;
+    Polynomial<Order+1, Real, typename variable_combine<PolyVar, Var<VarArgs...> >::type> retval;
     retval[0] = empty_sum(retval[0]);
     std::copy(f._l.begin(), f._l.end(), retval.begin() + 1);
     return retval;
   }
 
-  /*! \brief Conversion of a Variable to a polynomial if polynomial expansion is enabled. */
+  /*! \brief Conversion of a Var to a polynomial if polynomial expansion is enabled. */
   template<class Config = DefaultSimplifyConfig, class ...VarArgs,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
-  auto simplify(Variable<VarArgs...>) -> STATOR_AUTORETURN((Polynomial<1, int, Variable<VarArgs...> >{0, 1}));
+  auto simplify(Var<VarArgs...>) -> STATOR_AUTORETURN((Polynomial<1, int, Var<VarArgs...> >{0, 1}));
   
   /*! \brief Conversion of a PowerOp to a Polynomial when Polynomial
       expansion is enabled.
    */
   template<class Config = DefaultSimplifyConfig, class ...VarArgs, size_t Power,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
-  Polynomial<Power, int, Variable<VarArgs...>> simplify(const PowerOp<Variable<VarArgs...>, Power>&) {
-    Polynomial<Power, int, Variable<VarArgs...> > retval;
+  Polynomial<Power, int, Var<VarArgs...>> simplify(const PowerOp<Var<VarArgs...>, Power>&) {
+    Polynomial<Power, int, Var<VarArgs...> > retval;
     retval[Power] = 1;
     return retval;
   }

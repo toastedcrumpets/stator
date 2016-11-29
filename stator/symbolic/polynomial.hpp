@@ -177,19 +177,19 @@ namespace sym {
   */
 
   /*! \brief Optimised Polynomial substitution which performs an
-      exchange of the Polynomial Variable.
+      exchange of the Polynomial Var.
    */
   template<class Coeff_t, size_t Order, class Var1, class Var2, class ...VarArgs,
 	     typename = typename enable_if_var_in<Var2, Var1>::type>
-  Polynomial<Order, Coeff_t, Variable<VarArgs...> >
-  substitution(const Polynomial<Order, Coeff_t, Var1>& f, const VariableSubstitution<Var2, Variable<VarArgs...> >& x_container)
-  { return Polynomial<Order, Coeff_t, Variable<VarArgs...> >(f.begin(), f.end()); }
+  Polynomial<Order, Coeff_t, Var<VarArgs...> >
+  substitution(const Polynomial<Order, Coeff_t, Var1>& f, const VarSub<Var2, Var<VarArgs...> >& x_container)
+  { return Polynomial<Order, Coeff_t, Var<VarArgs...> >(f.begin(), f.end()); }
 
   /*! \brief Optimised Polynomial substitution for Null
       insertions. */
   template<size_t Order, class Coeff_t, class PolyVar, class SubVar,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
-  Coeff_t substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VariableSubstitution<SubVar, Null>&)
+  Coeff_t substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Null>&)
   { return f[0]; }
 
   /*! \brief Numerically Evaluates a Polynomial expression at a
@@ -207,7 +207,7 @@ namespace sym {
                                                && !std::is_base_of<Eigen::EigenBase<Coeff_t2>, Coeff_t2>::value)>::type,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
   decltype(store(Coeff_t() * Coeff_t2()))
-  substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VariableSubstitution<SubVar, Coeff_t2>& x_container)
+  substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Coeff_t2>& x_container)
   {
     //Handle the case where this is actually a constant and not a
     //Polynomial. This is free to evaluate now as Order is a
@@ -285,7 +285,7 @@ namespace sym {
                                               || (std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value && std::is_arithmetic<Coeff_t2>::value)
                                               >::type,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
-    auto substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VariableSubstitution<SubVar, Coeff_t2>& x_container)
+    auto substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Coeff_t2>& x_container)
    -> STATOR_AUTORETURN(detail::PolySubWorker<Order>::eval(f, x_container._val))
 
   /*! \brief Fast evaluation of multiple derivatives of a
@@ -402,10 +402,10 @@ namespace sym {
     than zero.
    */
   template<class PolyVar, class ...VarArgs, class Coeff_t, size_t N,
-	     typename = typename std::enable_if<(N > 0) && (variable_in<PolyVar, Variable<VarArgs...> >::value)>::type,
-	     typename = typename enable_if_var_in<PolyVar, Variable<VarArgs...> >::type>
-    inline Polynomial<N-1, Coeff_t, typename variable_combine<PolyVar, Variable<VarArgs...>>::type> derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Variable<VarArgs...>) {
-    Polynomial<N-1, Coeff_t, typename variable_combine<PolyVar, Variable<VarArgs...> >::type> retval;
+	     typename = typename std::enable_if<(N > 0) && (variable_in<PolyVar, Var<VarArgs...> >::value)>::type,
+	     typename = typename enable_if_var_in<PolyVar, Var<VarArgs...> >::type>
+    inline Polynomial<N-1, Coeff_t, typename variable_combine<PolyVar, Var<VarArgs...>>::type> derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Var<VarArgs...>) {
+    Polynomial<N-1, Coeff_t, typename variable_combine<PolyVar, Var<VarArgs...> >::type> retval;
     for (size_t i(0); i < N; ++i) {
 	retval[i] = f[i+1] * (i+1);
     }
@@ -418,8 +418,8 @@ namespace sym {
     the incorrect variable OR its a low order poly.
    */
   template<class PolyVar, class ...VarArgs, class Coeff_t, size_t N,
-	     typename = typename std::enable_if<(N==0) || (!variable_in<PolyVar, Variable<VarArgs...> >::value)>::type>
-  Null derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Variable<VarArgs...>) 
+	     typename = typename std::enable_if<(N==0) || (!variable_in<PolyVar, Var<VarArgs...> >::value)>::type>
+  Null derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Var<VarArgs...>) 
   { return Null(); }
 
   /*! \endcond \} */
@@ -1101,7 +1101,7 @@ namespace sym {
 	 */
 	template<class Coeff_t2>
 	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
-	  const Coeff_t currentx = substitution(_p_n, Variable<PolyVar>() == x);
+	  const Coeff_t currentx = substitution(_p_n, Var<PolyVar>() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 
@@ -1148,7 +1148,7 @@ namespace sym {
 
 	template<class Coeff_t2>
 	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
-	  const Coeff_t currentx = substitution(_p_n, Variable<PolyVar>() == x);
+	  const Coeff_t currentx = substitution(_p_n, Var<PolyVar>() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 	  return sign_change;
@@ -1593,7 +1593,7 @@ namespace sym {
 	  continue; //Start again
 	}
 
-	if (std::abs(substitution(f, Variable<PolyVar>() == 1.0)) <= (100 * precision(f, 1.0))) {
+	if (std::abs(substitution(f, Var<PolyVar>() == 1.0)) <= (100 * precision(f, 1.0))) {
 	  //There is probably a root near x=1.0 as its approached zero
 	  //closely (compared to the precision of the polynomial
 	  //evaluation). Rather than trying to divide it out or do

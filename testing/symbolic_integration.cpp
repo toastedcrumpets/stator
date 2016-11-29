@@ -35,7 +35,7 @@
 
 template<class T1, class T2>
 bool compare_expression(const T1& f, const T2& g) {
-  using namespace stator::symbolic;
+  using namespace sym;
   std::ostringstream os;
   os << f;
   std::string f_str = os.str();
@@ -51,7 +51,7 @@ bool compare_expression(const T1& f, const T2& g) {
 
 BOOST_AUTO_TEST_CASE( symbolic_integration_variable )
 { 
-  using namespace stator::symbolic;  
+  using namespace sym;  
 
   Variable<'x'> x;
   Variable<'y'> y;

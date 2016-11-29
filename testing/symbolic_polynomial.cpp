@@ -52,7 +52,7 @@ bool err(double val, double expected)
 
 template<class T1, class T2>
 bool compare_expression(const T1& f, const T2& g) {
-  using namespace stator::symbolic;
+  using namespace sym;
   std::ostringstream os;
   os << f;
   std::string f_str = os.str();
@@ -74,8 +74,8 @@ struct RootData {
 };
 
 template<class Real1, class Real2, size_t N, class PolyVar>
-stator::symbolic::Polynomial<N, Real1, PolyVar> convert_poly(const stator::symbolic::Polynomial<N, Real2, PolyVar>& p) {
-  stator::symbolic::Polynomial<N, Real1, PolyVar> f;
+sym::Polynomial<N, Real1, PolyVar> convert_poly(const sym::Polynomial<N, Real2, PolyVar>& p) {
+  sym::Polynomial<N, Real1, PolyVar> f;
   for (size_t i(0); i <= N; ++i)
     f[i] = Real1(p[i]);
   return f;
@@ -136,7 +136,7 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
 
 BOOST_AUTO_TEST_CASE( poly_variables )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
   Polynomial<1,double, Variable<vidx<'y'> > > y{0, 1};
   BOOST_CHECK(compare_expression(substitution(y, Variable<vidx<'y'> >()==Variable<vidx<'x'> >()), "P(1 × x)"));
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE( poly_variables )
 
 BOOST_AUTO_TEST_CASE( poly_addition )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 2.5};
   Polynomial<0> C{0.3};
   auto poly1 = expand(x+C);
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE( poly_addition )
 
 BOOST_AUTO_TEST_CASE( poly_multiplication )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
   auto poly1 = -2.0;
   auto poly2 = 2.0 - x + x * x;
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE( poly_multiplication )
 
 BOOST_AUTO_TEST_CASE( poly_division )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
   auto poly1 = 2.0 - x + x * x;
   auto poly2 = expand(poly1 / 0.5);
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE( poly_division )
 
 BOOST_AUTO_TEST_CASE( poly_vector )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1, Vector> x{Vector{0,0,0}, Vector{1,2,3}};
   Polynomial<0, Vector> C{Vector{3,2,1}};
   auto poly1 = expand(x+C);
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE( poly_vector )
 
 BOOST_AUTO_TEST_CASE( poly_lower_order )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
   Polynomial<2> poly2 = expand(2.0 - x + x * x);
   Polynomial<3> poly3 = expand(poly2 + 0 * x * x * x);
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE( poly_lower_order )
 
 BOOST_AUTO_TEST_CASE( poly_simplify )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Variable<vidx<'x'> > x;
   //Test that simplify creates polynomials from Variables
   auto poly1 = expand(2 * x * x);
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE( poly_simplify )
 
 BOOST_AUTO_TEST_CASE( poly_eval_limits )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
 
   {//Check even positive polynomials
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE( poly_eval_limits )
 
 BOOST_AUTO_TEST_CASE( poly_derivative )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
 
   auto poly1 = expand(x + x*x + x*x*x + x*x*x*x);
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE( poly_derivative )
 
 BOOST_AUTO_TEST_CASE( poly_zero_derivative)
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
   const auto poly1 = derivative(x, Variable<>());
   BOOST_CHECK_EQUAL(poly1[0], 1);
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE( poly_zero_derivative)
 
 BOOST_AUTO_TEST_CASE( poly_deflation)
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
 
   const double roots[] = {-1e3, 4e3, 0, 3.14159265, -3.14159265};
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE( poly_deflation)
 
 BOOST_AUTO_TEST_CASE( poly_shift)
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
 
   const double roots[] = {-1e3, 4e3, 0, 3.14159265, -3.14159265};
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE( poly_shift)
 
 BOOST_AUTO_TEST_CASE(poly_quadratic_roots_simple)
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
   
   {//Quadratic with no roots
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(poly_quadratic_roots_simple)
 
 BOOST_AUTO_TEST_CASE( poly_quadratic_special_cases)
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   Polynomial<1> x{0, 1};
   
   {//Quadratic with catastrophic cancellation of error
@@ -462,7 +462,7 @@ double cubic_rootvals[] = {-1e6, -1e3, -100, -1, 0, 1, +100, 1e3, 1e6};
 
 BOOST_AUTO_TEST_CASE( poly_linear_roots_full )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   for (double root1 : cubic_rootvals)
@@ -478,7 +478,7 @@ BOOST_AUTO_TEST_CASE( poly_linear_roots_full )
 
 BOOST_AUTO_TEST_CASE( poly_quadratic_roots_full )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   for (double root1 : cubic_rootvals)
@@ -495,7 +495,7 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_roots_full )
 
 BOOST_AUTO_TEST_CASE( poly_cubic_triple_roots )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   for (double root1 : cubic_rootvals)
@@ -511,7 +511,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_triple_roots )
 
 BOOST_AUTO_TEST_CASE( poly_cubic_single_roots )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   for (double root1 : cubic_rootvals)
@@ -537,7 +537,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_single_roots )
 
 BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   {//Zero constant term with three roots
@@ -603,7 +603,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
 
 BOOST_AUTO_TEST_CASE( poly_root_tests)
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   {//Check cubic
@@ -654,7 +654,7 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
 
 BOOST_AUTO_TEST_CASE( poly_gcd )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   { //Standard division with remainder
@@ -713,7 +713,7 @@ BOOST_AUTO_TEST_CASE( poly_gcd )
 
 BOOST_AUTO_TEST_CASE( poly_Sturm_chains )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   { //Example from wikipedia (x^4+x^3-x-1)
@@ -741,7 +741,7 @@ BOOST_AUTO_TEST_CASE( poly_Sturm_chains )
 
 BOOST_AUTO_TEST_CASE( descartes_sturm_and_budan_01_alesina_rootcount_test )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
   
   //The values 0.5, and 2.0 are strong tests of the algorithms, as
@@ -824,7 +824,7 @@ BOOST_AUTO_TEST_CASE( descartes_sturm_and_budan_01_alesina_rootcount_test )
 
 BOOST_AUTO_TEST_CASE( LMQ_upper_bound_test )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   const double roots[] = {-1e5, -0.14159265, 3.14159265, -0.0001,0.1, 0.3333, 0.6, 1.001, 2.0, 3.14159265, 1e7};
@@ -871,7 +871,7 @@ BOOST_AUTO_TEST_CASE( LMQ_upper_bound_test )
 
 BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
 
   const double roots[] = {-1e5, -0.14159265, 3.14159265, -0.0001,0.1, 0.3333, 0.6, 1.001, 2.0, 3.14159265, 1e7};
@@ -927,7 +927,7 @@ BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
 
 BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
   const Polynomial<1, long double> x_hp{0, 1};
 
@@ -977,7 +977,7 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 
 BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
   //Test Polynomial derivatives on subtraction Operation types
   auto poly1 = expand(derivative(2*x*x - x, Variable<vidx<'x'> >()));
@@ -988,7 +988,7 @@ BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
 
 BOOST_AUTO_TEST_CASE( polynomials_multiply_expansion )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
   //Test Polynomial simplification on multiplication Operation types
   auto poly1 = expand((x + 1)*(x + 3));
@@ -999,7 +999,7 @@ BOOST_AUTO_TEST_CASE( polynomials_multiply_expansion )
 
 BOOST_AUTO_TEST_CASE( function_poly_derivatives_special )
 { 
-  using namespace stator::symbolic;
+  using namespace sym;
 
   //Check special case derivatives of Functions with constant
   //arguments.
@@ -1007,11 +1007,11 @@ BOOST_AUTO_TEST_CASE( function_poly_derivatives_special )
   BOOST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Variable<vidx<'x'> >()), Null()));
 }
 
-template<class T> auto d(T a) -> STATOR_AUTORETURN(stator::symbolic::derivative(a, stator::symbolic::Variable<stator::symbolic::vidx<'y'> >()));
+template<class T> auto d(T a) -> STATOR_AUTORETURN(sym::derivative(a, sym::Variable<sym::vidx<'y'> >()));
 
 BOOST_AUTO_TEST_CASE( poly_taylor )
 { 
-  using namespace stator::symbolic;
+  using namespace sym;
   Variable<vidx<'y'> > y;
 
   BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Variable<vidx<'x'> >()), simplify(y*y*y)));
@@ -1050,9 +1050,9 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
 
 BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
 
-  static_assert(stator::symbolic::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
+  static_assert(sym::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
   
   BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<vidx<'x'> >()), Null()));
   BOOST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
@@ -1092,7 +1092,7 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
 
 BOOST_AUTO_TEST_CASE( generic_solve_real_roots_2 )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
   const Polynomial<1> x{0, 1};
   std::cout.precision(20);
   //Roots are, -1+-i, 0.5*(1+-i\sqrt{11})

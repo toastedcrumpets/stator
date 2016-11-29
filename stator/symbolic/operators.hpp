@@ -19,48 +19,47 @@
 
 #pragma once
 
-namespace stator {
-  namespace symbolic {
-    struct BinaryOpBase {};
-    
-    /*! \brief Symbolic representation of a binary symbolic operation. 
-     */
-    template<class LHS, class RHS, typename Op>
-    struct BinaryOp: BinaryOpBase, SymbolicOperator {
-      LHS _l;
-      RHS _r;
-      BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
-    };
-    
-    template<class LHS, class RHS, class Derived>
-    inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, RHS, Derived>& op) {
-      os << "(" << op._l << " " << Derived::_str <<  " " << op._r << ")";
-      return os;
-    }
+namespace sym {
+  struct BinaryOpBase {};
+  
+  /*! \brief Symbolic representation of a binary symbolic operation. 
+   */
+  template<class LHS, class RHS, typename Op>
+  struct BinaryOp: BinaryOpBase, SymbolicOperator {
+    LHS _l;
+    RHS _r;
+    BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
+  };
+  
+  template<class LHS, class RHS, class Derived>
+  inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, RHS, Derived>& op) {
+    os << "(" << op._l << " " << Derived::_str <<  " " << op._r << ")";
+    return os;
+  }
 
-    template<class LHS, class RHS, class Op, class Variable, class Arg> 
-    auto substitution(BinaryOp<LHS, RHS, Op> f, VariableSubstitution<Variable, Arg> x)
-      -> STATOR_AUTORETURN_BYVALUE(Op::apply(substitution(f._l, x), substitution(f._r, x)));
-    
-    namespace detail {
-      struct Add {
+  template<class LHS, class RHS, class Op, class Variable, class Arg> 
+  auto substitution(BinaryOp<LHS, RHS, Op> f, VariableSubstitution<Variable, Arg> x)
+    -> STATOR_AUTORETURN_BYVALUE(Op::apply(substitution(f._l, x), substitution(f._r, x)));
+  
+  namespace detail {
+    struct Add {
 	static constexpr bool commutative = true;
 	static constexpr bool associative = true;
 	typedef Null left_identity;
 	typedef Null right_identity;
 	static constexpr const char* _str = "+";
 	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l + r);
-      };
+    };
 
-      struct Subtract {
+    struct Subtract {
 	static constexpr bool commutative = false;
 	static constexpr bool associative = false;
 	typedef Null right_identity;
 	static constexpr const char* _str = "-";
 	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l - r);
-      };
+    };
 
-      struct Multiply {
+    struct Multiply {
 	static constexpr bool commutative = true;
 	static constexpr bool associative = true;
 	typedef Unity left_identity;
@@ -69,241 +68,241 @@ namespace stator {
 	typedef Null right_zero;
 	static constexpr const char* _str = "×";
 	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l * r);
-      };
+    };
 
-      struct Divide {
+    struct Divide {
 	static constexpr bool commutative = false;
 	static constexpr bool associative = false;
 	typedef Unity right_identity;
 	typedef Null left_zero;
 	static constexpr const char* _str = "÷";
 	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l / r);
-      };
+    };
 
-      struct Dot {
+    struct Dot {
 	static constexpr bool commutative = false;
 	static constexpr bool associative = false;
 	static constexpr const char* _str = "•";
 	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l.dot(r));
-      };
-    }
-
-    template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, RHS, detail::Add>;
-    template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, RHS, detail::Subtract>;    
-    template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, RHS, detail::Multiply>;
-    template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, RHS, detail::Divide>;
-    template<class LHS, class RHS> using DotOp      = BinaryOp<LHS, RHS, detail::Dot>;
-
-    template <class Op, class OverOp>
-    struct left_distributive { static constexpr bool value = false; };
-
-    template <class Op, class OverOp>
-    struct right_distributive { static constexpr bool value = Op::commutative && left_distributive<Op,OverOp>::value; };
-    
-    template <class Op, class OverOp>
-    struct distributive { static constexpr bool value = right_distributive<Op,OverOp>::value && left_distributive<Op,OverOp>::value; };
-
-    template<>
-    struct left_distributive<detail::Multiply, detail::Add> { static constexpr bool value = true; };
-    
-    template<>
-    struct left_distributive<detail::Dot, detail::Add> { static constexpr bool value = true; };
-
-    template<>
-    struct right_distributive<detail::Divide, detail::Add> { static constexpr bool value = true; };
-
-    /*! \name Symbolic algebra
-      \{
-    */
-    /*! \brief Simple combination rule to enable Symbolic operations,
-        but avoid redundantly specifying where two SymbolicOperator
-        classes are operated on. */
-    template<class LHS, class RHS> 
-    struct ApplySymbolicOps {
-      static const bool value = IsSymbolic<LHS>::value || (!IsSymbolic<LHS>::value && IsSymbolic<RHS>::value);
     };
+  }
 
-    /*! \brief Symbolic unary positive operator. */
-    template<class Arg,
+  template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, RHS, detail::Add>;
+  template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, RHS, detail::Subtract>;    
+  template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, RHS, detail::Multiply>;
+  template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, RHS, detail::Divide>;
+  template<class LHS, class RHS> using DotOp      = BinaryOp<LHS, RHS, detail::Dot>;
+
+  template <class Op, class OverOp>
+  struct left_distributive { static constexpr bool value = false; };
+
+  template <class Op, class OverOp>
+  struct right_distributive { static constexpr bool value = Op::commutative && left_distributive<Op,OverOp>::value; };
+  
+  template <class Op, class OverOp>
+  struct distributive { static constexpr bool value = right_distributive<Op,OverOp>::value && left_distributive<Op,OverOp>::value; };
+
+  template<>
+  struct left_distributive<detail::Multiply, detail::Add> { static constexpr bool value = true; };
+  
+  template<>
+  struct left_distributive<detail::Dot, detail::Add> { static constexpr bool value = true; };
+
+  template<>
+  struct right_distributive<detail::Divide, detail::Add> { static constexpr bool value = true; };
+
+  /*! \name Symbolic algebra
+    \{
+  */
+  /*! \brief Simple combination rule to enable Symbolic operations,
+      but avoid redundantly specifying where two SymbolicOperator
+      classes are operated on. */
+  template<class LHS, class RHS> 
+  struct ApplySymbolicOps {
+    static const bool value = IsSymbolic<LHS>::value || (!IsSymbolic<LHS>::value && IsSymbolic<RHS>::value);
+  };
+
+  /*! \brief Symbolic unary positive operator. */
+  template<class Arg,
 	     typename = typename std::enable_if<IsSymbolic<SymbolicOperator>::value>::type>
-    Arg operator+(const Arg& l) { return l; }
+  Arg operator+(const Arg& l) { return l; }
 
-    /*! \brief Symbolic unary negation operator. */
-    template<class Arg,
+  /*! \brief Symbolic unary negation operator. */
+  template<class Arg,
 	     typename = typename std::enable_if<IsSymbolic<SymbolicOperator>::value>::type>
-    auto operator-(const Arg& l) -> STATOR_AUTORETURN(C<-1>() * l)
+  auto operator-(const Arg& l) -> STATOR_AUTORETURN(C<-1>() * l)
 
-    /*! \brief Symbolic addition operator. */
-    template<class LHS, class RHS,
+  /*! \brief Symbolic addition operator. */
+  template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator+(const LHS& l, const RHS& r) 
-      -> STATOR_AUTORETURN((AddOp<decltype(store(l)), decltype(store(r))>(l, r)))
+  auto operator+(const LHS& l, const RHS& r) 
+    -> STATOR_AUTORETURN((AddOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
-    /*! \brief Symbolic multiplication operator. */
-    template<class LHS, class RHS,
+  /*! \brief Symbolic multiplication operator. */
+  template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator*(const LHS& l, const RHS& r) 
-      -> STATOR_AUTORETURN((MultiplyOp<decltype(store(l)), decltype(store(r))>(l, r)))
+  auto operator*(const LHS& l, const RHS& r) 
+    -> STATOR_AUTORETURN((MultiplyOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
-    /*! \brief Symbolic subtraction operator. */
-    template<class LHS, class RHS,
+  /*! \brief Symbolic subtraction operator. */
+  template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator-(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((SubtractOp<decltype(store(l)), decltype(store(r))>(l, r)))
+  auto operator-(const LHS& l, const RHS& r) 
+  -> STATOR_AUTORETURN((SubtractOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
-    /*! \brief Symbolic divide operator. */
-    template<class LHS, class RHS,
+  /*! \brief Symbolic divide operator. */
+  template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator/(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((DivideOp<decltype(store(l)), decltype(store(r))>(l, r)))
+  auto operator/(const LHS& l, const RHS& r) 
+  -> STATOR_AUTORETURN((DivideOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
-    /*! \brief Symbolic dot operator. */
-    template<class LHS, class RHS,
+  /*! \brief Symbolic dot operator. */
+  template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto dot(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((DotOp<decltype(store(l)), decltype(store(r))>(l, r)));
+  auto dot(const LHS& l, const RHS& r) 
+  -> STATOR_AUTORETURN((DotOp<decltype(store(l)), decltype(store(r))>(l, r)));
 
-    template<class LHS, class RHS,
+  template<class LHS, class RHS,
 	     typename = typename std::enable_if<!ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto dot(const LHS& l, const RHS& r) 
-      -> STATOR_AUTORETURN(detail::Dot::apply(l, r));
-    
-    /*! \brief Derivatives of AddOp operations.
-     */
-    template<class Variable, class LHS, class RHS>
-    auto derivative(const AddOp<LHS, RHS>& f, Variable)
-      -> STATOR_AUTORETURN(derivative(f._l, Variable()) + derivative(f._r, Variable()))
+  auto dot(const LHS& l, const RHS& r) 
+    -> STATOR_AUTORETURN(detail::Dot::apply(l, r));
+  
+  /*! \brief Derivatives of AddOp operations.
+   */
+  template<class Variable, class LHS, class RHS>
+  auto derivative(const AddOp<LHS, RHS>& f, Variable)
+    -> STATOR_AUTORETURN(derivative(f._l, Variable()) + derivative(f._r, Variable()))
 
-    /*! \brief Derivatives of SubtractOp operations.
-     */
-    template<class Variable, class LHS, class RHS>
-    auto derivative(const SubtractOp<LHS, RHS>& f, Variable) 
-      -> STATOR_AUTORETURN(derivative(f._l, Variable()) - derivative(f._r, Variable()))
+  /*! \brief Derivatives of SubtractOp operations.
+   */
+  template<class Variable, class LHS, class RHS>
+  auto derivative(const SubtractOp<LHS, RHS>& f, Variable) 
+    -> STATOR_AUTORETURN(derivative(f._l, Variable()) - derivative(f._r, Variable()))
 
-    /*! \brief Derivatives of MultiplyOp operations.
-     */
-    template<class Variable, class LHS, class RHS>
-    auto derivative(const MultiplyOp<LHS, RHS>& f, Variable) 
-    -> STATOR_AUTORETURN(derivative(f._l, Variable()) * f._r + f._l * derivative(f._r, Variable()))
+  /*! \brief Derivatives of MultiplyOp operations.
+   */
+  template<class Variable, class LHS, class RHS>
+  auto derivative(const MultiplyOp<LHS, RHS>& f, Variable) 
+  -> STATOR_AUTORETURN(derivative(f._l, Variable()) * f._r + f._l * derivative(f._r, Variable()))
 
-    /*! \} */
+  /*! \} */
 
-    namespace {
-      /*! \brief Generic implementation of the eval routine for PowerOp.
+  namespace {
+    /*! \brief Generic implementation of the eval routine for PowerOp.
 	
 	As the types of non-arithmetic arguments to PowerOp might
 	change with each round of multiplication, we must be careful
 	to accommodate this using templated looping. This class
 	achieves this.
-      */
-      template<size_t Power>
-      struct PowerOpSubstitution {
+    */
+    template<size_t Power>
+    struct PowerOpSubstitution {
 	template<class Arg_t>
 	static auto eval(Arg_t x)
-          -> STATOR_AUTORETURN(PowerOpSubstitution<Power-1>::eval(x) * x)
-      };
-
-      template<>
-      struct PowerOpSubstitution<1> {
-	template<class Arg_t> static Arg_t eval(Arg_t x) { return x; }
-      };
-
-      template<>
-      struct PowerOpSubstitution<0> {
-	template<class Arg_t> static Unity eval(Arg_t x) { return Unity(); }
-      };
-    }
-
-    /*! \brief Symbolic representation of a (positive) power operator.
-     */
-    template<class Arg, size_t Power>
-    struct PowerOp: SymbolicOperator {
-      Arg _arg;
-      PowerOp(Arg a): _arg(a) {}
-      PowerOp(): _arg() {}
+        -> STATOR_AUTORETURN(PowerOpSubstitution<Power-1>::eval(x) * x)
     };
-    
-    /*! \brief Evaluate PowerOp symbol at a value of x.
-      
-      This operator is only used if the result of evaluating the
-      argument is an arithmetic type. If this is the case, the
-      evaluation is passed to std::pow.
-    */
-    template<class Arg1, size_t Power, class Arg2, class Variable>
-    constexpr auto substitution(const PowerOp<Arg1, Power>& f, const VariableSubstitution<Variable, Arg2>& x)
-      -> typename std::enable_if<std::is_arithmetic<decltype(substitution(f._arg, x))>::value,
-				 decltype(std::pow(substitution(f._arg, x), Power))>::type
-    { return std::pow(substitution(f._arg, x), Power); }
 
-    /*! \brief Evaluate PowerOp symbol at a value of x.
-      
-      This is the general implementation for PowerOp.
-    */
-    template<class Arg1, size_t Power, class Arg2, class Variable>
-    auto substitution(const PowerOp<Arg1, Power>& f, const VariableSubstitution<Variable, Arg2>& x)
-      -> typename std::enable_if<!std::is_arithmetic<decltype(substitution(f._arg, x))>::value,
-				 decltype(PowerOpSubstitution<Power>::eval(substitution(f._arg, x)))>::type
-    { return PowerOpSubstitution<Power>::eval(substitution(f._arg, x)); }
+    template<>
+    struct PowerOpSubstitution<1> {
+	template<class Arg_t> static Arg_t eval(Arg_t x) { return x; }
+    };
 
-
-    /*! \relates PowerOp
-      \name PowerOp helper functions.
-    */
-    /*! \brief Helper function for creating PowerOp types. */
-    template<size_t Power, class Arg>
-    typename std::enable_if<!detail::IsConstant<Arg>::value, PowerOp<Arg, Power> >::type
-    pow(const Arg& f)
-    { return PowerOp<Arg, Power>(f); }
-
-    /*! \brief Helper function for immediately evaluating powers of constants. */
-    template<size_t Power, class Arg,
-             typename = typename std::enable_if<detail::IsConstant<Arg>::value && !std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
-    auto pow(const Arg& f) 
-      -> STATOR_AUTORETURN(PowerOpSubstitution<Power>::eval(f))
-
-    /*! \brief Specialisation for squares of matrix expressions. */
-    template<size_t Power, class Arg,
-             typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
-      auto pow(const Arg& f)
-      -> STATOR_AUTORETURN_BYVALUE(f.dot(f))
-
-    /*! \} */
-
-    /*! \relates PowerOp
-      \name PowerOp input/output operators.
-    */
-    /*! \brief Writes a human-readable representation of the BinaryOp to the output stream. */
-    template<class Arg, size_t Power>
-    inline std::ostream& operator<<(std::ostream& os, const PowerOp<Arg, Power>& p) {
-      os << "(" << p._arg << ")^" << Power;
-      return os;
-    }
-    /*! \} */
-
-    
-    /*! \relates PowerOp
-      \name PowerOp operations
-      \{
-    */
-
-    /*! \brief Derivatives of PowerOp operations.
-     */
-    template<class Variable, class Arg, size_t Power>
-    auto derivative(const PowerOp<Arg, Power>& f, Variable) 
-      -> STATOR_AUTORETURN((C<Power>() * derivative(f._arg, Variable()) * PowerOp<Arg, Power-1>(f._arg)))
-
-    template<class Variable, class Arg>
-    Null derivative(const PowerOp<Arg, 0>& f, Variable)
-    { return Null(); }
-
-    template<class Variable, class Arg>
-    auto derivative(const PowerOp<Arg, 1>& f, Variable) 
-      -> STATOR_AUTORETURN(derivative(f._arg, Variable()))
-
-    template<class Variable, class Arg>
-    auto derivative(const PowerOp<Arg, 2>& f, Variable) 
-      -> STATOR_AUTORETURN(C<2>() * derivative(f._arg, Variable()) * f._arg)
-    /*! \}*/
+    template<>
+    struct PowerOpSubstitution<0> {
+	template<class Arg_t> static Unity eval(Arg_t x) { return Unity(); }
+    };
   }
+
+  /*! \brief Symbolic representation of a (positive) power operator.
+   */
+  template<class Arg, size_t Power>
+  struct PowerOp: SymbolicOperator {
+    Arg _arg;
+    PowerOp(Arg a): _arg(a) {}
+    PowerOp(): _arg() {}
+  };
+  
+  /*! \brief Evaluate PowerOp symbol at a value of x.
+    
+    This operator is only used if the result of evaluating the
+    argument is an arithmetic type. If this is the case, the
+    evaluation is passed to std::pow.
+  */
+  template<class Arg1, size_t Power, class Arg2, class Variable>
+  constexpr auto substitution(const PowerOp<Arg1, Power>& f, const VariableSubstitution<Variable, Arg2>& x)
+    -> typename std::enable_if<std::is_arithmetic<decltype(substitution(f._arg, x))>::value,
+				 decltype(std::pow(substitution(f._arg, x), Power))>::type
+  { return std::pow(substitution(f._arg, x), Power); }
+
+  /*! \brief Evaluate PowerOp symbol at a value of x.
+    
+    This is the general implementation for PowerOp.
+  */
+  template<class Arg1, size_t Power, class Arg2, class Variable>
+  auto substitution(const PowerOp<Arg1, Power>& f, const VariableSubstitution<Variable, Arg2>& x)
+    -> typename std::enable_if<!std::is_arithmetic<decltype(substitution(f._arg, x))>::value,
+				 decltype(PowerOpSubstitution<Power>::eval(substitution(f._arg, x)))>::type
+  { return PowerOpSubstitution<Power>::eval(substitution(f._arg, x)); }
+
+
+  /*! \relates PowerOp
+    \name PowerOp helper functions.
+  */
+  /*! \brief Helper function for creating PowerOp types. */
+  template<size_t Power, class Arg>
+  typename std::enable_if<!detail::IsConstant<Arg>::value, PowerOp<Arg, Power> >::type
+  pow(const Arg& f)
+  { return PowerOp<Arg, Power>(f); }
+
+  /*! \brief Helper function for immediately evaluating powers of constants. */
+  template<size_t Power, class Arg,
+           typename = typename std::enable_if<detail::IsConstant<Arg>::value && !std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
+  auto pow(const Arg& f) 
+    -> STATOR_AUTORETURN(PowerOpSubstitution<Power>::eval(f))
+
+  /*! \brief Specialisation for squares of matrix expressions. */
+  template<size_t Power, class Arg,
+           typename = typename std::enable_if<(Power==2) && std::is_base_of<Eigen::EigenBase<Arg>, Arg>::value>::type>
+    auto pow(const Arg& f)
+    -> STATOR_AUTORETURN_BYVALUE(f.dot(f))
+
+  /*! \} */
+
+  /*! \relates PowerOp
+    \name PowerOp input/output operators.
+  */
+  /*! \brief Writes a human-readable representation of the BinaryOp to the output stream. */
+  template<class Arg, size_t Power>
+  inline std::ostream& operator<<(std::ostream& os, const PowerOp<Arg, Power>& p) {
+    os << "(" << p._arg << ")^" << Power;
+    return os;
+  }
+  /*! \} */
+
+  
+  /*! \relates PowerOp
+    \name PowerOp operations
+    \{
+  */
+
+  /*! \brief Derivatives of PowerOp operations.
+   */
+  template<class Variable, class Arg, size_t Power>
+  auto derivative(const PowerOp<Arg, Power>& f, Variable) 
+    -> STATOR_AUTORETURN((C<Power>() * derivative(f._arg, Variable()) * PowerOp<Arg, Power-1>(f._arg)))
+
+  template<class Variable, class Arg>
+  Null derivative(const PowerOp<Arg, 0>& f, Variable)
+  { return Null(); }
+
+  template<class Variable, class Arg>
+  auto derivative(const PowerOp<Arg, 1>& f, Variable) 
+    -> STATOR_AUTORETURN(derivative(f._arg, Variable()))
+
+  template<class Variable, class Arg>
+  auto derivative(const PowerOp<Arg, 2>& f, Variable) 
+    -> STATOR_AUTORETURN(C<2>() * derivative(f._arg, Variable()) * f._arg)
+  /*! \}*/
 }
+
     

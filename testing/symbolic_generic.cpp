@@ -31,7 +31,7 @@ std::mt19937 RNG;
 std::normal_distribution<double> normal_dist(0, 1);
 std::uniform_real_distribution<double> angle_dist(0, std::atan(1)*4);
 
-using namespace stator::symbolic;
+using namespace sym;
 typedef Eigen::Matrix<double, 3, 1, Eigen::DontAlign> Vector;
 
 Vector random_unit_vec() {
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE( Factorial_test )
 
 BOOST_AUTO_TEST_CASE( vector_symbolic )
 {
-  static_assert(stator::symbolic::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
+  static_assert(sym::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
   
   BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Variable<>()), Null()));
   BOOST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )
 
 BOOST_AUTO_TEST_CASE( derivative_addition )
 {
-  using namespace stator::symbolic;
+  using namespace sym;
 
   //Test Polynomial derivatives on addition Operation types
   Variable<> x;

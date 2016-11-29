@@ -116,13 +116,12 @@ namespace stator {
       typename Op::left_zero simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>&, detail::choice<0>) { return {}; };
 
     // Eliminate any identity operations
-    template<class Config, class LHS, class RHS, class Op,
-	     typename = typename std::enable_if<std::is_same<RHS, typename Op::right_identity>::value >::type>
-    auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._l));
+    template<class Config, class LHS, class Op>
+    auto simplify_BinaryOp(const BinaryOp<LHS, typename Op::right_identity, Op>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._l));
 
-    template<class Config, class LHS, class RHS, class Op,
-	     typename = typename std::enable_if<std::is_same<LHS, typename Op::left_identity>::value && !std::is_same<RHS, typename Op::right_identity>::value>::type>
-      auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._r));
+    template<class Config, class RHS, class Op,
+	     typename = typename std::enable_if<!std::is_same<RHS, typename Op::right_identity>::value>::type>
+      auto simplify_BinaryOp(const BinaryOp<typename Op::left_identity, RHS, Op>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._r));
 
     //Special case for divide
     template<class Config, class ...VarArgs1, class ...VarArgs2,

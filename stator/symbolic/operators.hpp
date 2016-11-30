@@ -48,7 +48,8 @@ namespace sym {
 	typedef Null left_identity;
 	typedef Null right_identity;
 	static constexpr const char* _str = "+";
-	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l + r);
+	//Apply has to accept by const ref, as returned objs may reference/alias the arguments, so everything needs at least the parent scope
+	template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l + r);
     };
 
     struct Subtract {
@@ -56,7 +57,7 @@ namespace sym {
 	static constexpr bool associative = false;
 	typedef Null right_identity;
 	static constexpr const char* _str = "-";
-	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l - r);
+	template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l - r);
     };
 
     struct Multiply {
@@ -67,7 +68,7 @@ namespace sym {
 	typedef Null left_zero;
 	typedef Null right_zero;
 	static constexpr const char* _str = "×";
-	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l * r);
+	template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l * r);
     };
 
     struct Divide {
@@ -76,14 +77,14 @@ namespace sym {
 	typedef Unity right_identity;
 	typedef Null left_zero;
 	static constexpr const char* _str = "÷";
-	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l / r);
+	template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l / r);
     };
 
     struct Dot {
 	static constexpr bool commutative = false;
 	static constexpr bool associative = false;
 	static constexpr const char* _str = "•";
-	template<class L, class R> static auto apply(L l, R r) -> STATOR_AUTORETURN(l.dot(r));
+	template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l.dot(r));
     };
   }
 

@@ -217,19 +217,20 @@ namespace sym {
 
     const auto & x = x_container._val;
     //Special cases for infinite values of x
-    if (std::isinf(x)) {
+    if (std::numeric_limits<Coeff_t2>::has_infinity
+	&& ((std::numeric_limits<Coeff_t2>::infinity() == x)
+	    || (std::numeric_limits<Coeff_t2>::infinity() == -x))) {
 	//Look through the Polynomial to find the highest order term
 	//with a non-zero coefficient.
 	for(size_t i = Order; i > 0; --i)
 	  if (f[i] != empty_sum(f[0])) {
 	    //Determine if this is an odd or even function of x
 	    if (Order % 2)
-	      //This is an odd function of x.
-	      return (1 - 2 * (std::signbit(f[i]) ^ std::signbit(x))) * std::numeric_limits<Coeff_t>::infinity();
+	      //This is an odd function of x, the sign of x matters
+	      return f[i] * x;
 	    else
-	      //This is an even function of x, the sign of x doesn't
-	      //matter!
-	      return (1 - 2 * std::signbit(f[i])) * std::numeric_limits<Coeff_t>::infinity();
+	      //This is an even function of x, its sign does not matter!
+	      return f[i] * std::numeric_limits<Coeff_t2>::infinity();
 	  };
 	//All terms in x have zero as their coefficient
 	return f[0];

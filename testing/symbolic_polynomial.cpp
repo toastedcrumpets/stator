@@ -1039,7 +1039,8 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   auto ffinal = simplify((3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0));
 
   //We compare the expressions as Polynomials using the expand
-  BOOST_CHECK(compare_expression(expand(taylor_series<3>(expand(f), Null(), x)), expand(ffinal)));
+  auto ffinal_expanded = expand(ffinal);
+  BOOST_CHECK(compare_expression(expand(taylor_series<3>(f, Null(), x)), ffinal_expanded));
 
   //Test Taylor expansion again at a non-zero location
   BOOST_CHECK(compare_expression(expand(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x)), expand(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
@@ -1103,5 +1104,5 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots_2 )
   const Polynomial<1> x{0, 1};
   std::cout.precision(20);
   //Roots are, -1+-i, 0.5*(1+-i\sqrt{11})
-  std::cout << LinBairstowSolve(Polynomial<4>{6,4,3,1,1}, 1e-14) << std::endl;
+  //std::cout << LinBairstowSolve(Polynomial<4>{6,4,3,1,1}, 1e-14) << std::endl;
 }

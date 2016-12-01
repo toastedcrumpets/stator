@@ -24,75 +24,83 @@ namespace sym {
   /////////////////////////        Standard functions         /////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////
 
-  /*! \brief Function types are symbolic representation of
-      non-polynomial functions.
-  */
-  template<class Arg, size_t FUNC_ID>
-  class Function: SymbolicOperator {
-  public:
-    /*! \brief The symbolic expression which is the argument of the
-        Function. 
-    */
+  template<class Arg, typename Op>
+  struct UnaryOp: SymbolicOperator {
     Arg _arg;
-    
-    /*! \brief Construct a Function with its argument. */
-    Function(const Arg& a): _arg(a) {}
+    UnaryOp(Arg a): _arg(a) {}
   };
-
-#define CREATE_FUNCTION(HELPERNAME, NUMERIC_IMPL, ARG_DERIVATIVE, TEXT_REPRESENTATION, ID) \
-  template <class Arg> using HELPERNAME##F = Function<Arg, ID>;	\
-  template<class A,							\
-	     typename = typename std::enable_if<!std::is_arithmetic<A>::value>::type> \
-  HELPERNAME##F<A> HELPERNAME(const A& a) { return a; } \
-									\
-  template<class A,							\
-	     typename = typename std::enable_if<std::is_arithmetic<A>::value>::type> \
-  auto HELPERNAME(const A& x) -> decltype(NUMERIC_IMPL)		\
-  { return NUMERIC_IMPL; }						\
-									\
-  template<class Var, class Arg1, class Arg2>			\
-  auto substitution(const Function<Arg1, ID>& f, const VarSub<Var, Arg2>& x) \
-    -> STATOR_AUTORETURN(HELPERNAME(substitution(f._arg, x)))         \
-									\
-  template<class A>							\
-  inline std::ostream& operator<<(std::ostream& os, const Function<A, ID>& f) \
-  { return os << TEXT_REPRESENTATION; }			\
-									\
-  template<class Var, class A>					\
-  auto derivative(const HELPERNAME##F<A>& f, Var)	\
-    -> STATOR_AUTORETURN(derivative(f._arg, Var()) * (ARG_DERIVATIVE)) \
   
-  CREATE_FUNCTION(sin, std::sin(x), cos(f._arg), "sin(" << f._arg << ")", 0)
-  CREATE_FUNCTION(cos, std::cos(x), -sin(f._arg), "cos(" << f._arg << ")", 1)
-  CREATE_FUNCTION(abs, std::abs(x), f._arg / f, "|" << f._arg << "|", 2)
-  CREATE_FUNCTION(arbsign, arbsign(std::abs(x)), arbsign(Unity()), "±|" << f._arg << "|", 3)
-
   template<class C_arg, class factor, class offset = std::ratio<0> >
   struct is_whole_factor {
     static const bool value = (std::ratio_divide<std::ratio_subtract<std::ratio<C_arg::num, C_arg::den>, std::ratio<offset::num, offset::den> >, std::ratio<factor::num, factor::den> >::den == 1);
   };
 
-  //Specialisations of sine cosine for whole multiples of pi/2
-  template<std::intmax_t num, std::intmax_t den,
-	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
-  constexpr Null sin(const C<num, den>&) { return Null(); }
+  namespace detail {
+    struct Sine {
+      static constexpr const char* _str_left = "sin(";
+      static constexpr const char* _str_right = ")";
+      template<std::intmax_t num, std::intmax_t den,
+	       typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
+      static auto apply(const C<num, den>& a, detail::choice<0>) -> STATOR_AUTORETURN(Null());
+      template<std::intmax_t num, std::intmax_t den,
+	       typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
+      static auto apply(const C<num, den>& a, detail::choice<0>) -> STATOR_AUTORETURN(Unity());
+      template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::sin(a));
+      template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Sine>(a)));
+    };
 
-  template<std::intmax_t num, std::intmax_t den,
-	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
-  constexpr Unity sin(const C<num, den>&) { return Unity(); }
+    struct Cosine {
+      static constexpr const char* _str_left = "cos(";
+      static constexpr const char* _str_right = ")";
+      template<std::intmax_t num, std::intmax_t den,
+	       typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
+      static auto apply(const C<num, den>& a, detail::choice<0>) -> STATOR_AUTORETURN(Unity());
+      template<std::intmax_t num, std::intmax_t den,
+	       typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
+      static auto apply(const C<num, den>& a, detail::choice<0>) -> STATOR_AUTORETURN(Null());
+      template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::cos(a));
+      template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Cosine>(a)));
+    };
 
-  template<std::intmax_t num, std::intmax_t den,
-	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
-  constexpr Null cos(const C<num, den>&) { return Null(); }
+    struct Absolute {
+      static constexpr const char* _str_left = "|";
+      static constexpr const char* _str_right = "|";
+      template<std::intmax_t num, std::intmax_t den> static
+      constexpr C<(1 - 2 *(num < 0)) * num, den> apply(const C<num, den>& a, detail::choice<0>) { return {}; }
+      template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::abs(a));
+      template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Absolute>(a)));
+    };
+    struct Arbsign {
+      static constexpr const char* _str_left = "±|";
+      static constexpr const char* _str_right = "|";
+      template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Arbsign>(a)));
+    };
+  }
+  
+  template <class Arg> auto sin(const Arg& a) -> STATOR_AUTORETURN(detail::Sine::apply(a, detail::select_overload{}));
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Sine>& f, Var x)
+    -> STATOR_AUTORETURN(derivative(f._arg, x) * detail::Cosine::apply(f._arg, detail::select_overload{}));
 
-  template<std::intmax_t num, std::intmax_t den,
-	     typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi >::value>::type>
-  constexpr Unity cos(const C<num, den>&) { return Unity(); }
+  template <class Arg> auto cos(const Arg& a) -> STATOR_AUTORETURN(detail::Cosine::apply(a, detail::select_overload{}));
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Cosine>& f, Var x)
+    -> STATOR_AUTORETURN(-derivative(f._arg, x) * detail::Sine::apply(f._arg, detail::select_overload{}));
 
-  //Removal of sign via abs on compile-time constants!
-  template<std::intmax_t num, std::intmax_t den>
-  constexpr C<((num >= 0) ? num : -num), den> abs(const C<num, den>&) { return C<((num >= 0) ? num : -num), den>(); }
+  template <class Arg> auto abs(const Arg& a) -> STATOR_AUTORETURN(detail::Absolute::apply(a, detail::select_overload{}));
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Absolute>& f, Var x)
+    -> STATOR_AUTORETURN(derivative(f._arg, x) * detail::Absolute::apply(f._arg, detail::select_overload{}) / f._arg);
 
+  template <class Arg> auto arbsign(const Arg& a) -> STATOR_AUTORETURN(detail::Arbsign::apply(a, detail::select_overload{}));
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Arbsign>& f, Var x)
+    -> STATOR_AUTORETURN((derivative(f._arg, x) * UnaryOp<Unity, detail::Arbsign>(Unity())));
+
+  template<class Var, class Arg1, class Arg2, class Op>
+  auto substitution(const UnaryOp<Arg1, Op>& f, const VarSub<Var, Arg2>& x)
+    -> STATOR_AUTORETURN(Op::apply(substitution(f._arg, x), detail::select_overload{}));
+  
+  template<class Arg, class Op>
+  inline std::ostream& operator<<(std::ostream& os, const UnaryOp<Arg, Op>& f)
+  { return os << Op::_str_left << f._arg << Op::_str_right; }
+  
   /////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////         Complex functions         /////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////    

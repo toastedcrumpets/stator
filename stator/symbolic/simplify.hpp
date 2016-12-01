@@ -384,55 +384,48 @@ namespace sym {
   //}
 
   //                      FUNCTION SIMPLIFICATION
-  template<class Config = DefaultSimplifyConfig, class Arg, size_t FuncID>
-  auto simplify(const Function<Arg, FuncID>& f) -> decltype(Function<decltype(simplify<Config>(f._arg)), FuncID>(simplify<Config>(f._arg)))
-  { return Function<decltype(simplify<Config>(f._arg)), FuncID>(simplify<Config>(f._arg)); }
+  template<class Config = DefaultSimplifyConfig, class Arg, class Op>
+  auto simplify(const UnaryOp<Arg, Op>& f)
+    -> STATOR_AUTORETURN(Op::apply(simplify<Config>(f._arg), detail::select_overload{}));
 
   template<class Config = DefaultSimplifyConfig, class LHS, class Arg>
-  auto simplify(const MultiplyOp<LHS, arbsignF<Arg> >& f) 
-    -> decltype(arbsign(try_simplify<Config>(f._l * f._r._arg)))
-  { return arbsign(try_simplify<Config>(f._l * f._r._arg)); }
+  auto simplify(const MultiplyOp<LHS, UnaryOp<Arg, detail::Arbsign> >& f)
+    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l * f._r._arg)));
 
   template<class Config = DefaultSimplifyConfig, class RHS, class Arg>
-  auto simplify(const MultiplyOp<arbsignF<Arg>, RHS>& f)
-    -> decltype(arbsign(try_simplify<Config>(f._l._arg * f._r)))
-  { return arbsign(try_simplify<Config>(f._l._arg * f._r)); }
+  auto simplify(const MultiplyOp<UnaryOp<Arg, detail::Arbsign>, RHS>& f)
+    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l._arg * f._r)));
 
   template<class Config = DefaultSimplifyConfig, class Arg1, class Arg2>
-  auto simplify(const MultiplyOp<arbsignF<Arg1>, arbsignF<Arg2> >& f)
-    -> decltype(arbsign(try_simplify<Config>(f._l._arg * f._r._arg)))
-  { return arbsign(try_simplify<Config>(f._l._arg * f._r._arg)); }
+  auto simplify(const MultiplyOp<UnaryOp<Arg1, detail::Arbsign>, UnaryOp<Arg2, detail::Arbsign> >& f)
+    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l._arg * f._r._arg)));
 
   template<class Config = DefaultSimplifyConfig, class LHS, class Arg>
-  auto simplify(const DivideOp<LHS, arbsignF<Arg> >& f) 
-    -> decltype(arbsign(try_simplify<Config>(f._l / f._r._arg)))
-  { return arbsign(try_simplify<Config>(f._l / f._r._arg)); }
+  auto simplify(const DivideOp<LHS, UnaryOp<Arg, detail::Arbsign> >& f)
+    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l / f._r._arg)));
 
   template<class Config = DefaultSimplifyConfig, class RHS, class Arg>
-  auto simplify(const DivideOp<arbsignF<Arg>, RHS>& f)
-    -> decltype(arbsign(try_simplify<Config>(f._l._arg / f._r)))
-  { return arbsign(try_simplify<Config>(f._l._arg / f._r)); }
+  auto simplify(const DivideOp<UnaryOp<Arg, detail::Arbsign>, RHS>& f)
+    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l._arg / f._r)));
 
   template<class Config = DefaultSimplifyConfig, class Arg1, class Arg2>
-  auto simplify(const DivideOp<arbsignF<Arg1>, arbsignF<Arg2> >& f)
-    -> decltype(arbsign(try_simplify<Config>(f._l._arg / f._r._arg)))
-  { return arbsign(try_simplify<Config>(f._l._arg / f._r._arg)); }
+  auto simplify(const DivideOp<UnaryOp<Arg1, detail::Arbsign>, UnaryOp<Arg2, detail::Arbsign> >& f)
+    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l._arg / f._r._arg)));
 
   template<class Config = DefaultSimplifyConfig, class Arg>
-  auto simplify(const arbsignF<arbsignF<Arg> >& f)
-    -> decltype(arbsign(try_simplify<Config>(f._arg._arg)))
-  { return arbsign(try_simplify<Config>(f._arg._arg)); }
-
+  auto simplify(const UnaryOp<UnaryOp<Arg, detail::Arbsign>, detail::Arbsign>& f)
+    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._arg._arg)));
+  
   //For even powers, remove the sign term
   template<class Config = DefaultSimplifyConfig, class Arg, size_t Power>
-  auto simplify(const PowerOp<arbsignF<Arg>,Power>& f)
-    -> typename std::enable_if<!(Power % 2), decltype(pow<Power>(f._arg._arg))>::type
-  { return pow<Power>(f._arg._arg); }
+  auto simplify(const PowerOp<UnaryOp<Arg, detail::Arbsign>, Power>& f)
+    -> typename std::enable_if<!(Power % 2), decltype(try_simplify<Config>(pow<Power>(f._arg._arg)))>::type
+  { return try_simplify<Config>(pow<Power>(f._arg._arg)); }
 
   //For odd powers, move the sign term outside
   template<class Config = DefaultSimplifyConfig, class Arg, size_t Power>
-  auto simplify(const PowerOp<arbsignF<Arg>,Power>& f)
-    -> typename std::enable_if<Power % 2, decltype(arbsign(pow<Power>(f._arg._arg)))>::type
-  { return arbsign(pow<Power>(f._arg._arg)); }
+  auto simplify(const PowerOp<UnaryOp<Arg, detail::Arbsign>, Power>& f)
+    -> typename std::enable_if<Power % 2, decltype(try_simplify<Config>(arbsign(pow<Power>(f._arg._arg))))>::type
+  { return try_simplify<Config>(arbsign(pow<Power>(f._arg._arg))); }
 }
 

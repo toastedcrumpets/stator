@@ -933,6 +933,10 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 
   std::vector<double> roots{-0.14159265, -3.14159265, -0.0001,0.1, 0.3333, 0.6, 1.001, 2.0, 3.14159265};
 
+  //MSVC (long double) == (double), thus there is not the precision required to test some of these roots on MSVC!
+  if ((std::numeric_limits<double>::digits == std::numeric_limits<long double>::digits))
+    return;
+  
   for (auto it1 = roots.begin(); it1 != roots.end(); ++it1)
     for (auto it2 = it1; it2 != roots.end(); ++it2)
       for (auto it3 = it2; it3 != roots.end(); ++it3)
@@ -1023,17 +1027,21 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   
   //Test simple Taylor expansion of sine 
   BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), y * (C<1>()+(pow<2>(y)*(C<-1,6>()+(pow<2>(y)*C<1,120>()))))));
+
+  //MSVC only supports limited symbol names lengths, thus deep
+  //templating is not possible, and these tests fail on compilation
+#if !(defined(_MSC_VER) && !defined(__INTEL_COMPILER))
   BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), pow<2>(y) * (C<1>()+(pow<4>(y)*C<-1,6>()))));
   
   //Test Taylor expansion of a complex expression at zero
   Var<vidx<'x'> > x;
-//  auto f = sin(cos(x)+2*x*x - x + 3);
-//  auto ffinal = simplify((3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0));
-//
-//  std::cout << expand(f) << std::endl;
-//
-//  //We compare the expressions as Polynomials using the expand
-//  BOOST_CHECK(compare_expression(taylor_series<3>(expand(f), Null(), x), expand(ffinal)));
+  auto f = sin(cos(x)+2*x*x - x + 3);
+  auto ffinal = simplify((3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0));
+
+  std::cout << expand(f) << std::endl;
+
+  //We compare the expressions as Polynomials using the expand
+  BOOST_CHECK(compare_expression(taylor_series<3>(expand(f), Null(), x), expand(ffinal)));
 
   //Test Taylor expansion again at a non-zero location
   BOOST_CHECK(compare_expression(expand(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x)), expand(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
@@ -1046,6 +1054,7 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   
   //Taylor simplify at a higher order
   BOOST_CHECK(compare_expression(expand(taylor_series<4>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4})); 
+#endif
 }
 
 BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )

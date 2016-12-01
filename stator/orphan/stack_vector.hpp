@@ -69,44 +69,43 @@ namespace stator {
       constexpr bool empty() const { return size() == 0; }
 
       /*! \brief Returns an iterator pointing to the end of the container. */
-      typename Base::iterator end() { return typename Base::iterator(Base::data() + _size); }
+      typename Base::iterator end() { return typename Base::begin() + _size; }
 
       /*! \brief Returns an iterator pointing to the end of the container. */
-      typename Base::const_iterator end() const { return typename Base::iterator(Base::data() + _size); }
+      typename Base::const_iterator end() const { return typename Base::begin() + _size; }
 
       /*! \brief Returns a const iterator pointing to the end of the container. */
-      typename Base::const_iterator cend() const { return typename Base::iterator(Base::data() + _size); }
+      typename Base::const_iterator cend() const { return typename Base::begin()+ _size; }
 
       /*! \brief Returns a reverse iterator pointing to the start of
           the container. */
-      typename Base::reverse_iterator rbegin() { return typename Base::reverse_iterator(Base::end()); }
+      typename Base::reverse_iterator rbegin() { return typename Base::reverse_iterator(this->end()); }
 
       /*! \brief Returns a reverse iterator pointing to the start of
           the container. */
-      typename Base::const_reverse_iterator rbegin() const { return typename Base::const_reverse_iterator(Base::end()); }
+      typename Base::const_reverse_iterator rbegin() const { return typename Base::const_reverse_iterator(this->end()); }
 
       /*! \brief Returns a const reverse iterator pointing to the start of
           the container. */
-      typename Base::const_reverse_iterator crbegin() const { return typename Base::const_reverse_iterator(Base::end()); }
+      typename Base::const_reverse_iterator crbegin() const { return typename Base::const_reverse_iterator(this->end()); }
 
       /*! \brief Returns a reverse iterator pointing to the end of
           the container. */
-      typename Base::reverse_iterator rend() { return typename Base::reverse_iterator(Base::begin()); }
+      typename Base::reverse_iterator rend() { return typename Base::reverse_iterator(this->begin()); }
 
       /*! \brief Returns a reverse iterator pointing to the end of
           the container. */
-      typename Base::const_reverse_iterator rend() const { return typename Base::const_reverse_iterator(Base::begin()); }
+      typename Base::const_reverse_iterator rend() const { return typename Base::const_reverse_iterator(this->begin()); }
 
       /*! \brief Returns a const reverse iterator pointing to the end
           of the container. */
-      typename Base::const_reverse_iterator crend() const { return typename Base::const_reverse_iterator(Base::begin()); }
+      typename Base::const_reverse_iterator crend() const { return typename Base::const_reverse_iterator(this->begin()); }
       
       /*! \brief Returns a reference to the last element stored in the container. */
-      typename Base::reference back() { return _size ? *(Base::end() - 1) : *Base::end(); }
-
+      typename Base::reference back() { return _size ? *(this->end() - 1) : *this->end(); }
 
       /*! \brief Returns a reference to the last element stored in the container. */
-      typename Base::const_reference back() const { return _size ? *(Base::end() - 1) : *Base::end(); }
+      typename Base::const_reference back() const { return _size ? *(this->end() - 1) : *this->end(); }
 
       /*! \brief Add an element to the end of the container. */
       void push_back(const T& val) {

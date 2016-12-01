@@ -39,37 +39,44 @@ namespace sym {
     struct Sine {
       static constexpr const char* _str_left = "sin(";
       static constexpr const char* _str_right = ")";
-      template<std::intmax_t num, std::intmax_t den,
-	       typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
-      static auto apply(const C<num, den>& a, detail::choice<0>) -> STATOR_AUTORETURN(Null());
-      template<std::intmax_t num, std::intmax_t den,
-	       typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
-      static auto apply(const C<num, den>& a, detail::choice<0>) -> STATOR_AUTORETURN(Unity());
-      template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::sin(a));
-      template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Sine>(a)));
+
+	  template<std::intmax_t num, std::intmax_t den>
+	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value, Null>::type apply(const C<num, den>& a, detail::choice<0>) { return{}; }
+
+      template<std::intmax_t num, std::intmax_t den>
+      static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi() / C<2>())>::value, Unity>::type apply(const C<num, den>& a, detail::choice<0>) { return{}; }
+
+	  template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::sin(a));
+
+	  template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Sine>(a)));
     };
 
     struct Cosine {
       static constexpr const char* _str_left = "cos(";
       static constexpr const char* _str_right = ")";
-      template<std::intmax_t num, std::intmax_t den,
-	       typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
-      static auto apply(const C<num, den>& a, detail::choice<0>) -> STATOR_AUTORETURN(Unity());
-      template<std::intmax_t num, std::intmax_t den,
-	       typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi()/C<2>())>::value>::type>
-      static auto apply(const C<num, den>& a, detail::choice<0>) -> STATOR_AUTORETURN(Null());
-      template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::cos(a));
+
+	  template<std::intmax_t num, std::intmax_t den>
+	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value, Unity>::type apply(const C<num, den>& a, detail::choice<0>) { return{}; }
+
+	  template<std::intmax_t num, std::intmax_t den>
+	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi() / C<2>())>::value, Null>::type apply(const C<num, den>& a, detail::choice<0>) { return{} };
+
+	  template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::cos(a));
       template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Cosine>(a)));
     };
 
     struct Absolute {
       static constexpr const char* _str_left = "|";
       static constexpr const char* _str_right = "|";
+
       template<std::intmax_t num, std::intmax_t den> static
       constexpr C<(1 - 2 *(num < 0)) * num, den> apply(const C<num, den>& a, detail::choice<0>) { return {}; }
-      template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::abs(a));
-      template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Absolute>(a)));
+
+	  template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::abs(a));
+
+	  template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Absolute>(a)));
     };
+
     struct Arbsign {
       static constexpr const char* _str_left = "±|";
       static constexpr const char* _str_right = "|";

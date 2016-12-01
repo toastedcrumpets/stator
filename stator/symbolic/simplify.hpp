@@ -101,31 +101,31 @@ namespace sym {
   // Prune expressions which do not require the BinaryOp framework
   // as their are higher precedent operator implementations// .
   template<class Config, class LHS, class RHS, class Op>
-  auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>& f, detail::choice<0>)
-    -> typename std::enable_if<!std::is_same<decltype(Op::apply(f._l, f._r)), BinaryOp<LHS, RHS, Op> >::value, decltype(Op::apply(f._l, f._r))>::type
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<0>)
+    -> typename std::enable_if<!std::is_same<decltype(Op::apply(f._l, f._r)), BinaryOp<LHS, Op, RHS> >::value, decltype(Op::apply(f._l, f._r))>::type
   { return Op::apply(f._l, f._r); };
   
   // Convert any zero operations into the zero
   template<class Config, class LHS, class RHS, class Op,
 	     typename = typename std::enable_if<std::is_same<RHS, typename Op::right_zero>::value >::type>
-  typename Op::right_zero simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>&, detail::choice<0>) { return {}; };
+  typename Op::right_zero simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>&, detail::choice<0>) { return {}; };
   
   template<class Config, class LHS, class RHS, class Op,
 	     typename = typename std::enable_if<std::is_same<LHS, typename Op::left_zero>::value && !std::is_same<RHS, typename Op::right_zero>::value>::type>
-    typename Op::left_zero simplify_BinaryOp(const BinaryOp<LHS, RHS, Op>&, detail::choice<0>) { return {}; };
+    typename Op::left_zero simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>&, detail::choice<0>) { return {}; };
 
   // Eliminate any identity operations
   template<class Config, class LHS, class Op>
-  auto simplify_BinaryOp(const BinaryOp<LHS, typename Op::right_identity, Op>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._l));
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, typename Op::right_identity>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._l));
 
   template<class Config, class RHS, class Op,
 	     typename = typename std::enable_if<!std::is_same<RHS, typename Op::right_identity>::value>::type>
-    auto simplify_BinaryOp(const BinaryOp<typename Op::left_identity, RHS, Op>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._r));
+  auto simplify_BinaryOp(const BinaryOp<typename Op::left_identity, Op, RHS>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._r));
 
   //Special case for divide
   template<class Config, class ...VarArgs1, class ...VarArgs2,
 	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  Unity simplify_BinaryOp(const BinaryOp<Var<VarArgs1...>, Var<VarArgs2...>, detail::Divide>& op, detail::choice<0>)
+  Unity simplify_BinaryOp(const BinaryOp<Var<VarArgs1...>, detail::Divide, Var<VarArgs2...>>& op, detail::choice<0>)
   { return {};}
   
   //Special case for the subtraction binary operator becoming the unary negation operator
@@ -149,18 +149,18 @@ namespace sym {
     -> STATOR_AUTORETURN((PowerOp<typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type, Order+1>()));
       
   // Simplification of both arguments available
-  template<class Config, class LHS, class RHS, class Derived>
-  auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Derived>& f, detail::choice<1>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Derived::apply(simplify<Config>(f._l), simplify<Config>(f._r))));
+  template<class Config, class LHS, class RHS, class Op>
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<1>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(f._l), simplify<Config>(f._r))));
   
   // Simplification of only one argument available
-  template<class Config, class LHS, class RHS, class Derived>
-  auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Derived>& f, detail::choice<2>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Derived::apply(simplify<Config>(f._l), f._r)));
+  template<class Config, class LHS, class RHS, class Op>
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<2>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(f._l), f._r)));
   
-  template<class Config, class LHS, class RHS, class Derived>
-  auto simplify_BinaryOp(const BinaryOp<LHS, RHS, Derived>& f, detail::choice<2>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Derived::apply(f._l, simplify<Config>(f._r))));
+  template<class Config, class LHS, class RHS, class Op>
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<2>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, simplify<Config>(f._r))));
   
   // Reorder to find further simplifications
   //
@@ -174,26 +174,26 @@ namespace sym {
   // For associative operators, try (A*B)*C as A*(B*C) (but only do this if B*C has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
-  auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Arg2, Op>, Arg3, Op>& f, detail::choice<4>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l._l, simplify<Config>(BinaryOp<Arg2, Arg3, Op>(f._l._r, f._r)))));
+  auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Op, Arg2>, Op, Arg3>& f, detail::choice<4>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l._l, simplify<Config>(BinaryOp<Arg2, Op, Arg3>(f._l._r, f._r)))));
   
   // For associative operators, try A*(B*C) as (A*B)*C (but only do this if A*B has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
-  auto simplify_BinaryOp(const BinaryOp<Arg1, BinaryOp<Arg2, Arg3, Op>, Op>& f, detail::choice<4>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Arg2, Op>(f._l, f._r._l)), f._r._r)));
+  auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<4>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg2>(f._l, f._r._l)), f._r._r)));
 
   // For associative and commutative operators, try (A*B)*C as (A*C)*B (but only do this if A*C has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
-  auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Arg2, Op>, Arg3, Op>& f, detail::choice<5>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Arg3, Op>(f._l._l, f._r)), f._l._r)));
+  auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Op, Arg2>, Op, Arg3>& f, detail::choice<5>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>(f._l._l, f._r)), f._l._r)));
   
   // For associative and commutative operators, try A*(B*C) as (A*C)*B (but only do this if A*C has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
-  auto simplify_BinaryOp(const BinaryOp<Arg1, BinaryOp<Arg2, Arg3, Op>, Op>& f, detail::choice<5>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Arg3, Op>(f._l, f._r._r)), f._r._l)));
+  auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<5>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>(f._l, f._r._r)), f._r._l)));
 
 
   // Finally, the gateway to the above series of simplifications for BinaryOps!
@@ -296,14 +296,14 @@ namespace sym {
     constant RHS. */
   template<class Config, class PolyVar, size_t Order, class Real, class Op, class Real2,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
-    auto simplify_BinaryOp(const BinaryOp<Polynomial<Order, Real, PolyVar>, Real2, Op>& f, detail::last_choice)
+    auto simplify_BinaryOp(const BinaryOp<Polynomial<Order, Real, PolyVar>, Op, Real2>& f, detail::last_choice)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, Polynomial<0, decltype(toArithmetic(f._r)), PolyVar>{toArithmetic(f._r)})));
   
   /*! \brief Simplification of a Polynomial operating with a
     constant LHS. */
   template<class Config, class PolyVar, size_t Order, class Real, class Op, class Real2,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial && detail::IsConstant<Real2>::value>::type>
-    auto simplify_BinaryOp(const BinaryOp<Real2, Polynomial<Order, Real, PolyVar>, Op>& f, detail::last_choice)
+    auto simplify_BinaryOp(const BinaryOp<Real2, Op, Polynomial<Order, Real, PolyVar>>& f, detail::last_choice)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(Polynomial<0, decltype(toArithmetic(f._l)), PolyVar>{toArithmetic(f._l)}, f._r)));
 
   namespace detail {
@@ -316,7 +316,7 @@ namespace sym {
   template<class Config = DefaultSimplifyConfig, class Real1, size_t N, class Real2, size_t M, class PolyVar1, class PolyVar2, class Op,
 	     typename = typename std::enable_if<std::is_same<Op,detail::Add>::value || std::is_same<Op,detail::Subtract>::value>::type,
 	     typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>
-  auto simplify(const BinaryOp<Polynomial<N, Real1, PolyVar1>, Polynomial<M, Real2, PolyVar2>, Op> & f)
+    auto simplify(const BinaryOp<Polynomial<N, Real1, PolyVar1>, Op, Polynomial<M, Real2, PolyVar2>> & f)
     -> Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0],f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type>
   {
     Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type> retval;
@@ -337,7 +337,7 @@ namespace sym {
    */
   template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, class PolyVar1, class PolyVar2, class Op,
 	     typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value || std::is_same<Op,detail::Dot>::value>::type>
-  auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, Polynomial<N, Real2, PolyVar2>, Op>& f)
+    auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, Op, Polynomial<N, Real2, PolyVar2>>& f)
     -> Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type>
   {
     Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type> retval;
@@ -350,7 +350,7 @@ namespace sym {
   /*! \brief Division between two Polynomial types.
    */
   template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, class PolyVar1, class PolyVar2>
-  auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, Polynomial<0, Real2, PolyVar2>, detail::Divide>& f)
+  auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, detail::Divide, Polynomial<0, Real2, PolyVar2>>& f)
     -> Polynomial<M, decltype(store(f._l[0] / f._r[0])), typename variable_combine<PolyVar1, PolyVar2>::type>
   {
     Polynomial<M, decltype(store(f._l[0] / f._r[0])), typename variable_combine<PolyVar1, PolyVar2>::type> retval;

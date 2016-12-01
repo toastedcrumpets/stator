@@ -24,21 +24,21 @@ namespace sym {
   
   /*! \brief Symbolic representation of a binary symbolic operation. 
    */
-  template<class LHS, class RHS, typename Op>
+  template<class LHS, typename Op, class RHS>
   struct BinaryOp: BinaryOpBase, SymbolicOperator {
     LHS _l;
     RHS _r;
     BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
   };
   
-  template<class LHS, class RHS, class Derived>
-  inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, RHS, Derived>& op) {
-    os << "(" << op._l << " " << Derived::_str <<  " " << op._r << ")";
+  template<class LHS, class RHS, class Op>
+  inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, Op, RHS>& op) {
+    os << "(" << op._l << " " << Op::_str <<  " " << op._r << ")";
     return os;
   }
 
   template<class LHS, class RHS, class Op, class Var, class Arg> 
-  auto substitution(BinaryOp<LHS, RHS, Op> f, VarSub<Var, Arg> x)
+  auto substitution(BinaryOp<LHS, Op, RHS> f, VarSub<Var, Arg> x)
     -> STATOR_AUTORETURN_BYVALUE(Op::apply(substitution(f._l, x), substitution(f._r, x)));
   
   namespace detail {
@@ -88,11 +88,11 @@ namespace sym {
     };
   }
 
-  template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, RHS, detail::Add>;
-  template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, RHS, detail::Subtract>;    
-  template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, RHS, detail::Multiply>;
-  template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, RHS, detail::Divide>;
-  template<class LHS, class RHS> using DotOp      = BinaryOp<LHS, RHS, detail::Dot>;
+  template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add, RHS>;
+  template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, detail::Subtract, RHS>;    
+  template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, detail::Multiply, RHS>;
+  template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, detail::Divide, RHS>;
+  template<class LHS, class RHS> using DotOp      = BinaryOp<LHS, detail::Dot, RHS>;
 
   template <class Op, class OverOp>
   struct left_distributive { static constexpr bool value = false; };

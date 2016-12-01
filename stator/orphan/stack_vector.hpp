@@ -69,13 +69,13 @@ namespace stator {
       constexpr bool empty() const { return size() == 0; }
 
       /*! \brief Returns an iterator pointing to the end of the container. */
-      typename Base::iterator end() { return typename Base::begin() + _size; }
+      typename Base::iterator end() { return Base::begin() + _size; }
 
       /*! \brief Returns an iterator pointing to the end of the container. */
-      typename Base::const_iterator end() const { return typename Base::begin() + _size; }
+      typename Base::const_iterator end() const { return Base::begin() + _size; }
 
       /*! \brief Returns a const iterator pointing to the end of the container. */
-      typename Base::const_iterator cend() const { return typename Base::begin()+ _size; }
+      typename Base::const_iterator cend() const { return Base::begin()+ _size; }
 
       /*! \brief Returns a reverse iterator pointing to the start of
           the container. */

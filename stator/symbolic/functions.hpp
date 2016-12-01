@@ -59,7 +59,7 @@ namespace sym {
 	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value, Unity>::type apply(const C<num, den>& a, detail::choice<0>) { return{}; }
 
 	  template<std::intmax_t num, std::intmax_t den>
-	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi() / C<2>())>::value, Null>::type apply(const C<num, den>& a, detail::choice<0>) { return{} };
+	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi() / C<2>())>::value, Null>::type apply(const C<num, den>& a, detail::choice<0>) { return {}; };
 
 	  template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::cos(a));
       template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Cosine>(a)));

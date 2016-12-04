@@ -30,79 +30,78 @@ namespace sym {
     UnaryOp(Arg a): _arg(a) {}
   };
   
-  template<class C_arg, class factor, class offset = std::ratio<0> >
-  struct is_whole_factor {
-    static const bool value = (std::ratio_divide<std::ratio_subtract<std::ratio<C_arg::num, C_arg::den>, std::ratio<offset::num, offset::den> >, std::ratio<factor::num, factor::den> >::den == 1);
-  };
+  float sin(float a) { return std::sin(a); }
+  double sin(double a) { return std::sin(a); }
+  long double sin(long double a) { return std::sin(a); }
+  template<class T> std::complex<T> sin(std::complex<T> a) { return std::sin(a); }
+  
+  float cos(float a) { return std::cos(a); }
+  double cos(double a) { return std::cos(a); }
+  long double cos(long double a) { return std::cos(a); }
+  template<class T> std::complex<T> cos(std::complex<T> a) { return std::cos(a); }
+
+  int abs(int a) { return std::abs(a); }
+  long abs(long a) { return std::abs(a); }
+  long long abs(long long a) { return std::abs(a); }
+  float abs(float a) { return std::abs(a); }
+  double abs(double a) { return std::abs(a); }
+  long double abs(long double a) { return std::abs(a); }
+  template<class T> T abs(std::complex<T> a) { return std::abs(a); }
 
   namespace detail {
     struct Sine {
       static constexpr const char* _str_left = "sin(";
       static constexpr const char* _str_right = ")";
-
-	  template<std::intmax_t num, std::intmax_t den>
-	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value, Null>::type apply(const C<num, den>& a, detail::choice<0>) { return{}; }
-
-      template<std::intmax_t num, std::intmax_t den>
-      static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi() / C<2>())>::value, Unity>::type apply(const C<num, den>& a, detail::choice<0>) { return{}; }
-
-	  template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::sin(a));
-
-	  template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Sine>(a)));
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sym::sin(a));
     };
 
     struct Cosine {
       static constexpr const char* _str_left = "cos(";
       static constexpr const char* _str_right = ")";
-
-	  template<std::intmax_t num, std::intmax_t den>
-	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value, Unity>::type apply(const C<num, den>& a, detail::choice<0>) { return{}; }
-
-	  template<std::intmax_t num, std::intmax_t den>
-	  static constexpr typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi() / C<2>())>::value, Null>::type apply(const C<num, den>& a, detail::choice<0>) { return {}; };
-
-	  template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::cos(a));
-      template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Cosine>(a)));
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sym::cos(a));
     };
 
     struct Absolute {
       static constexpr const char* _str_left = "|";
       static constexpr const char* _str_right = "|";
 
-      template<std::intmax_t num, std::intmax_t den> static
-      constexpr C<(1 - 2 *(num < 0)) * num, den> apply(const C<num, den>& a, detail::choice<0>) { return {}; }
-
-	  template<class Arg> static auto apply(const Arg& a, detail::choice<1>) -> STATOR_AUTORETURN(std::abs(a));
-
-	  template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Absolute>(a)));
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sym::abs(a));
     };
 
     struct Arbsign {
       static constexpr const char* _str_left = "±|";
       static constexpr const char* _str_right = "|";
-      template<class Arg> static auto apply(const Arg& a, detail::last_choice) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Arbsign>(a)));
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Arbsign>(a)));
     };
   }
+
+  template<class Arg,
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
+  auto sin(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Sine>(arg)));
+
+  template<class Arg,
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
+  auto cos(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Cosine>(arg)));
   
-  template <class Arg> auto sin(const Arg& a) -> STATOR_AUTORETURN(detail::Sine::apply(a, detail::select_overload{}));
+  template<class Arg,
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
+  auto abs(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Absolute>(arg)));
+  
+  template<class Arg>
+  auto arbsign(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Arbsign>(arg)));
+  
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Sine>& f, Var x)
-    -> STATOR_AUTORETURN(derivative(f._arg, x) * detail::Cosine::apply(f._arg, detail::select_overload{}));
-
-  template <class Arg> auto cos(const Arg& a) -> STATOR_AUTORETURN(detail::Cosine::apply(a, detail::select_overload{}));
+    -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::cos(f._arg));  
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Cosine>& f, Var x)
-    -> STATOR_AUTORETURN(-derivative(f._arg, x) * detail::Sine::apply(f._arg, detail::select_overload{}));
-
-  template <class Arg> auto abs(const Arg& a) -> STATOR_AUTORETURN(detail::Absolute::apply(a, detail::select_overload{}));
+    -> STATOR_AUTORETURN(-derivative(f._arg, x) * sym::sin(f._arg));
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Absolute>& f, Var x)
-    -> STATOR_AUTORETURN(derivative(f._arg, x) * detail::Absolute::apply(f._arg, detail::select_overload{}) / f._arg);
-
-  template <class Arg> auto arbsign(const Arg& a) -> STATOR_AUTORETURN(detail::Arbsign::apply(a, detail::select_overload{}));
+    -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::abs(f._arg) / f._arg);
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Arbsign>& f, Var x)
-    -> STATOR_AUTORETURN((derivative(f._arg, x) * UnaryOp<Unity, detail::Arbsign>(Unity())));
+    -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::arbsign(Unity()));
 
   template<class Var, class Arg1, class Arg2, class Op>
   auto substitution(const UnaryOp<Arg1, Op>& f, const VarSub<Var, Arg2>& x)
-    -> STATOR_AUTORETURN(Op::apply(substitution(f._arg, x), detail::select_overload{}));
+    -> STATOR_AUTORETURN(Op::apply(substitution(f._arg, x)));
   
   template<class Arg, class Op>
   inline std::ostream& operator<<(std::ostream& os, const UnaryOp<Arg, Op>& f)

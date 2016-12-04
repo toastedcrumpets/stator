@@ -151,4 +151,35 @@ namespace sym {
 	return (os << "(" <<c.real() << " - " << std::abs(c.imag()) << "i)");
     return (os << "(" <<c.real() << " + " << c.imag() << "i)");
   }
+
+  template<class C_arg, class factor, class offset = std::ratio<0> >
+  struct is_whole_factor {
+    static const bool value = (std::ratio_divide<std::ratio_subtract<std::ratio<C_arg::num, C_arg::den>, std::ratio<offset::num, offset::den> >, std::ratio<factor::num, factor::den> >::den == 1);
+  };
+
+  //simplify sin(i * pi)
+  template<std::intmax_t num, std::intmax_t den,
+	   typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
+  constexpr Null sin_Cimpl(const C<num, den>& a, detail::choice<0>) { return {}; }
+
+  template<std::intmax_t num, std::intmax_t den,
+	   typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi() / C<2>())>::value>::type>
+  constexpr Unity sin_Cimpl(const C<num, den>& a, detail::choice<0>) { return {}; }
+
+  template<std::intmax_t num, std::intmax_t den,
+	   typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi>::value>::type>
+  constexpr Unity cos_Cimpl(const C<num, den>& a, detail::choice<0>) { return {}; }
+
+  template<std::intmax_t num, std::intmax_t den,
+	   typename = typename std::enable_if<is_whole_factor<std::ratio<num, den>, pi, decltype(pi() / C<2>())>::value>::type>
+  constexpr Null cos_Cimpl(const C<num, den>& a, detail::choice<0>) { return {}; }
+
+  template<std::intmax_t num, std::intmax_t den>
+  auto sin(const C<num, den>& a) -> STATOR_AUTORETURN(sin_Cimpl(a, detail::select_overload{}));  
+
+  template<std::intmax_t num, std::intmax_t den>
+  auto cos(const C<num, den>& a) -> STATOR_AUTORETURN(cos_Cimpl(a, detail::select_overload{}));
+
+  template<std::intmax_t num, std::intmax_t den>
+  constexpr C<(1 - 2 * (num < 0)) * num, (1 - 2 * (den < 0)) * den> abs(const C<num, den>& a) { return {}; }
 }

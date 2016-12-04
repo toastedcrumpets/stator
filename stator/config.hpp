@@ -91,6 +91,7 @@ namespace stator {
     template<class T> auto store(const T& val) -> STATOR_AUTORETURN(store_impl(val, select_overload{}));
 
     template<class T> struct dependent_false: std::false_type {};
+    template<class T> struct dependent_true: std::true_type {};
   } // namespace detail
 } // namespace stator
 

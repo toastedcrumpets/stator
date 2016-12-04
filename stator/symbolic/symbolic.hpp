@@ -35,9 +35,6 @@
 #include <ratio>
 #include <type_traits>
 
-#include "stator/symbolic/constants.hpp"
-#include "stator/orphan/template_config.hpp"
-
 namespace sym {
   using stator::orphan::StackVector;
   using stator::detail::store;
@@ -47,7 +44,12 @@ namespace sym {
     using stator::detail::last_choice;
     using stator::detail::select_overload;
   } // namespace detail
+}
 
+#include "stator/symbolic/constants.hpp"
+#include "stator/orphan/template_config.hpp"
+
+namespace sym {
   /*! \brief A type trait to denote symbolic terms (i.e., one that
       is not yet immediately evaluable to a "normal" type)*/
   struct SymbolicOperator {};

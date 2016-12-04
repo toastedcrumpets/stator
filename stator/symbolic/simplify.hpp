@@ -150,18 +150,20 @@ namespace sym {
       
   // Simplification of both arguments available
   template<class Config, class LHS, class RHS, class Op>
-  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<1>)
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<2>)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(f._l), simplify<Config>(f._r))));
   
   // Simplification of only one argument available
   template<class Config, class LHS, class RHS, class Op>
-  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<2>)
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<3>)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(f._l), f._r)));
   
   template<class Config, class LHS, class RHS, class Op>
-  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<2>)
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<3>)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, simplify<Config>(f._r))));
-  
+
+  //Implement other simplifications at least at choice<5> or above, reordering should be a last case option!
+
   // Reorder to find further simplifications
   //
   // If you're trying to check if there is a simplification for a
@@ -174,27 +176,29 @@ namespace sym {
   // For associative operators, try (A*B)*C as A*(B*C) (but only do this if B*C has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
-  auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Op, Arg2>, Op, Arg3>& f, detail::choice<4>)
+  auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Op, Arg2>, Op, Arg3>& f, detail::choice<6>)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l._l, simplify<Config>(BinaryOp<Arg2, Op, Arg3>(f._l._r, f._r)))));
   
   // For associative operators, try A*(B*C) as (A*B)*C (but only do this if A*B has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
-  auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<4>)
+  auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<6>)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg2>(f._l, f._r._l)), f._r._r)));
 
   // For associative and commutative operators, try (A*B)*C as (A*C)*B (but only do this if A*C has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
-  auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Op, Arg2>, Op, Arg3>& f, detail::choice<5>)
+  auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Op, Arg2>, Op, Arg3>& f, detail::choice<7>)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>(f._l._l, f._r)), f._l._r)));
   
   // For associative and commutative operators, try A*(B*C) as (A*C)*B (but only do this if A*C has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
-  auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<5>)
+  auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<7>)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>(f._l, f._r._r)), f._r._l)));
 
+
+  
 
   // Finally, the gateway to the above series of simplifications for BinaryOps!
   template<class Config = DefaultSimplifyConfig, class T, typename = typename std::enable_if<std::is_base_of<BinaryOpBase, T>::value >::type >
@@ -384,38 +388,43 @@ namespace sym {
   //}
 
   //                      FUNCTION SIMPLIFICATION
+
+  template<class Config, class Arg>
+  auto simplify_UnaryOp(const UnaryOp<UnaryOp<Arg, detail::Arbsign>, detail::Arbsign>& f, detail::choice<0>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(detail::Arbsign::apply(f._arg._arg)));
+  
+  //Simplify the argument only (if such a simplification exists
+  template<class Config, class Arg, class Op>
+  auto simplify_UnaryOp(const UnaryOp<Arg, Op>& f, detail::last_choice)
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(f._arg))));
+    
+  // The gateway to the simplifcation of unary operations
   template<class Config = DefaultSimplifyConfig, class Arg, class Op>
   auto simplify(const UnaryOp<Arg, Op>& f)
-    -> STATOR_AUTORETURN(Op::apply(simplify<Config>(f._arg), detail::select_overload{}));
+    -> STATOR_AUTORETURN(simplify_UnaryOp<Config>(f, detail::select_overload{}));
 
-  template<class Config = DefaultSimplifyConfig, class LHS, class Arg>
-  auto simplify(const MultiplyOp<LHS, UnaryOp<Arg, detail::Arbsign> >& f)
-    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l * f._r._arg)));
-
-  template<class Config = DefaultSimplifyConfig, class RHS, class Arg>
-  auto simplify(const MultiplyOp<UnaryOp<Arg, detail::Arbsign>, RHS>& f)
-    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l._arg * f._r)));
-
-  template<class Config = DefaultSimplifyConfig, class Arg1, class Arg2>
-  auto simplify(const MultiplyOp<UnaryOp<Arg1, detail::Arbsign>, UnaryOp<Arg2, detail::Arbsign> >& f)
-    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l._arg * f._r._arg)));
-
-  template<class Config = DefaultSimplifyConfig, class LHS, class Arg>
-  auto simplify(const DivideOp<LHS, UnaryOp<Arg, detail::Arbsign> >& f)
-    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l / f._r._arg)));
-
-  template<class Config = DefaultSimplifyConfig, class RHS, class Arg>
-  auto simplify(const DivideOp<UnaryOp<Arg, detail::Arbsign>, RHS>& f)
-    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l._arg / f._r)));
-
-  template<class Config = DefaultSimplifyConfig, class Arg1, class Arg2>
-  auto simplify(const DivideOp<UnaryOp<Arg1, detail::Arbsign>, UnaryOp<Arg2, detail::Arbsign> >& f)
-    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._l._arg / f._r._arg)));
-
-  template<class Config = DefaultSimplifyConfig, class Arg>
-  auto simplify(const UnaryOp<UnaryOp<Arg, detail::Arbsign>, detail::Arbsign>& f)
-    -> STATOR_AUTORETURN(try_simplify<Config>(arbsign(f._arg._arg)));
+  //Sign propagation through multipliction or division
+  template<class Config = DefaultSimplifyConfig, class Arg1, class Arg2, class Op,
+ 	   typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value
+					      || std::is_same<Op,detail::Divide>::value
+					      || std::is_same<Op,detail::Dot>::value>::type>
+    auto simplify_BinaryOp(const BinaryOp<UnaryOp<Arg1, detail::Arbsign>, Op, UnaryOp<Arg2, detail::Arbsign> >& f, detail::choice<4>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(detail::Arbsign::apply(Op::apply(f._l._arg, f._r._arg))));
   
+  template<class Config, class LHS, class Arg, class Op,
+	   typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value
+					      || std::is_same<Op,detail::Divide>::value
+					      || std::is_same<Op,detail::Dot>::value>::type>
+    auto simplify_BinaryOp(const BinaryOp<LHS, Op, UnaryOp<Arg, detail::Arbsign> >& f, detail::choice<5>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(detail::Arbsign::apply(Op::apply(f._l, f._r._arg))));
+
+  template<class Config, class RHS, class Arg, class Op,
+ 	   typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value
+					      || std::is_same<Op,detail::Divide>::value
+					      || std::is_same<Op,detail::Dot>::value>::type>
+    auto simplify_BinaryOp(const BinaryOp<UnaryOp<Arg, detail::Arbsign>, Op,  RHS>& f, detail::choice<5>)
+    -> STATOR_AUTORETURN(try_simplify<Config>(detail::Arbsign::apply(Op::apply(f._l._arg, f._r))));
+    
   //For even powers, remove the sign term
   template<class Config = DefaultSimplifyConfig, class Arg, size_t Power>
   auto simplify(const PowerOp<UnaryOp<Arg, detail::Arbsign>, Power>& f)
@@ -427,5 +436,6 @@ namespace sym {
   auto simplify(const PowerOp<UnaryOp<Arg, detail::Arbsign>, Power>& f)
     -> typename std::enable_if<Power % 2, decltype(try_simplify<Config>(arbsign(pow<Power>(f._arg._arg))))>::type
   { return try_simplify<Config>(arbsign(pow<Power>(f._arg._arg))); }
+    
 }
 

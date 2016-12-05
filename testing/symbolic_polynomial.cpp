@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE( poly_simplify )
   //Check expansion
   {
     Polynomial<1> x{0,1};
-    BOOST_CHECK(compare_expression(expand(pow<3>(x+2)), expand((x+2) * (x+2) * (x+2))));;
+    BOOST_CHECK(compare_expression(expand(pow(x+2, C<3>())), expand((x+2) * (x+2) * (x+2))));;
   }
 }
 
@@ -310,10 +310,10 @@ BOOST_AUTO_TEST_CASE( poly_derivative )
   BOOST_CHECK_EQUAL(substitution(poly4, Var<>()==0), -1);
   BOOST_CHECK_EQUAL(substitution(poly4, Var<>()==1), 3);
 
-  C<2>() * derivative(x, Var<>()) * PowerOp<decltype(x), 1>(x);
-  //derivative(pow<2>(x), Var<vidx<'x'> >());
+  C<2>() * derivative(x, Var<>()) * pow(x, C<1>());
+  //derivative(pow(x, C<2>), Var<vidx<'x'> >());
   
-  BOOST_CHECK(compare_expression(simplify(derivative(pow<2>(x), Var<>())), C<2>()* Polynomial<1>{0,1}));
+  BOOST_CHECK(compare_expression(simplify(derivative(pow(x, C<2>()), Var<>())), C<2>()* Polynomial<1>{0,1}));
 }
 
 BOOST_AUTO_TEST_CASE( poly_zero_derivative)
@@ -635,7 +635,7 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
   }
 
   {//PowerOp quartic
-    auto f1 = expand(pow<2>(30 * x * x + x - 23));
+    auto f1 = expand(pow(30 * x * x + x - 23, C<2>()));
 
     auto roots = solve_real_roots(f1);
     //FIX THIS UNIT TEST!
@@ -1026,12 +1026,12 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   CHECK_TYPE(taylor_series<2>(y*y*y, Null(), y), Null);
   
   //Test simple Taylor expansion of sine 
-  BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), y * (C<1>()+(pow<2>(y)*(C<-1,6>()+(pow<2>(y)*C<1,120>()))))));
+  BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), y * (C<1>()+(pow(y, C<2>())*(C<-1,6>()+(pow(y, C<2>())*C<1,120>()))))));
 
   //MSVC only supports limited symbol names lengths, thus deep
   //templating is not possible, and these tests fail on compilation
 #if !(defined(_MSC_VER) && !defined(__INTEL_COMPILER))
-  BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), pow<2>(y) * (C<1>()+(pow<4>(y)*C<-1,6>()))));
+  BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), pow(y, C<2>()) * (C<1>()+(pow(y, C<4>())*C<-1,6>()))));
   
   //Test Taylor expansion of a complex expression at zero
   Var<vidx<'x'> > x;

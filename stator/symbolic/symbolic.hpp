@@ -149,7 +149,7 @@ namespace sym {
     is at least longer than the current expression.
   */
   template<class T, class Var, class Arg,
-	     typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
+	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
   auto substitution(const T& f, const VarSub<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
   
   /*! \brief Evaluates a symbolic Var at a given point.

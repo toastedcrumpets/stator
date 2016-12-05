@@ -168,19 +168,19 @@ BOOST_AUTO_TEST_CASE( function_derivatives )
 BOOST_AUTO_TEST_CASE( power_basic )
 {
   Var<> x;
-  BOOST_CHECK(pow<3>(3) == 27);
-  BOOST_CHECK(pow<2>(Vector{0,1,2}) == 5);
+  BOOST_CHECK(sym::pow(3, C<3>()) == 27);
+  BOOST_CHECK(sym::pow(Vector{0,1,2}, C<2>()) == 5);
 
-  BOOST_CHECK_CLOSE(substitution(pow<3>(x), x==4.0), 4.0*4.0*4.0, 1e-10);
-  BOOST_CHECK_CLOSE(substitution(pow<3>(x), x==0.75), std::pow(0.75, 3), 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow(x, C<3>()), x==4.0), 4.0*4.0*4.0, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow(x, C<3>()), x==0.75), std::pow(0.75, 3), 1e-10);
 
   //Test PowerOp algebraic operations
-  BOOST_CHECK_CLOSE(substitution(pow<3>(x) - x, x==0.75), std::pow(0.75, 3) - 0.75, 1e-10);
-  BOOST_CHECK_CLOSE(substitution(pow<3>(x) + x, x==0.75), std::pow(0.75, 3) + 0.75, 1e-10);
-  BOOST_CHECK_CLOSE(substitution(pow<3>(x) * x, x==0.75), std::pow(0.75, 3) * 0.75, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow(x, C<3>()) - x, x==0.75), std::pow(0.75, 3) - 0.75, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow(x, C<3>()) + x, x==0.75), std::pow(0.75, 3) + 0.75, 1e-10);
+  BOOST_CHECK_CLOSE(substitution(pow(x, C<3>()) * x, x==0.75), std::pow(0.75, 3) * 0.75, 1e-10);
 
   //Check special case derivatives
-  Check_Type<decltype(derivative(pow<1>(x), Var<>())), Unity>();
+  Check_Type<decltype(derivative(pow(x, C<1>()), Var<>())), Unity>();
 }
 
 BOOST_AUTO_TEST_CASE( Var_tests )
@@ -221,10 +221,10 @@ BOOST_AUTO_TEST_CASE( reorder_operations )
   BOOST_CHECK(!compare_expression(x, sin(x), false));
 
   //Here we're looking for the two Polynomial terms to be reordered
-  BOOST_CHECK(compare_expression(simplify((sin(2*x) * x) * x), sin(2*x) * pow<2>(x)));
-  BOOST_CHECK(compare_expression(simplify((x * sin(2*x)) * x), pow<2>(x) * sin(2*x)));
-  BOOST_CHECK(compare_expression(simplify(x * (sin(2*x) * x)), pow<2>(x) * sin(2*x)));
-  BOOST_CHECK(compare_expression(simplify(x * (x * sin(2*x))), pow<2>(x) * sin(2*x)));
+  BOOST_CHECK(compare_expression(simplify((sin(2*x) * x) * x), sin(2*x) * pow(x, C<2>())));
+  BOOST_CHECK(compare_expression(simplify((x * sin(2*x)) * x), pow(x, C<2>()) * sin(2*x)));
+  BOOST_CHECK(compare_expression(simplify(x * (sin(2*x) * x)), pow(x, C<2>()) * sin(2*x)));
+  BOOST_CHECK(compare_expression(simplify(x * (x * sin(2*x))), pow(x, C<2>()) * sin(2*x)));
 
   //Here we check that constants (such as 2) will become Null
   //types when the derivative is taken, causing their terms to be
@@ -302,15 +302,16 @@ BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )
   BOOST_CHECK(compare_expression(simplify(derivative(arbsign(x), x)), arbsign(Unity())));
   BOOST_CHECK(compare_expression(derivative(arbsign(x), Var<vidx<'y'>>()), Null()));
 
-  BOOST_CHECK(compare_expression(simplify(x * arbsign(x)), arbsign(pow<2>(x))));
-  BOOST_CHECK(compare_expression(simplify(arbsign(x) * x), arbsign(pow<2>(x))));
-  BOOST_CHECK(compare_expression(simplify(arbsign(x) * arbsign(x)), arbsign(pow<2>(x))));
+  BOOST_CHECK(compare_expression(simplify(x * arbsign(x)), arbsign(pow(x, C<2>()))));
+  BOOST_CHECK(compare_expression(simplify(arbsign(x) * x), arbsign(pow(x, C<2>()))));
+  BOOST_CHECK(compare_expression(simplify(arbsign(x) * arbsign(x)), arbsign(pow(x, C<2>()))));
 
   BOOST_CHECK(compare_expression(simplify(arbsign(x) / x), arbsign(Unity())));
   BOOST_CHECK(compare_expression(simplify(arbsign(x) / arbsign(x)), arbsign(Unity())));
   BOOST_CHECK(compare_expression(simplify(arbsign(arbsign(x))), arbsign(x)));
-  BOOST_CHECK(compare_expression(simplify(pow<5>(arbsign(x))), arbsign(pow<5>(x))));
-  BOOST_CHECK(compare_expression(simplify(pow<6>(arbsign(x))), pow<6>(x)));
+  simplify(pow(arbsign(x), C<5>()));
+  BOOST_CHECK(compare_expression(simplify(pow(arbsign(x), C<5>())), arbsign(pow(x, C<5>()))));
+  BOOST_CHECK(compare_expression(simplify(pow(arbsign(x), C<6>())), pow(x, C<6>())));
 }
 
 BOOST_AUTO_TEST_CASE( derivative_addition )

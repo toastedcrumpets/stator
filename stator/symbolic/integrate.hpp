@@ -69,9 +69,9 @@ namespace sym {
     -> STATOR_AUTORETURN((C<1,2>() * pow<2>(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type())));
   
   /*! \brief Integration of \$x^n\$ by \$x\$.*/
-  template<class ...VarArgs1, class ...VarArgs2, size_t Power,
+  template<class ...VarArgs1, class ...VarArgs2, std::intmax_t Power,
 	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto integrate(const PowerOp<Var<VarArgs1...>, Power>& a, Var<VarArgs2...>)
-    -> STATOR_AUTORETURN((C<1, Power+1>() * PowerOp<typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type(), Power+1>()));
+  auto integrate(const PowerOp<Var<VarArgs1...>, C<Power> >& a, Var<VarArgs2...>)
+    -> STATOR_AUTORETURN((C<1, Power+1>() * pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type(), C<Power+1>())));
   
 } // namespace symbolic

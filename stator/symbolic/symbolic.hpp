@@ -278,7 +278,7 @@ namespace sym {
     expression.
   */
   template<size_t Order, class Var, class F, class Real>
-  auto taylor_series(const F& f, Real a, Var) 
+  auto taylor_series(const F& f, Real a, Var)
     -> STATOR_AUTORETURN(try_simplify(detail::TaylorSeriesWorker<0, Order, Var>::eval(f, a)));
 } // namespace symbolic
 

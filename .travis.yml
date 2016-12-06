@@ -3,6 +3,9 @@ language: cpp
 dist: trusty
 
 matrix:
+  fast_finish: true
+  allow_failures:
+    - env: COMPILER=g++-5 COMPILER_PACKAGE=g++-5 COMPILER_NAME=gcc-5
   include:
     - compiler: gcc
       os: linux

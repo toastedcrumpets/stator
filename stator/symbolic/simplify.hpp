@@ -73,7 +73,7 @@ namespace sym {
       available.
    */
   template<class Config = DefaultSimplifyConfig, class T>
-  auto try_simplify(const T& a) -> decltype(detail::try_simplify_imp<Config>(a, detail::select_overload{})) {
+  decltype(auto) try_simplify(const T& a) {
     return detail::try_simplify_imp<Config>(a, detail::select_overload{});
   }
 
@@ -82,14 +82,14 @@ namespace sym {
   /*! \brief A variant of simplify that expands into Polynomial
       types aggressively.
    */
-  template<class T> auto expand(const T& a)
-    -> STATOR_AUTORETURN(simplify<ExpandConfig>(a));
+  template<class T> decltype(auto) expand(const T& a)
+  { return simplify<ExpandConfig>(a); }
 
   /*! \brief A variant of try_simplify that expands into Polynomial
       types aggressively.
    */
-  template<class T> auto try_expand(const T& a)
-    -> STATOR_AUTORETURN(try_simplify<ExpandConfig>(a));
+  template<class T> decltype(auto) try_expand(const T& a)
+  { return try_simplify<ExpandConfig>(a); }
   
   /////////////////// BINARY OPERATORS /////////////////////////////
   // 
@@ -116,11 +116,13 @@ namespace sym {
 
   // Eliminate any identity operations
   template<class Config, class LHS, class Op>
-  auto simplify_BinaryOp(const BinaryOp<LHS, Op, typename Op::right_identity>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._l));
+  decltype(auto) simplify_BinaryOp(const BinaryOp<LHS, Op, typename Op::right_identity>& op, detail::choice<0>)
+  { return try_simplify<Config>(op._l); }
 
   template<class Config, class RHS, class Op,
 	     typename = typename std::enable_if<!std::is_same<RHS, typename Op::right_identity>::value>::type>
-  auto simplify_BinaryOp(const BinaryOp<typename Op::left_identity, Op, RHS>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._r));
+  decltype(auto) simplify_BinaryOp(const BinaryOp<typename Op::left_identity, Op, RHS>& op, detail::choice<0>)
+  { return try_simplify<Config>(op._r); }
 
   //Special case for divide
   template<class Config, class ...VarArgs1, class ...VarArgs2,
@@ -135,18 +137,18 @@ namespace sym {
   //Transformations to power-ops where possible
   template<class Config, class ...VarArgs1, class ...VarArgs2,
 	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<Var<VarArgs1...>, Var<VarArgs2...> >&, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type(), C<2>()));
+  decltype(auto) simplify_BinaryOp(const MultiplyOp<Var<VarArgs1...>, Var<VarArgs2...> >&, detail::choice<0>)
+  { return sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type(), C<2>()); }
   
   template<class Config, class ...VarArgs1, class ...VarArgs2, class Order,
 	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<PowerOp<Var<VarArgs1...>, Order>, Var<VarArgs2...> >& f, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type {}, f._l._r + C<1>()));
+  decltype(auto) simplify_BinaryOp(const MultiplyOp<PowerOp<Var<VarArgs1...>, Order>, Var<VarArgs2...> >& f, detail::choice<0>)
+  { return sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type {}, f._l._r + C<1>()); }
   
   template<class Config, class ...VarArgs1, class ...VarArgs2,  class Order,
 	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<Var<VarArgs1...>, PowerOp<Var<VarArgs2...>, Order> >& f, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type {}, f._r._r + C<1>()));
+  decltype(auto) simplify_BinaryOp(const MultiplyOp<Var<VarArgs1...>, PowerOp<Var<VarArgs2...>, Order> >& f, detail::choice<0>)
+  { return sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type {}, f._r._r + C<1>()); }
       
   // Simplification of both arguments available
   template<class Config, class LHS, class RHS, class Op>
@@ -184,7 +186,6 @@ namespace sym {
   template<class Config = DefaultSimplifyConfig, class Arg, std::intmax_t Power,
 	     typename = typename std::enable_if<PowerOpEnableExpansion<Arg>::value>::type>
   auto simplify(const PowerOp<Arg, C<Power, 1> >& f) -> STATOR_AUTORETURN(simplify_powerop_impl<Config>(f, detail::select_overload{}));
-
   
   //Implement other simplifications at least at choice<5> or above, reordering should be a last case option!
 
@@ -220,7 +221,6 @@ namespace sym {
 	     typename = typename std::enable_if<Op::associative>::type>
   auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<7>)
     -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>(f._l, f._r._r)), f._r._l)));
-
 
   // Finally, the gateway to the above series of simplifications for BinaryOps!
   template<class Config = DefaultSimplifyConfig, class T, typename = typename std::enable_if<std::is_base_of<BinaryOpBase, T>::value >::type >

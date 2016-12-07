@@ -82,27 +82,19 @@ endif()
 ######################################################################
 ########## COMPILER C++11/C++0x SUPPORT TESTS
 ######################################################################
-### First check if the compiler supports C++11 or C++0x and enable the build flag
+### First check if the compiler supports C++14 and enable the build flag
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORT_CXX11)
+check_cxx_compiler_flag("-std=c++14" COMPILER_SUPPORT_CXX11)
 if(COMPILER_SUPPORT_CXX11)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 else()
-  check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORT_CXX0X)
-  if(COMPILER_SUPPORT_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-  else()
-    message(SEND_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 or C++0X support. You must install a more modern C++ compiler.")
-  endif()
+  message(SEND_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. You must install a more modern C++ compiler.")
 endif()
 
-#Test for different C++11 functionality
 if(NOT MSVC)
   set(CMAKE_REQUIRED_FLAGS -Wfatal-errors)
 endif()
 
-check_cxx_source_compiles("int main(int, const char**) {int array[5] = {1,2,3,4,5}; for(int& x: array) x *= 2;}" CXX11_RANGE_BASED_FOR)
-check_cxx_source_compiles("template <class T> class A {}; template <class T> using B = A<T>; int main(int, const char**) { B<double> b; }" CXX11_TEMPLATE_TYPEDEFS)
 check_cxx_source_compiles("template <typename T> struct wrapped{ typedef T type;};
 template <typename T> typename T::type unwrap1(T a) { return typename T::type();}
 int unwrap(int a) { return 1; }
@@ -146,11 +138,9 @@ endfunction(stator_test)
 #stator_test(orphan_static_list)
 stator_test(stack_vector)
 
-if(CXX11_TEMPLATE_TYPEDEFS)
-  #stator_test(geometry_shapes)
-  stator_test(symbolic_generic)
-  stator_test(symbolic_polynomial)
-  stator_test(symbolic_poly_solve_roots)
-  stator_test(symbolic_poly_taylor)
-  #stator_test(symbolic_integration)
-endif()
+#stator_test(geometry_shapes)
+stator_test(symbolic_generic)
+stator_test(symbolic_polynomial)
+stator_test(symbolic_poly_solve_roots)
+stator_test(symbolic_poly_taylor)
+#stator_test(symbolic_integration)

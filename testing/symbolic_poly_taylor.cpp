@@ -92,6 +92,8 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
   auto f = sin(cos(x)+2*x*x - x + 3);
   auto ffinal = simplify((3.0 * std::sin(4.0)/2.0 + (std::cos(4.0)/6.0)) * x*x*x + (3*std::cos(4.0)/2.0 - std::sin(4.0)/2.0) * x*x - std::cos(4.0) * x + std::sin(4.0));
 
+  expand(taylor_series<3>(f, Null(), x));
+    
   //We compare the expressions as Polynomials using the expand
   auto ffinal_expanded = expand(ffinal);
   BOOST_CHECK(compare_expression(expand(taylor_series<3>(f, Null(), x)), ffinal_expanded));

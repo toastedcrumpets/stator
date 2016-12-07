@@ -38,8 +38,8 @@ namespace sym {
   }
 
   template<class LHS, class RHS, class Op, class Var, class Arg> 
-  auto substitution(BinaryOp<LHS, Op, RHS> f, VarSub<Var, Arg> x)
-    -> STATOR_AUTORETURN_BYVALUE(Op::apply(substitution(f._l, x), substitution(f._r, x)));
+  decltype(auto) substitution(BinaryOp<LHS, Op, RHS> f, VarSub<Var, Arg> x)
+  { return Op::apply(substitution(f._l, x), substitution(f._r, x)); }
 
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value)>::type>
@@ -62,7 +62,7 @@ namespace sym {
   auto pow(const LHS& l, const C<2,1>& r) -> STATOR_AUTORETURN_BYVALUE(l.squaredNorm());
   
   template<class LHS>
-  auto pow(const LHS& l, const C<1,1>& r) -> STATOR_AUTORETURN(l);
+  LHS pow(const LHS& l, const C<1,1>& r) { return l; }
 
   namespace {
     /*! \brief Generic implementation of the eval routine for PowerOp.
@@ -91,8 +91,8 @@ namespace sym {
   }
   
   template<std::intmax_t num1, std::intmax_t den1, std::intmax_t num2>
-  auto pow(const C<num1, den1>& l, const C<num2,1>& r)
-    -> STATOR_AUTORETURN(PowerOpSubstitution<num2>::eval(substitution(l, num2)));
+  decltype(auto) pow(const C<num1, den1>& l, const C<num2,1>& r)
+  { return PowerOpSubstitution<num2>::eval(substitution(l, num2)); }
 
   namespace detail {
     struct Add {
@@ -199,7 +199,7 @@ namespace sym {
   /*! \brief Symbolic addition operator. */
     template<class LHS, class RHS,
 	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator+(const LHS& l, const RHS& r) 
+    auto operator+(const LHS& l, const RHS& r)
     -> STATOR_AUTORETURN((AddOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
   /*! \brief Symbolic multiplication operator. */

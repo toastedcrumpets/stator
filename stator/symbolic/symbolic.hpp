@@ -150,7 +150,7 @@ namespace sym {
   */
   template<class T, class Var, class Arg,
 	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-  auto substitution(const T& f, const VarSub<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
+  decltype(auto) substitution(const T& f, const VarSub<Var, Arg>&) { return store(f); }
   
   /*! \brief Evaluates a symbolic Var at a given point.
     
@@ -159,8 +159,8 @@ namespace sym {
   */
   template<typename ...Args1, typename ...Args2, class Arg,
 	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
-  auto substitution(const Var<Args1...>& f, const VarSub<Var<Args2...>, Arg>& x)
-   -> STATOR_AUTORETURN_BYVALUE(x._val);
+  decltype(auto) substitution(const Var<Args1...>& f, const VarSub<Var<Args2...>, Arg>& x)
+  { return store(x._val); }
 
   /*! \brief Evaluates a symbolic Var at a given point.
     
@@ -252,24 +252,24 @@ namespace sym {
   namespace detail {
     template<size_t State, size_t max_Order, class Var>
     struct TaylorSeriesWorker {
-	template<class Real>
-	static Null eval(const Null& f, const Real& a)
-	{ return Null(); }
+      template<class Real>
+      static Null eval(const Null& f, const Real& a)
+      { return Null(); }
       
-	template<class F, class Real>
-	static auto eval(const F& f, const Real& a) 
-        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * substitution(f, Var() == a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a)))
+      template<class F, class Real>
+      static decltype(auto) eval(const F& f, const Real& a) 
+      { return typename InvFactorial<State>::value() * substitution(f, Var() == a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a); }
     };
-
+    
     template<size_t max_Order, class Var>
     struct TaylorSeriesWorker<max_Order,max_Order, Var> {
-	template<class F, class Real>
-	static auto eval(const F& f, const Real& a)
-        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * substitution(f, Var() == a)));
+      template<class F, class Real>
+      static decltype(auto) eval(const F& f, const Real& a)
+      { return typename InvFactorial<max_Order>::value() * substitution(f, Var() == a); }
       
-	template<class Real>
-	static Null eval(const Null& f, const Real& a)
-	{ return Null(); }
+      template<class Real>
+      static Null eval(const Null& f, const Real& a)
+      { return Null(); }
     };
   }
 
@@ -278,7 +278,7 @@ namespace sym {
     expression.
   */
   template<size_t Order, class Var, class F, class Real>
-  auto taylor_series(const F& f, Real a, Var)
-    -> STATOR_AUTORETURN(try_simplify(detail::TaylorSeriesWorker<0, Order, Var>::eval(f, a)));
+  decltype(auto) taylor_series(const F& f, Real a, Var)
+  { return try_simplify(detail::TaylorSeriesWorker<0, Order, Var>::eval(f, a)); }
 } // namespace symbolic
 

@@ -82,10 +82,10 @@ int main(int argc, char **argv) {
   //Roots are always returned from smallest to largest in a
   //StackVector type, which is a stack allocated std::vector clone.
 
-  
-//  //Evaluation/substitution at a point x=2
-//  std::cout << substitution(simplef, x == 2) << std::endl;
-//  //Output: 16
+  //To actually 
+  //Evaluation/substitution at a point x=2
+  std::cout << sub(f5, x == 2) << std::endl;
+  //Output: 16
 //  //A symbolic substitution, replacing x with x+2:
 //  std::cout << simplify(substitution(simplef, x == x + 2)) << std::endl;
 //  //Output: 2 × x³ + 13.5 × x² + 27 × x + 16

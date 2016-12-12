@@ -150,7 +150,7 @@ namespace sym {
   */
   template<class T, class Var, class Arg,
 	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-  auto substitution(const T& f, const VarSub<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
+  auto sub(const T& f, const VarSub<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
   
   /*! \brief Evaluates a symbolic Var at a given point.
     
@@ -159,7 +159,7 @@ namespace sym {
   */
   template<typename ...Args1, typename ...Args2, class Arg,
 	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
-  auto substitution(const Var<Args1...>& f, const VarSub<Var<Args2...>, Arg>& x)
+  auto sub(const Var<Args1...>& f, const VarSub<Var<Args2...>, Arg>& x)
    -> STATOR_AUTORETURN_BYVALUE(x._val);
 
   /*! \brief Evaluates a symbolic Var at a given point.
@@ -169,7 +169,7 @@ namespace sym {
   */
   template<class ...Args1, class Arg, class Var2,
 	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
-  Var<Args1...> substitution(const Var<Args1...>& f, const VarSub<Var2, Arg>& x)
+  Var<Args1...> sub(const Var<Args1...>& f, const VarSub<Var2, Arg>& x)
   { return f; }
   
   /*! \brief Output operator for Var types. */
@@ -258,14 +258,14 @@ namespace sym {
       
 	template<class F, class Real>
 	static auto eval(const F& f, const Real& a) 
-        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * substitution(f, Var() == a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a)))
+        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * sub(f, Var() == a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a)))
     };
 
     template<size_t max_Order, class Var>
     struct TaylorSeriesWorker<max_Order,max_Order, Var> {
 	template<class F, class Real>
 	static auto eval(const F& f, const Real& a)
-        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * substitution(f, Var() == a)));
+        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * sub(f, Var() == a)));
       
 	template<class Real>
 	static Null eval(const Null& f, const Real& a)
@@ -273,8 +273,7 @@ namespace sym {
     };
   }
 
-  /*! \function taylor_series
-    \brief Generate a Taylor series representation of a Symbolic
+  /*! \brief Generate a Taylor series representation of a Symbolic
     expression.
   */
   template<size_t Order, class Var, class F, class Real>

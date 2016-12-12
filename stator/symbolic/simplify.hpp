@@ -166,11 +166,11 @@ namespace sym {
    
   template<class Config, class Arg, std::intmax_t Power>
   auto simplify_powerop_impl(const PowerOp<Arg, C<Power,1> >& f, detail::choice<0>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(PowerOpSubstitution<Power>::eval(simplify<Config>(f._l))));
+    -> STATOR_AUTORETURN(try_simplify<Config>(PowerOpSub<Power>::eval(simplify<Config>(f._l))));
       
   template<class Config, class Arg, std::intmax_t Power>
   auto simplify_powerop_impl(const PowerOp<Arg, C<Power,1> >& f, detail::choice<1>)
-    -> STATOR_AUTORETURN(simplify<Config>(PowerOpSubstitution<Power>::eval(f._l)));
+    -> STATOR_AUTORETURN(simplify<Config>(PowerOpSub<Power>::eval(f._l)));
 
   //Disable expansion of PowerOps of variables (otherwise we will recurse to death)
   template<class T> struct PowerOpEnableExpansion { static const bool value = true; };

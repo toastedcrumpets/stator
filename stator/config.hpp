@@ -58,15 +58,17 @@ namespace stator {
   
   namespace detail {
 
-    /*! \brief A class which recursively inherits from itself to allow ambiguous function definition ordering.*/
-    template<unsigned I> struct choice : choice<I+1>{};
+    /*! \class choice
+      \brief A class which recursively inherits from itself to allow ambiguous function definition ordering.
+     */
+    template<unsigned I> struct choice : choice<I+1> {};
     
     /*! \brief The lowest-priority overload level.*/
     static const int LAST_OVERLOAD_LVL = 10;
 
     /*! \brief The lowest-priority overload level (closing the recursion)*/
     template<> struct choice<LAST_OVERLOAD_LVL> {};
-
+    
     typedef choice<LAST_OVERLOAD_LVL> last_choice;
 
     /*! \brief A class used to start the ambiguous function definition ordering calculation. */

@@ -38,8 +38,8 @@ namespace sym {
   }
 
   template<class LHS, class RHS, class Op, class Var, class Arg> 
-  auto substitution(BinaryOp<LHS, Op, RHS> f, VarSub<Var, Arg> x)
-    -> STATOR_AUTORETURN_BYVALUE(Op::apply(substitution(f._l, x), substitution(f._r, x)));
+  auto sub(BinaryOp<LHS, Op, RHS> f, VarSub<Var, Arg> x)
+    -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
 
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value)>::type>
@@ -73,26 +73,26 @@ namespace sym {
       achieves this.
     */
     template<size_t Power>
-    struct PowerOpSubstitution {
+    struct PowerOpSub {
       template<class Arg_t>
       static auto eval(Arg_t x)
-        -> STATOR_AUTORETURN(PowerOpSubstitution<Power-1>::eval(x) * x)
+        -> STATOR_AUTORETURN(PowerOpSub<Power-1>::eval(x) * x)
 	};
 
     template<>
-    struct PowerOpSubstitution<1> {
+    struct PowerOpSub<1> {
       template<class Arg_t> static Arg_t eval(Arg_t x) { return x; }
     };
 
     template<>
-    struct PowerOpSubstitution<0> {
+    struct PowerOpSub<0> {
       template<class Arg_t> static Unity eval(Arg_t x) { return Unity(); }
     };
   }
   
   template<std::intmax_t num1, std::intmax_t den1, std::intmax_t num2>
   auto pow(const C<num1, den1>& l, const C<num2,1>& r)
-    -> STATOR_AUTORETURN(PowerOpSubstitution<num2>::eval(substitution(l, num2)));
+    -> STATOR_AUTORETURN(PowerOpSub<num2>::eval(sub(l, num2)));
 
   namespace detail {
     struct Add {

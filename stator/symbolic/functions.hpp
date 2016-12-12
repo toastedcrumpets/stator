@@ -100,8 +100,8 @@ namespace sym {
     -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::arbsign(Unity()));
 
   template<class Var, class Arg1, class Arg2, class Op>
-  auto substitution(const UnaryOp<Arg1, Op>& f, const VarSub<Var, Arg2>& x)
-    -> STATOR_AUTORETURN(Op::apply(substitution(f._arg, x)));
+  auto sub(const UnaryOp<Arg1, Op>& f, const VarSub<Var, Arg2>& x)
+    -> STATOR_AUTORETURN(Op::apply(sub(f._arg, x)));
   
   template<class Arg, class Op>
   inline std::ostream& operator<<(std::ostream& os, const UnaryOp<Arg, Op>& f)

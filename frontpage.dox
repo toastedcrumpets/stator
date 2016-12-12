@@ -56,20 +56,20 @@ namespace stator {
       are also number types in C++ and use these instead to identify
       your variables:
 
-      \until Variable<'y'>
+      \until Var<'y'>
 
       But please note, as 'x' is the decimal number 120 in ASCII the
-      definitions Variable<'x'> and \ref Variable "Variable"<120> are
+      definitions Variable<'x'> and \ref sym::Var "Variable"<120> are
       equivalent.
 
       The power of the library primarily arises from its ability to
-      cancel zero terms. Any term multiplied by zero (\ref Null "C<0>",
-      AKA \ref Null) is cancelled to zero:
+      cancel zero terms. Any term multiplied by zero (\ref sym::Null "C<0>",
+      AKA \ref sym::Null) is cancelled to zero:
 
       \until assert
 
-      Equally, any term multiplied by one (\ref Unity "C<1>", which has a
-      convenient typedef of \ref Unity), is left unchanged:
+      Equally, any term multiplied by one (\ref sym::Unity "C<1>", which has a
+      convenient typedef of \ref sym::Unity), is left unchanged:
 
       \until assert
     
@@ -85,10 +85,10 @@ namespace stator {
       remain integers or floats. They are not converted to compile time
       constants due to limitations of the C++ language. Unfortunately,
       this limits the amount of simplification that can be done at
-      compile-time so \ref C values should be used wherever possible.
+      compile-time so \ref sym::C values should be used wherever possible.
 
       \section sym_guide_poly Polynomial types
-      However, there is a \ref simplify function which allows
+      However, there is a \ref sym::simplify function which allows
       rearrangement and run-time calculations (such as combination of
       compile-time and run-time constants) to simplify expressions. For
       example:

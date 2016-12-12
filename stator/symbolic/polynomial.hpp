@@ -1,4 +1,4 @@
-/*! @file */
+/*! \file polynomial.hpp */
 /*
   Copyright (C) 2015 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
@@ -182,14 +182,14 @@ namespace sym {
   template<class Coeff_t, size_t Order, class Var1, class Var2, class ...VarArgs,
 	     typename = typename enable_if_var_in<Var2, Var1>::type>
   Polynomial<Order, Coeff_t, Var<VarArgs...> >
-  substitution(const Polynomial<Order, Coeff_t, Var1>& f, const VarSub<Var2, Var<VarArgs...> >& x_container)
+  sub(const Polynomial<Order, Coeff_t, Var1>& f, const VarSub<Var2, Var<VarArgs...> >& x_container)
   { return Polynomial<Order, Coeff_t, Var<VarArgs...> >(f.begin(), f.end()); }
 
   /*! \brief Optimised Polynomial substitution for Null
       insertions. */
   template<size_t Order, class Coeff_t, class PolyVar, class SubVar,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
-  Coeff_t substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Null>&)
+  Coeff_t sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Null>&)
   { return f[0]; }
 
   /*! \brief Numerically Evaluates a Polynomial expression at a
@@ -202,12 +202,12 @@ namespace sym {
     Sturm chains.
   */
   template<class Coeff_t, size_t Order, class PolyVar, class SubVar, class Coeff_t2,
-	     typename = typename std::enable_if<(std::is_arithmetic<Coeff_t2>::value
+	   typename = typename std::enable_if<(std::is_arithmetic<Coeff_t2>::value
                                                && !std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value
                                                && !std::is_base_of<Eigen::EigenBase<Coeff_t2>, Coeff_t2>::value)>::type,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
   decltype(store(Coeff_t() * Coeff_t2()))
-  substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Coeff_t2>& x_container)
+  sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Coeff_t2>& x_container)
   {
     //Handle the case where this is actually a constant and not a
     //Polynomial. This is free to evaluate now as Order is a
@@ -286,7 +286,7 @@ namespace sym {
                                               || (std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value && std::is_arithmetic<Coeff_t2>::value)
                                               >::type,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
-    auto substitution(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Coeff_t2>& x_container)
+    auto sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const VarSub<SubVar, Coeff_t2>& x_container)
    -> STATOR_AUTORETURN(detail::PolySubWorker<Order>::eval(f, x_container._val))
 
   /*! \brief Fast evaluation of multiple derivatives of a
@@ -370,7 +370,7 @@ namespace sym {
     return RetType(q, change_order<Order2 - 1>(r));
   }
 
-  /*!  \cond Specializations
+  /*!
     \brief Specialisation for division by a constant.
    */
   template<size_t Order1, class Coeff_t, class PolyVar1, class PolyVar2,
@@ -386,8 +386,6 @@ namespace sym {
 
     return RetType(expand(f * (1.0 / g[0])), RType{empty_sum(Coeff_t())});
   }
-
-  /*! \endcond */
 
   /*! \} */
 
@@ -422,8 +420,6 @@ namespace sym {
 	     typename = typename std::enable_if<(N==0) || (!variable_in<PolyVar, Var<VarArgs...> >::value)>::type>
   Null derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Var<VarArgs...>) 
   { return Null(); }
-
-  /*! \endcond \} */
 
   namespace detail {
     template<class T>
@@ -728,7 +724,7 @@ namespace sym {
     the same time and only actually accept whichever has the lowest 
     catastrophic cancellation accuracy in terms of bits.
 
-    \param f The Polynomial to factor a root out of.
+    \param a The Polynomial to factor a root out of.
     \param root The root to remove.
   */
   template<size_t Order, class Coeff_t, class PolyVar>
@@ -771,8 +767,9 @@ namespace sym {
     return b;
   }
   
-  /*!  \cond Specializations
+  /*!
     \brief Specialisation for no roots of a 0th order Polynomial.
+
     \param f The Polynomial to evaluate.
   */
   template<class PolyVar>
@@ -871,9 +868,9 @@ namespace sym {
   /*! \brief Calculate the real roots of a 3rd order Polynomial
       using radicals.
     
-	Roots are always returned sorted lowest-first.
-
-    \param f The Polynomial to evaluate.
+      Roots are always returned sorted lowest-first.
+      
+      \param f_original The Polynomial to evaluate.
   */
   template<class PolyVar>
   inline StackVector<double, 3> solve_real_roots(const Polynomial<3, double, PolyVar>& f_original) {
@@ -1023,7 +1020,6 @@ namespace sym {
     std::sort(roots.begin(), roots.end());
     return roots;
   }
-  /*! \endcond */
 
   namespace detail {
     /*! \brief Calculates the negative of the remainder of the
@@ -1102,7 +1098,7 @@ namespace sym {
 	 */
 	template<class Coeff_t2>
 	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
-	  const Coeff_t currentx = substitution(_p_n, Var<PolyVar>() == x);
+	  const Coeff_t currentx = sub(_p_n, Var<PolyVar>() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 
@@ -1149,7 +1145,7 @@ namespace sym {
 
 	template<class Coeff_t2>
 	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
-	  const Coeff_t currentx = substitution(_p_n, Var<PolyVar>() == x);
+	  const Coeff_t currentx = sub(_p_n, Var<PolyVar>() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 	  return sign_change;
@@ -1353,8 +1349,7 @@ namespace sym {
     return 1.0 / LMQ_upper_bound(Polynomial<Order, Coeff_t, PolyVar>(f.rbegin(), f.rend()));
   }
 
-  /*! \cond Specializations
-
+  /*!
     \brief Specialisation of Local-max Quadratic upper-bound
     estimation for real roots of a Polynomial, where the Polynomial
     is a constant.
@@ -1434,8 +1429,6 @@ namespace sym {
 	return retval;
     }
   }
-
-  /*! \endcond */
 
   /*! \brief Calculate bounds on all of the positive real roots of a
       Polynomial.
@@ -1594,7 +1587,7 @@ namespace sym {
 	  continue; //Start again
 	}
 
-	if (std::abs(substitution(f, Var<PolyVar>() == 1.0)) <= (100 * precision(f, 1.0))) {
+	if (std::abs(sub(f, Var<PolyVar>() == 1.0)) <= (100 * precision(f, 1.0))) {
 	  //There is probably a root near x=1.0 as its approached zero
 	  //closely (compared to the precision of the polynomial
 	  //evaluation). Rather than trying to divide it out or do
@@ -1642,8 +1635,6 @@ namespace sym {
     return StackVector<std::pair<Coeff_t,Coeff_t>, 1>();
   }
 
-  /*! \endcond */
-  
   /*! \brief Calculate bounds on all of the positive real roots of a
       Polynomial.
   
@@ -1674,15 +1665,15 @@ namespace sym {
     return bounds;
   }
   
-  /*! \brief Enumeration of the types of root bounding methods we
-      have for \ref solve_real_roots. 
+  /*! \brief Enumeration of the types of root bounding methods we have
+      for solve_real_roots.
   */
-  enum class  PolyRootBounder {
+  enum class PolyRootBounder {
     VCA, VAS, STURM
   };
 
   /*! \brief Enumeration of the types of bisection routines we have
-      for \ref solve_real_roots. */
+    for solve_real_roots . */
   enum class  PolyRootBisector {
     BISECTION, TOMS748
   };
@@ -1816,7 +1807,7 @@ namespace sym {
 	  if (try_toms748){
 	    try {
 	      boost::uintmax_t iter = 100;
-	      auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return substitution(f, PolyVar() == x); }, xmin, xmid, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
+	      auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return sub(f, PolyVar() == x); }, xmin, xmid, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
 	      retval.push_back((root.first + root.second) / 2);
 	    } catch(...) {
 	      regions.push_back(std::make_tuple(xmin, xmid, rootsa));
@@ -1832,7 +1823,7 @@ namespace sym {
 	  if (try_toms748){
 	    try {
 	      boost::uintmax_t iter = 100;
-	      auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return substitution(f, PolyVar() == x); }, xmid, xmax, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
+	      auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return sub(f, PolyVar() == x); }, xmid, xmax, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
 	      retval.push_back((root.first + root.second) / 2);
 	    } catch(...) {
 	      regions.push_back(std::make_tuple(xmid, xmax, rootsb));
@@ -1874,14 +1865,14 @@ namespace sym {
 	case PolyRootBisector::BISECTION: 
 	  {
 	    boost::uintmax_t iter = 100;
-	    auto root = boost::math::tools::bisect([&](Coeff_t x) { return substitution(f, PolyVar() == x); }, a, b, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
+	    auto root = boost::math::tools::bisect([&](Coeff_t x) { return sub(f, PolyVar() == x); }, a, b, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
 	    retval.push_back((root.first + root.second) / 2);
 	    break;
 	  }
 	case PolyRootBisector::TOMS748: 
 	  {
 	    boost::uintmax_t iter = 100;
-	    auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return substitution(f, PolyVar() == x); }, a, b, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
+	    auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return sub(f, PolyVar() == x); }, a, b, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
 	    retval.push_back((root.first + root.second) / 2);
 	    break;
 	  }
@@ -1925,5 +1916,4 @@ namespace sym {
     std::sort(roots.begin(), roots.end());
     return roots;
   }
-  /*! \endcond \} */
 } // namespace sym

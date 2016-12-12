@@ -34,7 +34,10 @@ namespace stator {
       time.
 
       \tparam T The stored data type.
+
       \tparam Nmax The maximum number of elements to be stored in the container.
+
+      
     */
     template<class T, size_t Nmax>
     class StackVector: public std::array<T, Nmax> {
@@ -44,7 +47,7 @@ namespace stator {
       /*! \brief Copy constructor which allows construction from
           smaller StackVector types. */
       template<size_t Nmax2,
-               typename = typename std::enable_if<Nmax2 <= Nmax>::type>
+               typename = typename std::enable_if<(Nmax2 <= Nmax)>::type>
       StackVector(const StackVector<T, Nmax2>& vec):
         _size(vec.size())
       { std::copy(vec.begin(), vec.end(), Base::begin()); }

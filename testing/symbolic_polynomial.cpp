@@ -185,8 +185,8 @@ BOOST_AUTO_TEST_CASE( poly_multiplication )
   static_assert(std::is_same<decltype(Null() * Polynomial<2>{1,2,3}), Null>::value, "Null multiply is not cancelling the polynomial");
   static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Null()), Null>::value, "Null multiply is not cancelling the polynomial");
   
-  CHECK_TYPE(simplify(Unity() * Polynomial<2>{1,2,3}), Polynomial<2>);
-  CHECK_TYPE(simplify(Polynomial<2>{1,2,3} * Unity()), Polynomial<2>);
+  CHECK_TYPE((Unity() * Polynomial<2>{1,2,3}), const Polynomial<2>&);
+  CHECK_TYPE((Polynomial<2>{1,2,3} * Unity()), const Polynomial<2>&);
 }
 
 BOOST_AUTO_TEST_CASE( poly_division )

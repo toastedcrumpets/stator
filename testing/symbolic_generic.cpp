@@ -117,10 +117,10 @@ BOOST_AUTO_TEST_CASE( Unity_tests )
   //Check simplification of multiplication with Unity
   BOOST_CHECK(compare_expression(Unity() * Unity(), Unity()));
   BOOST_CHECK(compare_expression(Unity() * 2, 2));
-  BOOST_CHECK(compare_expression(simplify<>(Unity() * x), x));
+  BOOST_CHECK(compare_expression(Unity() * x, x));
 
   BOOST_CHECK(compare_expression(2 * Unity(), 2));
-  BOOST_CHECK(compare_expression(simplify<>(x * Unity() * x), simplify(x * x)));
+  BOOST_CHECK(compare_expression(x * Unity() * x, x * x));
 }
 
 BOOST_AUTO_TEST_CASE( Substitution_of_variables )
@@ -202,12 +202,12 @@ BOOST_AUTO_TEST_CASE( Var_tests )
   BOOST_CHECK(compare_expression(substitution(y, x == 3.14159265), "y"));
 
   //Check that Var derivatives are correct
-  BOOST_CHECK(compare_expression(simplify(derivative(sin(x), Var<>())), cos(x)));
+  BOOST_CHECK(compare_expression(derivative(sin(x), Var<>()), cos(x)));
 
   //Check derivatives of Unity
   BOOST_CHECK(compare_expression(derivative(Unity(), Var<>()), Null()));
   BOOST_CHECK(compare_expression(derivative(x, Var<>()), Unity()));
-  BOOST_CHECK(compare_expression(simplify(derivative(x * sin(x), Var<>())), sin(x) + x * cos(x)));
+  BOOST_CHECK(compare_expression(derivative(x * sin(x), Var<>()), sin(x) + x * cos(x)));
 }
 
 BOOST_AUTO_TEST_CASE( reorder_operations )
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE( reorder_operations )
   //types when the derivative is taken, causing their terms to be
   //eliminated.
   BOOST_CHECK(compare_expression(simplify(derivative(C<2>() * cos(x), Var<>())), C<-2>() * sin(x)));
-  BOOST_CHECK(compare_expression(simplify(derivative(2 * sin(x), Var<>())), 2 * cos(x)));
+  BOOST_CHECK(compare_expression(derivative(2 * sin(x), Var<>()), 2 * cos(x)));
 }
 
 BOOST_AUTO_TEST_CASE( Factorial_test )
@@ -294,12 +294,12 @@ BOOST_AUTO_TEST_CASE( symbolic_abs_arbsign )
 
   BOOST_CHECK(compare_expression(abs(x), "|x|"));
   BOOST_CHECK_EQUAL(substitution(abs(x*x - 5*x), x==2), 6);
-  BOOST_CHECK_EQUAL(C<6/-2>::num, -3);
+  BOOST_CHECK_EQUAL(C<6/-2>::num, -3);  
   BOOST_CHECK_EQUAL(C<-8/-4>::num, 2);
   BOOST_CHECK(compare_expression(abs(Unity()), Unity()));
   BOOST_CHECK(compare_expression(abs(Null()), Null()));
   BOOST_CHECK(compare_expression(abs(Null()), Null()));
-  BOOST_CHECK(compare_expression(simplify(derivative(arbsign(x), x)), arbsign(Unity())));
+  BOOST_CHECK(compare_expression(derivative(arbsign(x), x), arbsign(Unity())));
   BOOST_CHECK(compare_expression(derivative(arbsign(x), Var<vidx<'y'>>()), Null()));
 
   BOOST_CHECK(compare_expression(simplify(x * arbsign(x)), arbsign(pow(x, C<2>()))));

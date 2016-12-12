@@ -119,6 +119,7 @@ namespace sym {
   constexpr bool operator==(const C<n1, d1>&, const C<n2, d2>&)
   { return std::ratio_equal<std::ratio<n1, d1>, std::ratio<n2, d2> >::value; }
 
+
   
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
   T operator+(const T& l, Null) { return l; }
@@ -133,6 +134,10 @@ namespace sym {
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
   Null operator*(Null, const T&) { return Null(); }
   
+  template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
+  auto operator*(const T& a, Unity) -> STATOR_AUTORETURN(a);
+  template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
+  auto operator*(Unity, const T& a) -> STATOR_AUTORETURN(a);
   
   /*! \brief Symbolic Inverse factorial function.
    

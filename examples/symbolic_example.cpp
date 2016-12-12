@@ -23,20 +23,24 @@
 */
 
 #include <stator/symbolic/symbolic.hpp>
+#include <iostream>
 
 int main(int argc, char **argv) {
-  using namespace stator::symbolic;
+  using namespace sym;
 
-  //We can define whole number constants, but note the value is actually the type:
-  C<0> zero;
-  C<1> one;
+  //Constants, but note the value is
+  //actually the type:
+  C<1, 2> half;
   C<2> two;
+  auto three = half + half + two;
+  //three is of type "C<3>"
+  
   //Fractional constants are possible as well as C inherits from std::ratio
   C<1, 4> quarter;
-  Variable<0> var0;
-  Variable<2> var2;
-  Variable<'x'> x;
-  Variable<'y'> y;
+  Var<0> var0;
+  Var<2> var2;
+  Var<'x'> x;
+  Var<'y'> y;
   assert((std::is_same<decltype(sin(x) * C<0>()), C<0> >::value));
   assert((std::is_same<decltype(C<1>() * Variable<'x'>()), Variable<'x'> >::value));
   auto f = x * x * (1.5 + 2 * x) - 3 * x;

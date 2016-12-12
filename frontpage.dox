@@ -1,9 +1,9 @@
 /*! 
   \mainpage stator API documentation
 
-  stator is a header-only C++11 library. It builds upon the Eigen
-  library (http://eigen.tuxfamily.org/), and to use it you must have
-  both added to your include path:
+  stator is a header-only C++11 library. In many places it builds upon
+  the Eigen 3 library (http://eigen.tuxfamily.org/), so to use it you
+  must have both added to your compiler include path. For example, on linux
   
   \code{.unparsed}
   g++ -I /path/to/stator/folder -I /path/to/Eigen/folder
@@ -13,17 +13,19 @@
   interesting mathematical capability. For more information have a
   look at the documentation for each namespace:
 
-  - stator::symbolic: Math library (\ref symbolic_guide "guide here")
+  - stator::sym: Symbolic math library (\ref symbolic_guide "guide here")
   
 */
 
 namespace stator {
-  namespace symbolic {
+  namespace sym {
     /*!
-      \page symbolic_guide Guide to stator::symbolic
+      \page symbolic_guide Guide to stator::sym
+
+      \brief A short introduction to the compile-time symbolic algebra library.
 
       This guide demonstrates the stator::symbolic library through
-      example usage. The exmaple is available in the source file
+      example usage. The example is available in the source file
       symbolic_example.cpp in the examples folder.
 
       First, we include the stator::symbolic library header and access
@@ -155,7 +157,7 @@ namespace stator {
 
   Although the \ref stator namespace is used for shared functionality
   (e.g., \ref stator::Exception), most of the code is implemented
-  under the namespaces \ref stator::symbolic, \ref stator::geometry,
+  under the namespaces \ref stator::sym, \ref stator::geometry,
   and \ref stator::orphan.  
 */ namespace stator {
    
@@ -195,7 +197,7 @@ namespace stator {
      } // namespace orphan
 
   
-     /*! \namespace stator::symbolic
+     /*! \namespace stator::sym
        \brief The stator symbolic math library.
     
        This namespace encapsulates the symbolic math functionality of
@@ -203,13 +205,13 @@ namespace stator {
        on mathematical expressions, as well as perform run-time
        calculations, such as root finding on polynomials.    
      */
-     namespace symbolic {
+     namespace sym {
   
        /*! \brief Performs a symbolic derivative on the expression.
         */
        template<typename Expression>
        auto derivative(const Expression&);
   
-     } // namespace symbolic
+     } // namespace sym
 
 } // namespace stator

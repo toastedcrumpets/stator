@@ -22,22 +22,23 @@
   along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stator/symbolic/symbolic.hpp>
 #include <iostream>
+#include <stator/symbolic/symbolic.hpp>
 
 int main(int argc, char **argv) {
   using namespace sym;
-
-  //Sym extends std::ratio into its own constant class, C.
+  //C is a compile time constant class (based on std::ratio).
   C<1, 2> half;
   C<2> two;
-  //This supports standard arithmetic operators
+  
+  //Beyond std::ratio, this class supports standard arithmetic operators, i.e.,
   auto three = half + half + two;
-  //three is of type "C<3>", which is computed at compile time.
-  assert((std::is_same<decltype(three), C<3> >::value));
+
+  //The variable three is of type "C<3>", thus it must be computed at compile time.
+  assert((std::is_same<decltype(three), C<3> >::value)); //does not fail
+  
   std::cout << three << std::endl;
-  //Output: ©3
-  // The copyright symbol is used to indicate its a compile time constant.
+  //Output: C<3>()
   
   //The default variable is the letter x
   Var<> x;

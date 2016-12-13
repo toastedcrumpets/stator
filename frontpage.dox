@@ -39,30 +39,28 @@ namespace stator {
     /*!
       \page symbolic_guide Guide to stator::sym
 
-      \brief A short introduction to the compile-time symbolic algebra library.
-
+      \brief This is a short introduction to the compile-time symbolic algebra library.
+      
       This guide demonstrates the stator::symbolic library through
       example usage. The example is available in the source file
       symbolic_example.cpp in the examples folder.
 
-      First, we include the stator::symbolic library header and access
-      the symbolic namespace for convenience:
+      First, we include the stator::sym library header file and bring
+      the sym namespace into scope for convenience:
     
       \dontinclude symbolic_example.cpp
-      \skipline #include
+      \skipline #include <stator
       \until using
       
-      You will only need to ensure you enable C++11 support and add
-      the stator (and Eigen) include paths to your compiler.
-
       \section sym_guide_const_var Constants and Variables
 
       The power of this library is in the ability of the compiler to
       simplify and analyse mathematical expressions. To enable this,
-      mathematical expressions must be encoded as a type. The first
-      type is the compile time constants:
+      mathematical expressions must be encoded as a type. One of the
+      most important type encodings is the rational constants type,
+      \ref sym::C.
    
-      \until quarter
+      \until //Output:
     
       You may have a large number of different variables too, and these
       are identified by a number in their type:

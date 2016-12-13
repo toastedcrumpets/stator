@@ -52,20 +52,20 @@ namespace sym {
     struct Sine {
       static constexpr const char* _str_left = "sin(";
       static constexpr const char* _str_right = ")";
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sym::sin(a));
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sin(a));
     };
 
     struct Cosine {
       static constexpr const char* _str_left = "cos(";
       static constexpr const char* _str_right = ")";
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sym::cos(a));
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(cos(a));
     };
 
     struct Absolute {
       static constexpr const char* _str_left = "|";
       static constexpr const char* _str_right = "|";
 
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sym::abs(a));
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(abs(a));
     };
 
     struct Arbsign {

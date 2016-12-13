@@ -39,13 +39,21 @@ namespace sym {
   ////////////////////// Simplify configuration //////////////
   namespace detail {
     struct expand_to_Polynomial_ID;
+    struct expand_Constants_ID;
+    struct expand_Constants_to_ID;
   };
 
   struct expand_to_Polynomial : stator::orphan::basic_conf_t<detail::expand_to_Polynomial_ID> {};
 
+  struct expand_Constants : stator::orphan::basic_conf_t<detail::expand_Constants_ID> {};
+  template<typename T>
+  struct expand_Constants_to : stator::orphan::type_conf_t<detail::expand_Constants_to_ID, T> {};
+  
   template <typename ...Args>
   struct SimplifyConfig {
     static constexpr const auto expand_to_Polynomial = stator::orphan::is_present<sym::expand_to_Polynomial, Args...>::value;
+    static constexpr const auto expand_Constants = stator::orphan::is_present<sym::expand_Constants, Args...>::value;
+    using expand_Constants_to_t = typename stator::orphan::get_type<sym::expand_Constants_to<double>, Args...>::value;
   };
 
   using DefaultSimplifyConfig = SimplifyConfig<>;
@@ -77,7 +85,9 @@ namespace sym {
     return detail::try_simplify_imp<Config>(a, detail::select_overload{});
   }
 
-  typedef SimplifyConfig<expand_to_Polynomial> ExpandConfig;
+  typedef SimplifyConfig<expand_to_Polynomial,
+			 expand_Constants
+			 > ExpandConfig;
   
   /*! \brief A variant of simplify that expands into Polynomial
       types aggressively.
@@ -91,6 +101,20 @@ namespace sym {
   template<class T> auto try_expand(const T& a)
     -> STATOR_AUTORETURN(try_simplify<ExpandConfig>(a));
   
+  typedef SimplifyConfig<expand_Constants> NConfig;
+
+  /*! \brief A variant of simplify that converts compile time symbols
+      into numbers.
+   */
+  template<class T> auto N(const T& a)
+    -> STATOR_AUTORETURN(simplify<NConfig>(a));
+
+  /*! \brief A variant of try_simplify that converts compile time
+      symbols into numbers.
+   */
+  template<class T> auto try_N(const T& a)
+    -> STATOR_AUTORETURN(try_simplify<NConfig>(a));
+
   /////////////////// BINARY OPERATORS /////////////////////////////
   // 
   // Here we perform different simplifications with different
@@ -293,6 +317,10 @@ namespace sym {
   template<std::intmax_t n1, std::intmax_t d1, 
   	     typename = typename std::enable_if<n1 % d1>::type>
   double toArithmetic(C<n1,d1> val) { return double(n1) / double(d1); }
+
+  template<class Config, std::intmax_t num, std::intmax_t den,
+	   typename = typename std::enable_if<Config::expand_Constants>::type>
+  auto simplify(const C<num, den>& f) -> STATOR_AUTORETURN(typename Config::expand_Constants_to_t(num)/typename Config::expand_Constants_to_t(den));
 
   /*! \brief Simplification of a Polynomial operating with a
     constant RHS. */

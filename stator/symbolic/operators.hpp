@@ -146,7 +146,7 @@ namespace sym {
       static constexpr const char* _str = "^";
       typedef Unity right_identity;
       typedef Unity left_zero;
-      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(sym::pow(l, r));
+      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(pow(l, r));
     };
   }
 

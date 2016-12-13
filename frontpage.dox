@@ -1,5 +1,22 @@
 /*! 
-  \mainpage stator API documentation
+  \mainpage Stator Documentation
+  
+  \section frontpage_about About the stator library
+
+  The stator library is a compile-time heap-allocated symbolic math
+  library. This means it is really, really, fast (zero overhead, or
+  even less thanks to cancellation!) but it lacks the generality of a
+  full CAS (Computer Algebra Systems).
+
+  A fancy motivational example.
+
+  \dontinclude symbolic_example.cpp
+  \skip //Fancy
+  \until }
+
+  See the \ref symbolic_guide "guide to the symbolic library" for more.
+
+  \section frontpage_usage Using the stator library
 
   stator is a header-only C++11 library. In many places it builds upon
   the Eigen 3 library (http://eigen.tuxfamily.org/), so to use it you

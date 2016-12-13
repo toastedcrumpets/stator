@@ -44,15 +44,16 @@ namespace sym {
     using stator::detail::last_choice;
     using stator::detail::select_overload;
   } // namespace detail
+
+  /*! \brief A type trait to denote symbolic terms (i.e., one that
+      is not yet immediately evaluable to a "normal" type)*/
+  struct SymbolicOperator {};
 }
 
 #include "stator/symbolic/constants.hpp"
 #include "stator/orphan/template_config.hpp"
 
 namespace sym {
-  /*! \brief A type trait to denote symbolic terms (i.e., one that
-      is not yet immediately evaluable to a "normal" type)*/
-  struct SymbolicOperator {};
   
   template<class T>
   struct IsSymbolic {
@@ -129,13 +130,13 @@ namespace sym {
     constructors create the empty sum.
   */
   template<class T, typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-  C<0> empty_sum(const T&) { return {}; }
+  T empty_sum(const T&) { return T(); }
 
   template<class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
-  T empty_sum(const T&) { return T::Zero(); }
+  auto empty_sum(const T&) -> STATOR_AUTORETURN(T::Zero());
 
   template<class T>
-  T empty_sum(const std::complex<T>&) { return {}; }
+  T empty_sum(const std::complex<T>&) { return T(); }
   
   /*! \brief Default implementation of substitution of a symbolic
     expression at a given point.

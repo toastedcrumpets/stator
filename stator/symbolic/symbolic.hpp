@@ -35,14 +35,6 @@
 #include <ratio>
 #include <type_traits>
 
-
-//Stator generates very large type names which scares the MSVC
-//compiler. Disable their warning, which appears to be harmless but
-//produces enormous amounts of compiler warnings
-#ifdef _MSC_VER
-# pragma warning(disable:4503)
-#endif
-
 /*! \namespace sym
   \brief The stator symbolic math library.
 

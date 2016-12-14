@@ -20,6 +20,8 @@ if(MSVC)
   #which conflict with the C++ standard algorithms! This define
   #instructs the compiler to not be an idiot and define those macros
   add_definitions(-DNOMINMAX)
+  #MSVC is scared of long type names (sigh). Disable the warning.
+  add_definitions("/wd4503")
 else()
   add_compile_options(-Wall)
 endif()

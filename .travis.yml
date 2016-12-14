@@ -2,6 +2,10 @@ sudo: required
 language: cpp
 dist: trusty
 
+env:
+  global:
+    - secure: "UdXXAimS2mcA0/+nijyAlbUfJkCedYG47GlzKuruep05j9ZK5ejCdVCGRtknUzYBC5Ykx984Uo0DZZTLJJTf0+kUd1ara3PnrCsiJTU6iQKrVFwNbDVeIwgSTOPqj9JYZGlM/1C2sgaGI/YoY7hwEjy603gRAYsWth+HG04SzQChuqqxuNJDlvf0AzSsvJOvLQ/bKmqXfkm0sCXelrNSPv3HpUqH1bwmlzArg08G0pjCI5tZuJdcRmRUg8PtIoUmPboEIhuahYQvf5qCvFSPZEKRSHBEO5aJO2HTAwV6Y+2KfKtoySZZZ0HcncKa+KYT7mvcXwSajUHfEuaF6PPFiYPEn0DWSUIcPQjmil/tahormCKoEA/4AihivTvjVY5sv3nMOEFIVUqFj35fPKoUL6JvEcSiOZ6glvM9t/O6//w00n5d7JifGV0IvGy3ARZHKgqmsaIecaA2jVO3BvUZrnDJKVtErZ2Nbex58aMwf/l61dyhrO/9xAsZYgOba+WTpp/HCSwgcUlEjONCGWKiasCHTrncw8QUoE3ZtpFeaYAIhBk6ZfERwXIJ+I+P2oDE7aPRxHZAm6/CVoFTG7ItlYDiiSxAfuKczQ3LuhkH3KIcZiWCgxc5okhuGmpB7dHRgUzSo+Avc2muWVK6fU6sU9S0GfOHHJXOmnmNGrkObHs="
+
 matrix:
   fast_finish: true
   allow_failures:
@@ -30,38 +34,43 @@ matrix:
         - COMPILER_PACKAGE=g++-6
     - compiler: clang
       os: linux
-      compiler: clang
       env:
         - COMPILER=clang++-3.5
         - COMPILER_PACKAGE=clang-3.5
     - compiler: clang
       os: linux
-      compiler: clang
       env:
         - COMPILER=clang++-3.6
         - COMPILER_PACKAGE=clang-3.6
     - compiler: clang
       os: linux
-      compiler: clang
       env:
         - COMPILER=clang++-3.8
         - COMPILER_PACKAGE=clang-3.8
+    - compiler: icc
+      os: linux
+      env:
+        - COMPILER=icpc
+        - COMPILER_PACKAGE=""
     - os: osx
       compiler: clang
       env:
         - COMPILER=clang++
         - COMPILER_PACKAGE=clang
 
+before_install:
+  - "if [ $COMPILER = 'icpc' ] wget -q -O /dev/stdout 'https://raw.githubusercontent.com/nemequ/icc-travis/master/install-icc.sh' | /bin/sh"
+
 install:
   - "export CXX=$COMPILER"
   - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; fi"
   - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get update -q; fi"
-  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get install -y --force-yes libboost-all-dev cmake cmake-data; fi"
-  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get install -y --force-yes $COMPILER_PACKAGE; fi"
+  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get install -y --force-yes libboost-all-dev cmake cmake-data $COMPILER_PACKAGE; fi"
   - "git submodule init"
   - "git submodule update"
 
 script:
+  - "source ~/.bashrc"
   - "mkdir build"
   - "cd build"
   - "if [ $TRAVIS_OS_NAME = 'osx' ]; then cmake .. -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_OSX_ARCHITECTURES=x86_64; fi"
@@ -69,3 +78,6 @@ script:
   - "cmake --build . --config ${CONFIG}"
   - "CTEST_OUTPUT_ON_FAILURE=1 ctest --build-config ${CONFIG}"
   - "cd .."
+
+after_script:
+  - '[[ ! -z "${INTEL_INSTALL_PATH}" ]] && uninstall_intel_software'

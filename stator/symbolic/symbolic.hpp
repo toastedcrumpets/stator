@@ -133,7 +133,7 @@ namespace sym {
   T empty_sum(const T&) { return T(); }
 
   template<class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
-  auto empty_sum(const T&) -> STATOR_AUTORETURN(T::Zero());
+  auto empty_sum(const T&) -> STATOR_AUTORETURN_BYVALUE(T::Zero());
 
   template<class T>
   T empty_sum(const std::complex<T>&) { return T(); }

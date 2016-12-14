@@ -344,8 +344,8 @@ namespace sym {
   /*!\brief Addition operator for two Polynomial types. 
    */
   template<class Config = DefaultSimplifyConfig, class Real1, size_t N, class Real2, size_t M, class PolyVar1, class PolyVar2, class Op,
-	     typename = typename std::enable_if<std::is_same<Op,detail::Add>::value || std::is_same<Op,detail::Subtract>::value>::type,
-	     typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>
+	   typename = typename std::enable_if<std::is_same<Op,detail::Add>::value || std::is_same<Op,detail::Subtract>::value>::type,
+	   typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>
     auto simplify(const BinaryOp<Polynomial<N, Real1, PolyVar1>, Op, Polynomial<M, Real2, PolyVar2>> & f)
     -> Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0],f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type>
   {

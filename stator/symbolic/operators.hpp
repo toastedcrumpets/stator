@@ -26,8 +26,8 @@ namespace sym {
    */
   template<class LHS, typename Op, class RHS>
   struct BinaryOp: BinaryOpBase, SymbolicOperator {
-    LHS _l;
-    RHS _r;
+    const LHS _l;
+    const RHS _r;
     BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
   };
   

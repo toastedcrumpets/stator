@@ -161,7 +161,7 @@ namespace sym {
   */
   template<size_t Order, class Coeff_t, class PolyVar>
   constexpr Polynomial<Order, Coeff_t, PolyVar> empty_sum(const Polynomial<Order, Coeff_t, PolyVar>&)
-  { return Polynomial<Order, Coeff_t, PolyVar>{}; }
+  { return Polynomial<Order, Coeff_t, PolyVar>(); }
 
   /*! \} */
   
@@ -529,7 +529,6 @@ namespace sym {
     if (t == 0) return f;
 
     Polynomial<Order, double, PolyVar> retval;
-    retval.fill(empty_sum(Coeff_t()));
     retval[0] = f[Order];
     for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)
@@ -548,7 +547,6 @@ namespace sym {
   template<size_t Order, class Coeff_t, class PolyVar>
   inline Polynomial<Order, Coeff_t, PolyVar> shift_function(const Polynomial<Order, Coeff_t, PolyVar>& f, Unity) {
     Polynomial<Order, Coeff_t, PolyVar> retval;
-    retval.fill(empty_sum(Coeff_t()));
     retval[0] = f[Order];
     for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)
@@ -599,7 +597,6 @@ namespace sym {
   template<size_t Order, class Coeff_t, class PolyVar>
   inline Polynomial<Order, Coeff_t, PolyVar> invert_taylor_shift(const Polynomial<Order, Coeff_t, PolyVar>& f) {
     Polynomial<Order, Coeff_t, PolyVar> retval;
-    retval.fill(empty_sum(Coeff_t()));
     retval[0] = f[0];
     for (size_t i(Order); i>0; i--) {
 	for (size_t j = Order-(i-1); j>0; j--)

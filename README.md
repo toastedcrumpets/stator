@@ -1,13 +1,9 @@
-# Namespaces
+Stator is a C++11 math library which uses template metaprogramming to
+build a Computer Algebra System.
 
-* **geometry**
-  Classes for geometric objects, and methods for calculating overlap and intersection between them.
-* **symbolic**:
-  A compile-time mathematics library. This allows symbolic operations (differentiation, Taylor expansion etc.) via the compiler
+Aside from the math, it has some tools for application in
+event-driven dynamics/ray-tracing/collision-detection.
 
-* **collision**:
-  Overlap functions, time to collision, contact points
+For full details, see the Documentation:
 
-*  **orphan**:
-  Morton numbers, Double precision math, dilation, static list
-
+https://toastedcrumpets.github.io/stator

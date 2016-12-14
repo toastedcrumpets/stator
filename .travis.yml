@@ -59,7 +59,7 @@ matrix:
         - COMPILER_PACKAGE=clang
 
 before_install:
-  - "if [ $COMPILER = 'icpc' ] wget -q -O /dev/stdout 'https://raw.githubusercontent.com/nemequ/icc-travis/master/install-icc.sh' | /bin/sh"
+  - "if [ $COMPILER = 'icpc' ]; then wget -q -O /dev/stdout 'https://raw.githubusercontent.com/nemequ/icc-travis/master/install-icc.sh' | /bin/sh; fi"
 
 install:
   - "export CXX=$COMPILER"

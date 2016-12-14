@@ -1,0 +1,6 @@
+var searchData=
+[
+  ['linbairstowsolve',['LinBairstowSolve',['../classsym_1_1Polynomial.html#a72d57e4dcc33f7054fdb99275604cc6c',1,'sym::Polynomial::LinBairstowSolve(Polynomial&lt; Order, Coeff_t, PolyVar1 &gt; f, Coeff_t tolerance, Polynomial&lt; 2, Coeff_t, PolyVar2 &gt; guess={0, 0, 1})'],['../classsym_1_1Polynomial.html#a74ebbc2c3139ee7ffa45130d46930ab8',1,'sym::Polynomial::LinBairstowSolve(Polynomial&lt; Order, Coeff_t, PolyVar1 &gt; f, Coeff_t tolerance, Polynomial&lt; 2, Coeff_t, PolyVar2 &gt; guess={0, 0, 1})']]],
+  ['lmq_5flower_5fbound',['LMQ_lower_bound',['../classsym_1_1Polynomial.html#a47d492c419fa0d08d445c2605018e965',1,'sym::Polynomial::LMQ_lower_bound(const Polynomial&lt; Order, Coeff_t, PolyVar &gt; &amp;f)'],['../classsym_1_1Polynomial.html#a3691f1507ab02a3f4c920ee35a3e022d',1,'sym::Polynomial::LMQ_lower_bound(const Polynomial&lt; 0, Coeff_t, PolyVar &gt; &amp;f)']]],
+  ['lmq_5fupper_5fbound',['LMQ_upper_bound',['../classsym_1_1Polynomial.html#a1307cda020be89404a405b88e59f9c40',1,'sym::Polynomial::LMQ_upper_bound(const Polynomial&lt; Order, Coeff_t, PolyVar &gt; &amp;f)'],['../classsym_1_1Polynomial.html#a2023beed7cb4750495c80f7efb167cf4',1,'sym::Polynomial::LMQ_upper_bound(const Polynomial&lt; 0, Coeff_t, PolyVar &gt; &amp;f)']]]
+];

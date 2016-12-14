@@ -1,0 +1,86 @@
+\form#0:$x$
+\form#1:$y+2$
+\form#2:$y=\pi$
+\form#3:$[-2^{63},+2^{63}-1]$
+\form#4:$k_B$
+\form#5:$\pi$
+\form#6:$N_A$
+\form#7:$R$
+\form#8:$e$
+\form#9:\[ \pi = \frac{47627751}{15160384} + 1.5987211554602254\ldots\times10^{-14} \]
+\form#10:$\mathrm{e}$
+\form#11:\[ \mathrm{e} = \frac{28245729}{10391023} + 8.8817841970012523\ldots\times10^{-16} \]
+\form#12:$f(x)=x^2 + 2\,x + 3$
+\form#13:$x=3$
+\form#14:$x=+\infty$
+\form#15:$-\infty$
+\form#16:$f(x)$
+\form#17:$g(x)$
+\form#18:$q(x)$
+\form#19:$r(x)$
+\form#20:\[ f(x) = g(x)\,q(x) + r(x) \]
+\form#21:$g(x)=(x-a)$
+\form#22:$a$
+\form#23:$g(x)=f(x+t)$
+\form#24:\[ f(x) = \sum_{i=0}^N a_i\,x^i \]
+\form#25:\[ g(x) = \sum_{i=0}^N b_i\,x^i \]
+\form#26:$t$
+\form#27:\[ g(x) = f(t+x) = \sum_{i=0}^N \frac{f^i(t)}{i!}x^i \]
+\form#28:$f^i(x)$
+\form#29:$i$
+\form#30:$N$
+\form#31:$f$
+\form#32:$g$
+\form#33:\[ b_i = \frac{f^i(t)}{i!} \]
+\form#34:$g(x)=f(x+1)$
+\form#35:$g(x)=(x+1)^{d} f\left(\frac{1}{x+1}\right)$
+\form#36:$p(x)$
+\form#37:\[ p(x) = \left(x+1\right)^d\,f\left(\frac{1}{x+1}\right) \]
+\form#38:$d$
+\form#39:$x\in[0,\,1]$
+\form#40:$x\in[\infty,\,0]$
+\form#41:\[ p_1(x) = x^d\,f\left(\frac{1}{x}\right) \]
+\form#42:\[ p_2(x) = p_1\left(x+1\right) \]
+\form#43:$g(x)=f\left(-x\right)$
+\form#44:$g(x)=f\left(a\,x\right)$
+\form#45:\[ \sum_{i=0}^N a_i\,x^i =(x - r_1)\sum_{i=0}^{N-1} b_i\, x^{i} \]
+\form#46:$r_1$
+\form#47:\[ b_i=\frac{b_{i-1} - a_i}{r_1}\qquad \textrm{for}\ i\in[1,\,N-1] \]
+\form#48:$b_0=-a_0 / r_1$
+\form#49:$b_{i-1}$
+\form#50:$a_i$
+\form#51:$i\to i+1$
+\form#52:\[ b_{i} = a_{i+1} + r_1\,b_{i+1} \qquad \textrm{for}\ i\in[0,\,N-2] \]
+\form#53:$b_{N-1}=a_N$
+\form#54:$a_{i+1}$
+\form#55:$r_1\,b_{i+1}$
+\form#56:$p_0(x)$
+\form#57:$p_1(x)$
+\form#58:$p_2(x)$
+\form#59:$\ldots$
+\form#60:$p_n(x)$
+\form#61:$n$
+\form#62:\begin{eqnarray*} p_0(x) &=& f(x)\\ p_1(x) &=& f'(x) \end{eqnarray*}
+\form#63:\begin{eqnarray*} p_n(x) &=& -\mathrm{rem}(p_{n-2}, p_{n-1}) \end{eqnarray*}
+\form#64:$\mathrm{rem}(p_{n+2},\,p_{n+1})$
+\form#65:$p_{n+2}$
+\form#66:$p_{n+1}$
+\form#67:$p_N$
+\form#68:$\xi$
+\form#69:\[ p_0(\xi),\,p_1(\xi),\,\ldots p_n(\xi) \]
+\form#70:$\sigma(\xi)$
+\form#71:$a<b$
+\form#72:$(a,b]$
+\form#73:$\sigma(a)-\sigma(b)$
+\form#74:$(-\infty,+\infty)$
+\form#75:$(0,\,1)$
+\form#76:$[0,1]$
+\form#77:$[0,\infty]$
+\form#78:$(a,\,b)$
+\form#79:$0$
+\form#80:$x=1$
+\form#81:$b$
+\form#82:\[ g(x) = x^n\,f(\frac{1}{x}) \]
+\form#83:$(0,1)$
+\form#84:\[ M(x) = \frac{a\,x+b}{c\,x+d} \]
+\form#85:$g(x)=f(x+a)$

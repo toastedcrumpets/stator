@@ -20,12 +20,14 @@
 #pragma once
 
 namespace sym {
-  struct BinaryOpBase {};
+  /*! \brief Base class for sym::BinaryOp.
+   */
+  struct BinaryOpBase : SymbolicOperator {};
   
   /*! \brief Symbolic representation of a binary symbolic operation. 
    */
   template<class LHS, typename Op, class RHS>
-  struct BinaryOp: BinaryOpBase, SymbolicOperator {
+  struct BinaryOp: BinaryOpBase {
     const LHS _l;
     const RHS _r;
     BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}

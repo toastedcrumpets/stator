@@ -1095,7 +1095,7 @@ namespace sym {
 	 */
 	template<class Coeff_t2>
 	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
-	  const Coeff_t currentx = sub(_p_n, Var<PolyVar>() == x);
+	  const Coeff_t currentx = sub(_p_n, PolyVar() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 
@@ -1142,7 +1142,7 @@ namespace sym {
 
 	template<class Coeff_t2>
 	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
-	  const Coeff_t currentx = sub(_p_n, Var<PolyVar>() == x);
+	  const Coeff_t currentx = sub(_p_n, PolyVar() == x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 	  return sign_change;
@@ -1462,17 +1462,17 @@ namespace sym {
       applied to a Polynomial.
 	
 	This class is used in the implementation of the
-	VAS_real_root_bounds_worker function. A mobius transformation is
+	sym::VAS_real_root_bounds_worker function. A mobius transformation is
 	the following function:
 	
-	\$
+	\f[
 	M(x) = \frac{a\,x+b}{c\,x+d}
-	\$
+	\f]
 
 	This allows a polynomial to be transformed and (provided the
 	Mobius transformation has the same operations applied to it)
-	we can map between the original polynomial x and the
-	transformed x.
+	we can map between the original polynomial \f$x\f$ and the
+	transformed \f$x\f$.
    */
   template<class Coeff_t>
   struct MobiusTransform: public std::array<Coeff_t, 4> {
@@ -1584,7 +1584,7 @@ namespace sym {
 	  continue; //Start again
 	}
 
-	if (std::abs(sub(f, Var<PolyVar>() == 1.0)) <= (100 * precision(f, 1.0))) {
+	if (std::abs(sub(f, PolyVar() == 1.0)) <= (100 * precision(f, 1.0))) {
 	  //There is probably a root near x=1.0 as its approached zero
 	  //closely (compared to the precision of the polynomial
 	  //evaluation). Rather than trying to divide it out or do

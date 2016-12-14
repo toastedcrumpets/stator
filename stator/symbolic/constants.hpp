@@ -59,10 +59,10 @@ namespace sym {
   /*! \brief Output operator for compile-time constant (\ref C types).*/
   template<std::intmax_t Num, std::intmax_t Denom>
   inline std::ostream& operator<<(std::ostream& os, const C<Num, Denom>) {
-    os << "©" << Num;
+    os << "C<" << Num;
     if (Denom != 1)
-	os << "/" << Denom;
-    return os ;
+	os << "," << Denom;
+    return os << ">()";
   }
   
   /*! \brief Output operator specialised for one quarter.*/

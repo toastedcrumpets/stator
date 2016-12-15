@@ -20,6 +20,11 @@ matrix:
       env:
         - COMPILER=clang++-3.5
         - COMPILER_PACKAGE=clang-3.5
+    - compiler: icc
+      os: linux
+      env:
+        - COMPILER=icpc
+        - COMPILER_PACKAGE=""
   include:
     - compiler: gcc
       os: linux

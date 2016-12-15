@@ -59,11 +59,11 @@ matrix:
         - COMPILER_PACKAGE=clang
 
 before_install:
-  - "if [ $COMPILER = 'icpc' ]; then wget -q -O /dev/stdout 'https://raw.githubusercontent.com/nemequ/icc-travis/master/install-icc.sh' | /bin/sh; fi"
+  - "if [ $COMPILER = 'icpc' ]; then ./install-icc.sh; fi"
 
 install:
   - "export CXX=$COMPILER"
-  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; fi"
+  - "if [ $TRAVIS_OS_NAME = 'linux' ] && [ $COMPILER != 'icpc' ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; fi"
   - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get update -q; fi"
   - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get install -y --force-yes libboost-all-dev cmake cmake-data $COMPILER_PACKAGE; fi"
   - "git submodule init"

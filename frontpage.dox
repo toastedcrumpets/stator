@@ -4,33 +4,66 @@
   \section frontpage_about About the stator library
 
   Stator is a Computer Algebra System (CAS) which focuses on using
-  compile-time and heap-allocated algorithms. This means it is really,
-  really, fast (zero overhead, or even less thanks to cancellation)
-  but it lacks the generality of a full CAS.
+  compile-time and stack-allocated algorithms. This means it is
+  really, really, fast (zero overhead, or even speed-up thanks to
+  cancellation of terms) but it lacks the generality of a full CAS.
 
-  A fancy motivational example.
+  An example of the available operations and computational costs is given below:
 
   \dontinclude symbolic_example.cpp
   \skip fancy
+  \until //Output: 0.25
+
+  As everything is performed by the compiler, only the last
+  substitution has any run-time cost. In fact, all of the code above
+  has the same computational cost as writing:
+
+  \code
+  double a = std::sin(2.3*2.3)+2*std::cos(2.3*2.3);
+  \endcode
+
+  however, as we have a symbolic representation of the function we can
+  perform some interesting transformations of it:
+
+  \until //Output:
+
+  Even complex operations such as taking the derivative have (at most)
+  the cost of copying a single int (the number two), which the
+  compiler is free to optimise away (as it is constant at compile
+  time). Other operations are only a little more expensive:
+
   \until }//End
 
-  See the \ref symbolic_guide "guide to the symbolic library" for more.
+  The call to sym::taylor_series creates a sym::Polynomial type, which
+  is a std::array of the coefficients, and solving for the roots for a
+  5th order polynomial like this one requires iteration; however, both
+  are carried out without dynamic allocation and thus are very fast on
+  any modern compiler.
+
+  See the \ref symbolic_guide "guide to the symbolic library" for more details on how to use the library.
 
   \section frontpage_usage Using the stator library
 
-  stator is a header-only C++11 library. In many places it builds upon
+  First, you will need a modern compiler to use stator. In fact, you
+  will need a version of GCC >= 6, clang >= 3.6, and MSVC >= 2015 for
+  all of the library to work. The MSVC compiler has difficulties with
+  deeply templated expressions thus it is not recommended for use with
+  this library.
+
+  The current compiler support on Linux is available at the <a
+  href="https://travis-ci.org/toastedcrumpets/stator">Travis CI
+  page</a>.
+
+  
+
+  Stator is a header-only C++11 library. In many places it builds upon
   the Eigen 3 library (http://eigen.tuxfamily.org/), so to use it you
-  must have both added to your compiler include path. For example, on linux
+  must have both added to your compiler include path. For example, on
+  linux
   
   \code{.unparsed}
   g++ -I /path/to/stator/folder -I /path/to/Eigen/folder
   \endcode
-
-  The library uses a range of advanced techniques to provide
-  interesting mathematical capability. For more information have a
-  look at the documentation for each namespace:
-
-  - stator::sym: Symbolic math library (\ref symbolic_guide "guide here")
   
 */
 

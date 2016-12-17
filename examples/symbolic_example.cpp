@@ -121,20 +121,18 @@ int main(int argc, char **argv) {
 
     //Perform a substitution x=y^2
     Var<vidx<'y'> > y;
-    auto g = sub(f, x == y*y);
+    auto g = sub(f, x == y*y); 
     std::cout << g << std::endl;
     //Output: (sin((y × y)) + (2 × cos((y × y))))
 
     //Evaluate the function
-    double a = sub(g, y == 2.3);
+    double a = sub(g, y == 2.3);   
     std::cout << a << std::endl;
     //Output: 0.254279
-
     //Take the derivative
-    auto dg_dy = derivative(g, y);
+    auto dg_dy = derivative(g, y); 
     std::cout << dg_dy << std::endl;
     //Output: (((y + y) × cos((y × y))) + (2 × ((C<-1>() × (y + y)) × sin((y × y)))))
-
     //Take a 5th order taylor series of the derivative around y=0
     auto poly = expand(taylor_series<5>(dg_dy, C<0>(), y));
     std::cout << poly << std::endl;

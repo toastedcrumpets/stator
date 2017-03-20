@@ -40,27 +40,59 @@ namespace sym {
 
 namespace sym {
 
-  class RTInterface;
+  class RTBase;
+  typedef shared_ptr<RTBase> Expr;
+  class VarRT;
   
-  typedef shared_ptr<RTInterface> Expr;
-  
-  class RTInterface {
+  /*! \brief Interface for runtime symbolic types. */
+  class RTBase {
   public:
-    virtual ~RTInterface() {}
+    virtual ~RTBase() {}
 
     virtual Expr clone() const = 0;
 
-    virtual Expr sub(const Expr var, const Expr repl) const = 0;
-
     virtual bool operator==(const Expr o) const = 0;
-    
-    virtual void unwrap() const = 0;
+
+    virtual Expr sub(const VarRT&, Expr) const = 0;
   };
 
-//  template<class Var, class Arg>
-//  shared_ptr<RTExpression> sub(const shared_ptr<RTExpression>& f,
-//			       const VarSub<Var, Arg>&) {
-//    return f->sub()
-//  };
+  /*! \brief CRTP helper base class which implements the boilerplate
+    code for runtime symbolic types.
+  */
+  template<class Derived>
+  class RTBaseHelper : public RTBase {
+  public:
+    virtual Expr clone() const {
+      return Expr(new Derived(static_cast<const Derived&>(*this)));
+    }
+
+    virtual bool operator==(const Expr o) const {
+      auto other = dynamic_pointer_cast<Derived>(o);
+      if (!other)
+	return false;
+      return *static_cast<const Derived*>(this) == *other;
+    }    
+  };
   
-}
+  class VarRT : public RTBaseHelper<VarRT> {
+  public:
+    template<typename ...Args>
+    VarRT(const Var<Args...> v):
+      idx(Var<Args...>::idx)
+    {}
+
+    bool operator==(const VarRT& o) const {
+      return idx == o.idx;
+    }
+
+    Expr sub(const VarRT& var, Expr exp) const {
+      if (*this == var)
+	return exp->clone();
+      else
+	return this->clone();
+    }
+    
+    char idx;
+  };
+
+ }

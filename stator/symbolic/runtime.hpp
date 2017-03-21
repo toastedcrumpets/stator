@@ -71,7 +71,7 @@ namespace sym {
       if (!other)
 	return false;
       return *static_cast<const Derived*>(this) == *other;
-    }    
+    }
   };
   
   class VarRT : public RTBaseHelper<VarRT> {
@@ -95,4 +95,50 @@ namespace sym {
     char idx;
   };
 
- }
+  template<typename T>
+  class ConstantRT : public RTBaseHelper<ConstantRT<T> > {
+  public:
+    ConstantRT(const T& v): _val(v) {}
+
+    
+    bool operator==(const ConstantRT& o) const {
+      return _val == o._val;
+    }
+    
+    /*! \brief Default substitution operation
+     */
+    virtual Expr sub(const VarRT& var, Expr exp) const {
+      return this->clone();
+    }
+
+    void throw_self() const {
+      throw _val;
+    };
+
+  private:
+    T _val;
+  };
+
+  template<typename Op>
+  class BinaryOpRT : public RTBaseHelper<BinaryOpRT<Op> > {
+  public:
+    BinaryOpRT(const Expr& lhs, const Expr& rhs): _LHS(lhs), _RHS(rhs) {}
+    
+    bool operator==(const BinaryOpRT<Op>& o) const {
+      return (_LHS == o._LHS) && (_RHS == o._RHS);
+    }
+    
+    virtual Expr sub(const VarRT& var, Expr exp) const {
+      return Expr(new BinaryOpRT(_LHS->sub(var, exp), _RHS->sub(var, exp)));
+    }
+    
+    Expr apply(Expr LHS, Expr RHS) {
+      throw 0;
+    }
+
+  private:
+    Expr _LHS;
+    Expr _RHS;
+  };
+
+}

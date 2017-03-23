@@ -43,7 +43,20 @@ namespace sym {
   class RTBase;
   typedef shared_ptr<RTBase> Expr;
   class VarRT;
-  
+
+  namespace detail {
+    /*! \brief Base interface for runtime symbolic math to allow the
+      visitor programming pattern.
+    */
+    struct VisitorInterface {
+      virtual void visit(const long&) = 0;
+      virtual void visit(const double&) = 0;
+      virtual void visit(const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>&) = 0;
+      virtual void visit(const std::complex<double>&) = 0;
+      virtual void visit(const RTBase&) = 0;
+    };
+  }
+
   /*! \brief Interface for runtime symbolic types. */
   class RTBase {
   public:
@@ -53,9 +66,56 @@ namespace sym {
 
     virtual bool operator==(const Expr o) const = 0;
 
-    virtual Expr sub(const VarRT&, Expr) const = 0;
+    //! \brief default visitor pattern interface
+    virtual void visit(detail::VisitorInterface& c) {
+      c.visit(*this);
+    }
   };
 
+  namespace detail {
+    template<typename Op, typename LHS_t>
+    struct SecondDispatch: public VisitorInterface {
+      SecondDispatch(const LHS_t& LHS) : _LHS(LHS) {}
+      
+      virtual void visit(const long& RHS) { typename Op::template apply<LHS_t, long>(_LHS, RHS); }
+
+      virtual void visit(const double& RHS) { typename Op::template apply<LHS_t, double>(_LHS, RHS); }
+      
+      virtual void visit(const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& RHS)
+      { typename Op::template apply<LHS_t, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> >(_LHS, RHS); }
+      
+      virtual void visit(const std::complex<double>& RHS)
+      { typename Op::template apply<LHS_t, std::complex<double>>(_LHS, RHS); }
+      
+      virtual void visit(const RTBase& RHS)
+      { typename Op::template apply<LHS_t, RTBase>(_LHS, RHS); }
+
+      const LHS_t& _LHS;
+    };
+
+    template<typename Op>
+    struct FirstDispatch: public VisitorInterface {
+      FirstDispatch(const RTBase& RHS): _RHS(RHS) {}
+      
+      virtual void visit(const long& LHS)
+      { _RHS.visit(SecondDispatch<Op, long>(LHS)); }
+
+      virtual void visit(const double& LHS)
+      { _RHS.visit(SecondDispatch<Op, double>(LHS)); }
+      
+      virtual void visit(const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& LHS)
+      { _RHS.visit(SecondDispatch<Op, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>>(LHS)); }
+      
+      virtual void visit(const std::complex<double>& LHS)
+      { _RHS.visit(SecondDispatch<Op, std::complex<double> >(LHS)); }
+      
+      virtual void visit(const RTBase& LHS)
+      { _RHS.visit(SecondDispatch<Op, RTBase>(LHS)); }
+
+      const RTBase& _RHS;
+    };
+  }
+  
   /*! \brief CRTP helper base class which implements the boilerplate
     code for runtime symbolic types.
   */
@@ -72,7 +132,7 @@ namespace sym {
 	return false;
       return *static_cast<const Derived*>(this) == *other;
     }
-  };
+  };  
   
   class VarRT : public RTBaseHelper<VarRT> {
   public:
@@ -127,11 +187,7 @@ namespace sym {
     bool operator==(const BinaryOpRT<Op>& o) const {
       return (_LHS == o._LHS) && (_RHS == o._RHS);
     }
-    
-    virtual Expr sub(const VarRT& var, Expr exp) const {
-      return Expr(new BinaryOpRT(_LHS->sub(var, exp), _RHS->sub(var, exp)));
-    }
-    
+        
     Expr apply(Expr LHS, Expr RHS) {
       throw 0;
     }

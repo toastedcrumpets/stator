@@ -199,6 +199,10 @@ namespace sym {
       return os << _val;
     }
 
+    virtual void visit(detail::VisitorInterface& c) {
+      c.visit(_val);
+    }
+
   private:
     T _val;
   };

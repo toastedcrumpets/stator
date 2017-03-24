@@ -35,7 +35,7 @@ namespace sym {
   
   template<class LHS, class RHS, class Op>
   inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, Op, RHS>& op) {
-    os << "(" << op._l << " " << Op::_str <<  " " << op._r << ")";
+    os << "(" << op._l << " " << Op::str() <<  " " << op._r << ")";
     return os;
   }
 
@@ -102,7 +102,7 @@ namespace sym {
       static constexpr bool associative = true;
       typedef Null left_identity;
       typedef Null right_identity;
-      static constexpr const char* _str = "+";
+      static inline std::string str() { return "+"; }
       //Apply has to accept by const ref, as returned objs may reference/alias the arguments, so everything needs at least the parent scope
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l + r);
     };
@@ -111,7 +111,7 @@ namespace sym {
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
       typedef Null right_identity;
-      static constexpr const char* _str = "-";
+      static inline std::string str() { return "-"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l - r);
     };
 
@@ -122,7 +122,7 @@ namespace sym {
       typedef Unity right_identity;
       typedef Null left_zero;
       typedef Null right_zero;
-      static constexpr const char* _str = "×";
+      static inline std::string str() { return "×"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l * r);
     };
 
@@ -131,21 +131,21 @@ namespace sym {
       static constexpr bool associative = false;
       typedef Unity right_identity;
       typedef Null left_zero;
-      static constexpr const char* _str = "÷";
+      static inline std::string str() { return "÷"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l / r);
     };
 
     struct Dot {
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
-      static constexpr const char* _str = "•";
+      static inline std::string str() { return "•"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l.dot(r));
     };
 
     struct Power {
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
-      static constexpr const char* _str = "^";
+      static inline std::string str() { return "^"; }
       typedef Unity right_identity;
       typedef Unity left_zero;
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(pow(l, r));

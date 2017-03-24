@@ -231,7 +231,7 @@ namespace sym {
     virtual std::ostream& output(std::ostream& os) const {
       os << "(";
       _LHS->output(os);
-      os << " " << Op::_str <<  " ";
+      os << " " << Op::str() <<  " ";
       _RHS->output(os);
       os << ")";
       return os;
@@ -253,7 +253,7 @@ namespace sym {
 
       template<class LHS, class RHS>
       void check_avail(const LHS& l, const RHS& r, detail::choice<1>)
-      { stator_throw() << "No operator defined for " << l << Op::_str << r; }
+      { stator_throw() << "No operator defined for " << l << Op::str() << r; }
       
       Expr _value;
     };

@@ -17,12 +17,11 @@
   along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define BOOST_TEST_MODULE orphan_static_list
-#include <boost/test/included/unit_test.hpp>
 
 // stator
 #include "stator/orphan/static_list.hpp"
 #include "stator/exception.hpp"
+#include <stator/unit_test.hpp>
 
 // C++
 #include <iostream>
@@ -30,7 +29,7 @@
 
 using namespace stator::orphan;
 
-BOOST_AUTO_TEST_CASE(StaticListTest) {
+UNIT_TEST(StaticListTest) {
   typedef static_list<int, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9> list;
 
   static_assert(static_list_size<list>::value == 10,

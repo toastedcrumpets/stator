@@ -21,6 +21,7 @@
 
 // C++
 #include <array>
+#include <ostream>
 
 namespace stator {
   namespace orphan {

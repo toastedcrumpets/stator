@@ -19,24 +19,14 @@
 
 #pragma once
 
-#ifdef STATOR_BOOST_SHARED
-# include <boost/shared_ptr.hpp>
-# include <boost/make_shared.hpp>
-namespace sym {
-  using boost::shared_ptr;
-  using boost::make_shared;
-  using boost::dynamic_pointer_cast;
-}
-#else
-# include <memory>
+#include <stator/symbolic/symbolic.hpp>
+
+#include <memory>
 namespace sym {
   using std::shared_ptr;
   using std::make_shared;
   using std::dynamic_pointer_cast;
 }
-#endif
-
-#include <stator/symbolic/symbolic.hpp>
 
 namespace sym {
   class RTBase;

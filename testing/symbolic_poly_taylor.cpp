@@ -26,11 +26,7 @@
 
 //stator
 #include <stator/symbolic/symbolic.hpp>
-
-//boost
-#define BOOST_TEST_MODULE Polynomial_test
-#include <boost/test/included/unit_test.hpp>
-#include <boost/mpl/assert.hpp>
+#include <stator/unit_test.hpp>
 
 #include <random>
 
@@ -64,28 +60,25 @@ bool compare_expression(const T1& f, const T2& g) {
   return f_str == g_str;
 }
 
-#define CHECK_TYPE(EXPRESSION, TYPE) \
-  BOOST_MPL_ASSERT_MSG((std::is_same<decltype(EXPRESSION), TYPE>::value), TYPE_COMPARE, (decltype(EXPRESSION), TYPE));
-
-BOOST_AUTO_TEST_CASE( poly_taylor )
+UNIT_TEST( poly_taylor )
 { 
   using namespace sym;
   Var<vidx<'y'> > y;
 
-  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Var<vidx<'x'> >()), simplify(y*y*y)));
+  UNIT_TEST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Var<vidx<'x'> >()), simplify(y*y*y)));
   
-  BOOST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), y), simplify(y*y*y)));
+  UNIT_TEST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), y), simplify(y*y*y)));
 
   //Test truncation of PowerOp expressions when the original order is too high
-  CHECK_TYPE(taylor_series<2>(y*y*y, Null(), y), Null);
+  UNIT_TEST_CHECK(compare_expression(taylor_series<2>(y*y*y, Null(), y), Null()));
   
   //Test simple Taylor expansion of sine 
-  BOOST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), y * (C<1>()+(pow(y, C<2>())*(C<-1,6>()+(pow(y, C<2>())*C<1,120>()))))));
+  UNIT_TEST_CHECK(compare_expression(taylor_series<6>(sin(y), Null(), y), y * (C<1>()+(pow(y, C<2>())*(C<-1,6>()+(pow(y, C<2>())*C<1,120>()))))));
 
   //MSVC only supports limited symbol names lengths, thus deep
   //templating is not possible, and these tests fail on compilation
 #if !(defined(_MSC_VER) && !defined(__INTEL_COMPILER))
-  BOOST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), pow(y, C<2>()) * (C<1>()+(pow(y, C<4>())*C<-1,6>()))));
+  UNIT_TEST_CHECK(compare_expression(taylor_series<8>(sin(y*y), Null(), y), pow(y, C<2>()) * (C<1>()+(pow(y, C<4>())*C<-1,6>()))));
   
   //Test Taylor expansion of a complex expression at zero
   Var<vidx<'x'> > x;
@@ -94,19 +87,19 @@ BOOST_AUTO_TEST_CASE( poly_taylor )
 
   //We compare the expressions as Polynomials using the expand
   auto ffinal_expanded = expand(ffinal);
-  BOOST_CHECK(compare_expression(expand(taylor_series<3>(f, Null(), x)), ffinal_expanded));
+  UNIT_TEST_CHECK(compare_expression(expand(taylor_series<3>(f, Null(), x)), ffinal_expanded));
 
   //Test Taylor expansion again at a non-zero location
-  BOOST_CHECK(compare_expression(expand(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x)), expand(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
+  UNIT_TEST_CHECK(compare_expression(expand(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x)), expand(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
 
   //Partially truncate a Polynomial through expansion
-  BOOST_CHECK(compare_expression(expand(taylor_series<2>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<2,int,Var<vidx<'y'> > >{1,2,3}));
+  UNIT_TEST_CHECK(compare_expression(expand(taylor_series<2>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<2,int,Var<vidx<'y'> > >{1,2,3}));
   
   //Keep the order the same
-  BOOST_CHECK(compare_expression(expand(taylor_series<3>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}));
+  UNIT_TEST_CHECK(compare_expression(expand(taylor_series<3>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}));
   
   //Taylor simplify at a higher order
-  BOOST_CHECK(compare_expression(expand(taylor_series<4>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4})); 
+  UNIT_TEST_CHECK(compare_expression(expand(taylor_series<4>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4})); 
 #endif
 }
 

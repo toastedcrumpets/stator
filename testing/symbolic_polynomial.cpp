@@ -17,21 +17,17 @@
   along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
 
+//stator
+#include <stator/symbolic/symbolic.hpp>
+#include <stator/unit_test.hpp>
 
 //C++
 #include <iostream>
 #include <vector>
+#include <map>
+#include <set>
 #include <cmath>
 #include <complex>
-
-//stator
-#include <stator/symbolic/symbolic.hpp>
-
-//boost
-#define BOOST_TEST_MODULE Polynomial_test
-#include <boost/test/included/unit_test.hpp>
-#include <boost/mpl/assert.hpp>
-
 #include <random>
 
 std::mt19937 RNG;
@@ -63,9 +59,6 @@ bool compare_expression(const T1& f, const T2& g) {
     std::cerr << f << " != " << g << std::endl;
   return f_str == g_str;
 }
-
-#define CHECK_TYPE(EXPRESSION, TYPE) \
-  BOOST_MPL_ASSERT_MSG((std::is_same<decltype(EXPRESSION), TYPE>::value), TYPE_COMPARE, (decltype(EXPRESSION), TYPE));
 
 struct RootData {
   RootData() : multiplicity(0) {}
@@ -129,114 +122,114 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
     os << "\n Matching data:";
     for (auto test_root: root_data)
       os << "\n   " << test_root.first << ", multiplicity=" << test_root.second.multiplicity << ", matches=" <<  test_root.second.matched_roots.size();
-    BOOST_ERROR(os.str());
+    UNIT_TEST_ERROR(os.str());
   }
 }
 
 
-BOOST_AUTO_TEST_CASE( poly_variables )
+UNIT_TEST( poly_variables )
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
   Polynomial<1,double, Var<vidx<'y'> > > y{0, 1};
-  BOOST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()==Var<vidx<'x'> >()), "P(1 × x)"));
+  UNIT_TEST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()==Var<vidx<'x'> >()), "P(1 × x)"));
 
-  BOOST_CHECK(compare_expression(expand(x * x * x), "P(1 × x³)"));
-  BOOST_CHECK(compare_expression(expand(y * y * y), "P(1 × y³)"));
-  BOOST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()==Var<vidx<'x'> >()), "P(1 × x³)"));
+  UNIT_TEST_CHECK(compare_expression(expand(x * x * x), "P(1 × x³)"));
+  UNIT_TEST_CHECK(compare_expression(expand(y * y * y), "P(1 × y³)"));
+  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()==Var<vidx<'x'> >()), "P(1 × x³)"));
 }
 
-BOOST_AUTO_TEST_CASE( poly_addition )
+UNIT_TEST( poly_addition )
 {
   using namespace sym;
   Polynomial<1> x{0, 2.5};
   Polynomial<0> C{0.3};
   auto poly1 = expand(x+C);
-  BOOST_CHECK_EQUAL(poly1[0], 0.3);
-  BOOST_CHECK_EQUAL(poly1[1], 2.5);
+  UNIT_TEST_CHECK_EQUAL(poly1[0], 0.3);
+  UNIT_TEST_CHECK_EQUAL(poly1[1], 2.5);
 
   poly1 = expand(C+x);
-  BOOST_CHECK_EQUAL(poly1[0], 0.3);
-  BOOST_CHECK_EQUAL(poly1[1], 2.5);
+  UNIT_TEST_CHECK_EQUAL(poly1[0], 0.3);
+  UNIT_TEST_CHECK_EQUAL(poly1[1], 2.5);
 
   auto poly2 = expand(x + 0.3);
-  BOOST_CHECK_EQUAL(poly2[0], 0.3);
-  BOOST_CHECK_EQUAL(poly2[1], 2.5);
+  UNIT_TEST_CHECK_EQUAL(poly2[0], 0.3);
+  UNIT_TEST_CHECK_EQUAL(poly2[1], 2.5);
 
   poly2 = expand(0.3 + x);
-  BOOST_CHECK_EQUAL(poly2[0], 0.3);
-  BOOST_CHECK_EQUAL(poly2[1], 2.5);
+  UNIT_TEST_CHECK_EQUAL(poly2[0], 0.3);
+  UNIT_TEST_CHECK_EQUAL(poly2[1], 2.5);
 }
 
-BOOST_AUTO_TEST_CASE( poly_multiplication )
+UNIT_TEST( poly_multiplication )
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
   auto poly1 = -2.0;
   auto poly2 = 2.0 - x + x * x;
   auto poly3 = expand(poly2 * poly1);
-  BOOST_CHECK_EQUAL(poly3[0], -4);
-  BOOST_CHECK_EQUAL(poly3[1], +2);
-  BOOST_CHECK_EQUAL(poly3[2], -2);
+  UNIT_TEST_CHECK_EQUAL(poly3[0], -4);
+  UNIT_TEST_CHECK_EQUAL(poly3[1], +2);
+  UNIT_TEST_CHECK_EQUAL(poly3[2], -2);
 
-  CHECK_TYPE((Null() * Polynomial<2>{1,2,3}), Null);
-  CHECK_TYPE((Polynomial<2>{1,2,3}) * Null(), Null);
+  UNIT_TEST_CHECK(compare_expression((Null() * Polynomial<2>{1,2,3}), Null()));
+  UNIT_TEST_CHECK(compare_expression((Polynomial<2>{1,2,3}) * Null(), Null()));
 
   static_assert(std::is_same<decltype(Null() * Polynomial<2>{1,2,3}), Null>::value, "Null multiply is not cancelling the polynomial");
   static_assert(std::is_same<decltype(Polynomial<2>{1,2,3} * Null()), Null>::value, "Null multiply is not cancelling the polynomial");
   
-  CHECK_TYPE((Unity() * Polynomial<2>{1,2,3}), const Polynomial<2>&);
-  CHECK_TYPE((Polynomial<2>{1,2,3} * Unity()), const Polynomial<2>&);
+  UNIT_TEST_CHECK(compare_expression((Unity() * Polynomial<2>{1,2,3}), Polynomial<2>{1,2,3}));
+  UNIT_TEST_CHECK(compare_expression((Polynomial<2>{1,2,3} * Unity()), Polynomial<2>{1,2,3}));
 }
 
-BOOST_AUTO_TEST_CASE( poly_division )
+UNIT_TEST( poly_division )
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
   auto poly1 = 2.0 - x + x * x;
   auto poly2 = expand(poly1 / 0.5);
-  BOOST_CHECK_EQUAL(poly2[0], 4);
-  BOOST_CHECK_EQUAL(poly2[1], -2);
-  BOOST_CHECK_EQUAL(poly2[2], 2);
+  UNIT_TEST_CHECK_EQUAL(poly2[0], 4);
+  UNIT_TEST_CHECK_EQUAL(poly2[1], -2);
+  UNIT_TEST_CHECK_EQUAL(poly2[2], 2);
 
   static_assert(std::is_same<decltype(simplify(Polynomial<2>{1,2,3} / Unity())), Polynomial<2> >::value, "Unity division is not returning the polynomial");
 }
 
-BOOST_AUTO_TEST_CASE( poly_vector )
+UNIT_TEST( poly_vector )
 {
   using namespace sym;
   Polynomial<1, Vector> x{Vector{0,0,0}, Vector{1,2,3}};
   Polynomial<0, Vector> C{Vector{3,2,1}};
   auto poly1 = expand(x+C);
-  BOOST_CHECK_EQUAL(poly1[0], (Vector{3,2,1}));
-  BOOST_CHECK_EQUAL(poly1[1], (Vector{1,2,3}));
+  UNIT_TEST_CHECK_EQUAL(poly1[0], (Vector{3,2,1}));
+  UNIT_TEST_CHECK_EQUAL(poly1[1], (Vector{1,2,3}));
 }
 
-BOOST_AUTO_TEST_CASE( poly_lower_order )
+UNIT_TEST( poly_lower_order )
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
   Polynomial<2> poly2 = expand(2.0 - x + x * x);
   Polynomial<3> poly3 = expand(poly2 + 0 * x * x * x);
   //Try to cast down one level as the highest order coefficient is zero
-  BOOST_CHECK(poly3[3] == 0);
+  UNIT_TEST_CHECK(poly3[3] == 0);
   Polynomial<2> poly4(change_order<2>(poly3));
 
-  BOOST_CHECK_EQUAL(poly4[0], 2);
-  BOOST_CHECK_EQUAL(poly4[1], -1);
-  BOOST_CHECK_EQUAL(poly4[2], 1);
-  BOOST_CHECK_EQUAL(sub(poly3, Var<vidx<'x'> >()==123), sub(poly4, Var<vidx<'x'> >()==123));
+  UNIT_TEST_CHECK_EQUAL(poly4[0], 2);
+  UNIT_TEST_CHECK_EQUAL(poly4[1], -1);
+  UNIT_TEST_CHECK_EQUAL(poly4[2], 1);
+  UNIT_TEST_CHECK_EQUAL(sub(poly3, Var<vidx<'x'> >()==123), sub(poly4, Var<vidx<'x'> >()==123));
 }
 
-BOOST_AUTO_TEST_CASE( poly_simplify )
+UNIT_TEST( poly_simplify )
 {
   using namespace sym;
   Var<vidx<'x'> > x;
   //Test that simplify creates polynomials from Vars
   auto poly1 = expand(2 * x * x);
-  BOOST_CHECK_EQUAL(poly1[0], 0);
-  BOOST_CHECK_EQUAL(poly1[1], 0);
-  BOOST_CHECK_EQUAL(poly1[2], 2);
+  UNIT_TEST_CHECK_EQUAL(poly1[0], 0);
+  UNIT_TEST_CHECK_EQUAL(poly1[1], 0);
+  UNIT_TEST_CHECK_EQUAL(poly1[2], 2);
 
   Var<vidx<'y'> > y;
   //Check that Polynomial simplifications exist for these functions
@@ -248,81 +241,81 @@ BOOST_AUTO_TEST_CASE( poly_simplify )
   //Check expansion
   {
     Polynomial<1> x{0,1};
-    BOOST_CHECK(compare_expression(expand(pow(x+2, C<3>())), expand((x+2) * (x+2) * (x+2))));;
+    UNIT_TEST_CHECK(compare_expression(expand(pow(x+2, C<3>())), expand((x+2) * (x+2) * (x+2))));;
   }
 }
 
-BOOST_AUTO_TEST_CASE( poly_eval_limits )
+UNIT_TEST( poly_eval_limits )
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
 
   {//Check even positive polynomials
     auto f = expand(x * x - x + 3);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==0), 3);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), +HUGE_VAL);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==0), 3);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), +HUGE_VAL);
   }
 
   {//Check even negative polynomials
     auto f = expand(-x * x + x + 3);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==0), 3);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), -HUGE_VAL);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==0), 3);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd positive polynomials
     auto f = expand(x * x * x + x + 3);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), +HUGE_VAL);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd negative polynomials
     auto f = expand(-x * x * x + x + 3);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), -HUGE_VAL);
-    BOOST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), +HUGE_VAL);
   }
 }
 
-BOOST_AUTO_TEST_CASE( poly_derivative )
+UNIT_TEST( poly_derivative )
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
 
   auto poly1 = expand(x + x*x + x*x*x + x*x*x*x);
   auto poly2 = derivative(poly1, Var<>());
-  BOOST_CHECK_EQUAL(poly2[0], 1);
-  BOOST_CHECK_EQUAL(poly2[1], 2);
-  BOOST_CHECK_EQUAL(poly2[2], 3);  
-  BOOST_CHECK_EQUAL(poly2[3], 4);  
+  UNIT_TEST_CHECK_EQUAL(poly2[0], 1);
+  UNIT_TEST_CHECK_EQUAL(poly2[1], 2);
+  UNIT_TEST_CHECK_EQUAL(poly2[2], 3);  
+  UNIT_TEST_CHECK_EQUAL(poly2[3], 4);  
 
-  BOOST_CHECK_CLOSE(sub(poly2, Var<>()==3.14159), eval_derivatives<1>(poly1, 3.14159)[1], 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(poly2, Var<>()==3.14159), eval_derivatives<1>(poly1, 3.14159)[1], 1e-10);
 
   auto poly3 = expand(2.0 - x + 2 * x * x);
   auto poly4 = derivative(poly3, Var<>());
-  BOOST_CHECK_EQUAL(poly4[0], -1);
-  BOOST_CHECK_EQUAL(poly4[1], 4);
-  BOOST_CHECK_EQUAL(sub(poly4, Var<>()==0), -1);
-  BOOST_CHECK_EQUAL(sub(poly4, Var<>()==1), 3);
+  UNIT_TEST_CHECK_EQUAL(poly4[0], -1);
+  UNIT_TEST_CHECK_EQUAL(poly4[1], 4);
+  UNIT_TEST_CHECK_EQUAL(sub(poly4, Var<>()==0), -1);
+  UNIT_TEST_CHECK_EQUAL(sub(poly4, Var<>()==1), 3);
 
   C<2>() * derivative(x, Var<>()) * pow(x, C<1>());
   //derivative(pow(x, C<2>), Var<vidx<'x'> >());
   
-  BOOST_CHECK(compare_expression(simplify(derivative(pow(x, C<2>()), Var<>())), C<2>()* Polynomial<1>{0,1}));
+  UNIT_TEST_CHECK(compare_expression(simplify(derivative(pow(x, C<2>()), Var<>())), C<2>()* Polynomial<1>{0,1}));
 }
 
-BOOST_AUTO_TEST_CASE( poly_zero_derivative)
+UNIT_TEST( poly_zero_derivative)
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
   const auto poly1 = derivative(x, Var<>());
-  BOOST_CHECK_EQUAL(poly1[0], 1);
+  UNIT_TEST_CHECK_EQUAL(poly1[0], 1);
 
   const auto poly2 = derivative(poly1, Var<>());
-  BOOST_CHECK(compare_expression(poly2, Null()));
+  UNIT_TEST_CHECK(compare_expression(poly2, Null()));
 }
 
-BOOST_AUTO_TEST_CASE( poly_deflation)
+UNIT_TEST( poly_deflation)
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
@@ -337,29 +330,29 @@ BOOST_AUTO_TEST_CASE( poly_deflation)
 	auto exact = expand((x - root2) * (x-root3));
 	for (size_t i(0); i < 3; ++i)
 	  if (exact[i] != 0)
-	    BOOST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
+	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
 	  else
-	    BOOST_CHECK_SMALL(deflated[i], 1e-10);
+	    UNIT_TEST_CHECK_SMALL(deflated[i], 1e-10);
 	
 	deflated = deflate_polynomial(poly, root2);
 	exact = expand((x - root1) * (x-root3));
 	for (size_t i(0); i < 3; ++i)
 	  if (exact[i] != 0)
-	    BOOST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
+	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
 	  else
-	    BOOST_CHECK_SMALL(deflated[i], 1e-10);
+	    UNIT_TEST_CHECK_SMALL(deflated[i], 1e-10);
 
 	deflated = deflate_polynomial(poly, root3);
 	exact = expand((x - root1) * (x-root2));
 	for (size_t i(0); i < 3; ++i)
 	  if (exact[i] != 0)
-	    BOOST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
+	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
 	  else
-	    BOOST_CHECK_SMALL(deflated[i], 1e-10);
+	    UNIT_TEST_CHECK_SMALL(deflated[i], 1e-10);
       }
 }
 
-BOOST_AUTO_TEST_CASE( poly_shift)
+UNIT_TEST( poly_shift)
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
@@ -373,14 +366,14 @@ BOOST_AUTO_TEST_CASE( poly_shift)
 	for (double shift : {-1.0, 2.0, 1e3, 3.14159265, -1e5}) {
 	  auto g = shift_function(f, shift);
 	  
-	  BOOST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() == 0), sub(f, Var<vidx<'x'> >() == shift), 1e-10);
-	  BOOST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() == 1e3), sub(f, Var<vidx<'x'> >() == 1e3 + shift), 1e-10);
+	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() == 0), sub(f, Var<vidx<'x'> >() == shift), 1e-10);
+	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() == 1e3), sub(f, Var<vidx<'x'> >() == 1e3 + shift), 1e-10);
 	}
       }
 }
 
 
-BOOST_AUTO_TEST_CASE( poly_gcd )
+UNIT_TEST( poly_gcd )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -391,8 +384,8 @@ BOOST_AUTO_TEST_CASE( poly_gcd )
     auto r = expand(4 * x - 2);
     auto f = expand(q * g + r);
     auto euclid = gcd(f, g);  
-    BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
-    BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(q, std::get<0>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(r, std::get<1>(euclid)));
   }
   {//Standard division without remainder
     auto q = expand(x * x * x + 3 * x - 2);
@@ -401,8 +394,8 @@ BOOST_AUTO_TEST_CASE( poly_gcd )
     auto f = simplify(q * g + r);
     auto euclid = gcd(f, g);
     
-    BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
-    BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(q, std::get<0>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(r, std::get<1>(euclid)));
   }
 
   {//Division with a zero leading order coefficient
@@ -412,8 +405,8 @@ BOOST_AUTO_TEST_CASE( poly_gcd )
     auto f = expand(q * g + r);
     auto euclid = gcd(f, g);
     
-    BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
-    BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(q, std::get<0>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(r, std::get<1>(euclid)));
   }
 
   {//Division by a constant
@@ -423,8 +416,8 @@ BOOST_AUTO_TEST_CASE( poly_gcd )
     auto f = expand(q * g + r);
     auto euclid = gcd(f, g);
     
-    BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
-    BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(q, std::get<0>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(r, std::get<1>(euclid)));
   }
 
   {//Division by a high-order Polynomial which is actually a constant
@@ -434,12 +427,12 @@ BOOST_AUTO_TEST_CASE( poly_gcd )
     auto f = expand(q * g + r);
     auto euclid = gcd(f, g);
     
-    BOOST_CHECK(compare_expression(q, std::get<0>(euclid)));
-    BOOST_CHECK(compare_expression(r, std::get<1>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(q, std::get<0>(euclid)));
+    UNIT_TEST_CHECK(compare_expression(r, std::get<1>(euclid)));
   }
 }
 
-BOOST_AUTO_TEST_CASE( poly_Sturm_chains )
+UNIT_TEST( poly_Sturm_chains )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -448,26 +441,26 @@ BOOST_AUTO_TEST_CASE( poly_Sturm_chains )
     auto f = expand(x*x*x*x + x*x*x - x - 1);
     auto chain = sturm_chain(f);
 
-    BOOST_CHECK(compare_expression(chain.get(0), f));
-    BOOST_CHECK(compare_expression(chain.get(1), expand(4*x*x*x + 3*x*x - 1)));
-    BOOST_CHECK(compare_expression(chain.get(2), expand((3.0/16) * x*x + (3.0/4)*x + (15.0/16))));
-    BOOST_CHECK(compare_expression(chain.get(3), expand(-32*x -64)));
-    BOOST_CHECK(compare_expression(chain.get(4), Polynomial<0>{-3.0/16}));
-    BOOST_CHECK(compare_expression(chain.get(5), Polynomial<0>{0}));
-    BOOST_CHECK(compare_expression(chain.get(6), Polynomial<0>{0}));
+    UNIT_TEST_CHECK(compare_expression(chain.get(0), f));
+    UNIT_TEST_CHECK(compare_expression(chain.get(1), expand(4*x*x*x + 3*x*x - 1)));
+    UNIT_TEST_CHECK(compare_expression(chain.get(2), expand((3.0/16) * x*x + (3.0/4)*x + (15.0/16))));
+    UNIT_TEST_CHECK(compare_expression(chain.get(3), expand(-32*x -64)));
+    UNIT_TEST_CHECK(compare_expression(chain.get(4), Polynomial<0>{-3.0/16}));
+    UNIT_TEST_CHECK(compare_expression(chain.get(5), Polynomial<0>{0}));
+    UNIT_TEST_CHECK(compare_expression(chain.get(6), Polynomial<0>{0}));
     
     //This polynomial has roots at -1 and +1
-    BOOST_CHECK_EQUAL(chain.sign_changes(-HUGE_VAL), 3);
-    BOOST_CHECK_EQUAL(chain.sign_changes(0), 2);
-    BOOST_CHECK_EQUAL(chain.sign_changes(HUGE_VAL), 1);
+    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(-HUGE_VAL), 3);
+    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(0), 2);
+    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(HUGE_VAL), 1);
     
-    BOOST_CHECK_EQUAL(chain.roots(0.5, 3.0), 1);
-    BOOST_CHECK_EQUAL(chain.roots(-2.141, -0.314159265), 1);
-    BOOST_CHECK_EQUAL(chain.roots(-HUGE_VAL, HUGE_VAL), 2);
+    UNIT_TEST_CHECK_EQUAL(chain.roots(0.5, 3.0), 1);
+    UNIT_TEST_CHECK_EQUAL(chain.roots(-2.141, -0.314159265), 1);
+    UNIT_TEST_CHECK_EQUAL(chain.roots(-HUGE_VAL, HUGE_VAL), 2);
  }
 }
 
-BOOST_AUTO_TEST_CASE( descartes_sturm_and_budan_01_alesina_rootcount_test )
+UNIT_TEST( descartes_sturm_and_budan_01_alesina_rootcount_test )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -512,45 +505,45 @@ BOOST_AUTO_TEST_CASE( descartes_sturm_and_budan_01_alesina_rootcount_test )
 		      switch (roots_in_01) {
 		      case 0: 
 		      case 1: 
-			BOOST_CHECK_EQUAL(budan_01_test(f1), roots_in_01);
-			BOOST_CHECK_EQUAL(budan_01_test(f2), roots_in_01);
-			BOOST_CHECK_EQUAL(alesina_galuzzi_test(f1, 0.0, 1.0), roots_in_01);
-			BOOST_CHECK_EQUAL(alesina_galuzzi_test(f2, 0.0, 1.0), roots_in_01);
+			UNIT_TEST_CHECK_EQUAL(budan_01_test(f1), roots_in_01);
+			UNIT_TEST_CHECK_EQUAL(budan_01_test(f2), roots_in_01);
+			UNIT_TEST_CHECK_EQUAL(alesina_galuzzi_test(f1, 0.0, 1.0), roots_in_01);
+			UNIT_TEST_CHECK_EQUAL(alesina_galuzzi_test(f2, 0.0, 1.0), roots_in_01);
 			break;
 		      default: 
-			BOOST_CHECK(budan_01_test(f1) >= roots_in_01); 
-			BOOST_CHECK(budan_01_test(f2) >= roots_in_01); 
-			BOOST_CHECK(alesina_galuzzi_test(f1, 0.0, 1.0) >= roots_in_01); 
-			BOOST_CHECK(alesina_galuzzi_test(f2, 0.0, 1.0) >= roots_in_01); 
+			UNIT_TEST_CHECK(budan_01_test(f1) >= roots_in_01); 
+			UNIT_TEST_CHECK(budan_01_test(f2) >= roots_in_01); 
+			UNIT_TEST_CHECK(alesina_galuzzi_test(f1, 0.0, 1.0) >= roots_in_01); 
+			UNIT_TEST_CHECK(alesina_galuzzi_test(f2, 0.0, 1.0) >= roots_in_01); 
 			break;
 		      }
-		      BOOST_CHECK_EQUAL(chain1.roots(0.0, 1.0), roots_in_01); 
-		      BOOST_CHECK_EQUAL(chain2.roots(0.0, 1.0), roots_in_01); 
+		      UNIT_TEST_CHECK_EQUAL(chain1.roots(0.0, 1.0), roots_in_01); 
+		      UNIT_TEST_CHECK_EQUAL(chain2.roots(0.0, 1.0), roots_in_01); 
 		      
 		      //Test interval [0, \infty]
 		      size_t positive_roots = roots_in_range(0, HUGE_VAL);
 		      switch (positive_roots) {
 		      case 0: 
 		      case 1:
-			BOOST_CHECK_EQUAL(descartes_rule_of_signs(f1), positive_roots); 
-			BOOST_CHECK_EQUAL(descartes_rule_of_signs(f2), positive_roots);
+			UNIT_TEST_CHECK_EQUAL(descartes_rule_of_signs(f1), positive_roots); 
+			UNIT_TEST_CHECK_EQUAL(descartes_rule_of_signs(f2), positive_roots);
 			break;
 		      default: 
-			BOOST_CHECK(descartes_rule_of_signs(f1) >= positive_roots); 
+			UNIT_TEST_CHECK(descartes_rule_of_signs(f1) >= positive_roots); 
 			break;
 		      }
-		      BOOST_CHECK_EQUAL(chain1.roots(0.0, HUGE_VAL), positive_roots); 
-		      BOOST_CHECK_EQUAL(chain2.roots(0.0, HUGE_VAL), positive_roots); 
+		      UNIT_TEST_CHECK_EQUAL(chain1.roots(0.0, HUGE_VAL), positive_roots); 
+		      UNIT_TEST_CHECK_EQUAL(chain2.roots(0.0, HUGE_VAL), positive_roots); 
 
 		      //Try some others
-		      BOOST_CHECK_EQUAL(chain1.roots(-HUGE_VAL, HUGE_VAL), 5);
-		      BOOST_CHECK_EQUAL(chain2.roots(-HUGE_VAL, HUGE_VAL), 5); 
-		      BOOST_CHECK(alesina_galuzzi_test(f1,-1.0, 30.0) >= roots_in_range(-1, 30));
-		      BOOST_CHECK(alesina_galuzzi_test(f1,-0.01, 5.0) >= roots_in_range(-0.01, 5));
+		      UNIT_TEST_CHECK_EQUAL(chain1.roots(-HUGE_VAL, HUGE_VAL), 5);
+		      UNIT_TEST_CHECK_EQUAL(chain2.roots(-HUGE_VAL, HUGE_VAL), 5); 
+		      UNIT_TEST_CHECK(alesina_galuzzi_test(f1,-1.0, 30.0) >= roots_in_range(-1, 30));
+		      UNIT_TEST_CHECK(alesina_galuzzi_test(f1,-0.01, 5.0) >= roots_in_range(-0.01, 5));
 		    }
 }
 
-BOOST_AUTO_TEST_CASE( LMQ_upper_bound_test )
+UNIT_TEST( LMQ_upper_bound_test )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -573,9 +566,9 @@ BOOST_AUTO_TEST_CASE( LMQ_upper_bound_test )
 	    
 	      double bound = LMQ_upper_bound(f);
 	      if (max_root < 0)
-		BOOST_CHECK_EQUAL(bound, 0);
+		UNIT_TEST_CHECK_EQUAL(bound, 0);
 	      else
-		BOOST_CHECK(bound >= max_root);
+		UNIT_TEST_CHECK(bound >= max_root);
 	    }
 
   //Test expressions with zero coefficients
@@ -588,16 +581,16 @@ BOOST_AUTO_TEST_CASE( LMQ_upper_bound_test )
 	  
 	  double bound = LMQ_upper_bound(f);
 	  if (max_root < 0)
-	    BOOST_CHECK_EQUAL(bound, 0);
+	    UNIT_TEST_CHECK_EQUAL(bound, 0);
 	  else
-	    BOOST_CHECK(bound >= max_root);
+	    UNIT_TEST_CHECK(bound >= max_root);
 	}
 
   //Test constant coefficients 
-  BOOST_CHECK_EQUAL(LMQ_upper_bound(expand(1 + 0 * x*x*x*x*x)), 0);
+  UNIT_TEST_CHECK_EQUAL(LMQ_upper_bound(expand(1 + 0 * x*x*x*x*x)), 0);
 }
 
-BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
+UNIT_TEST( LMQ_lower_bound_test )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -624,9 +617,9 @@ BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
 	    
 	      double bound = LMQ_lower_bound(f);
 	      if (min_pos_root == HUGE_VAL)
-		BOOST_CHECK_EQUAL(bound, HUGE_VAL);
+		UNIT_TEST_CHECK_EQUAL(bound, HUGE_VAL);
 	      else
-		BOOST_CHECK(bound <= min_pos_root);
+		UNIT_TEST_CHECK(bound <= min_pos_root);
 	    }
 
   //Test expressions with zero coefficients
@@ -644,57 +637,57 @@ BOOST_AUTO_TEST_CASE( LMQ_lower_bound_test )
 	  
 	  double bound = LMQ_lower_bound(f);
 	  if (min_pos_root == HUGE_VAL)
-	    BOOST_CHECK_EQUAL(bound, HUGE_VAL);
+	    UNIT_TEST_CHECK_EQUAL(bound, HUGE_VAL);
 	  else
-	    BOOST_CHECK(bound <= min_pos_root);
+	    UNIT_TEST_CHECK(bound <= min_pos_root);
 	}
 
   //Test constant coefficients 
-  BOOST_CHECK_EQUAL(LMQ_lower_bound(expand(1 + 0 * x*x*x*x*x)), HUGE_VAL);
+  UNIT_TEST_CHECK_EQUAL(LMQ_lower_bound(expand(1 + 0 * x*x*x*x*x)), HUGE_VAL);
 }
 
 
-BOOST_AUTO_TEST_CASE( polynomials_derivative_subtraction )
+UNIT_TEST( polynomials_derivative_subtraction )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
   //Test Polynomial derivatives on subtraction Operation types
   auto poly1 = expand(derivative(2*x*x - x, Var<vidx<'x'> >()));
   //derivative will automatically combine polynomials
-  BOOST_CHECK_EQUAL(poly1[0], -1);
-  BOOST_CHECK_EQUAL(poly1[1], 4);
+  UNIT_TEST_CHECK_EQUAL(poly1[0], -1);
+  UNIT_TEST_CHECK_EQUAL(poly1[1], 4);
 }
 
-BOOST_AUTO_TEST_CASE( polynomials_multiply_expansion )
+UNIT_TEST( polynomials_multiply_expansion )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
   //Test Polynomial simplification on multiplication Operation types
   auto poly1 = expand((x + 1)*(x + 3));
-  BOOST_CHECK_EQUAL(poly1[0], 3);
-  BOOST_CHECK_EQUAL(poly1[1], 4);
-  BOOST_CHECK_EQUAL(poly1[2], 1);
+  UNIT_TEST_CHECK_EQUAL(poly1[0], 3);
+  UNIT_TEST_CHECK_EQUAL(poly1[1], 4);
+  UNIT_TEST_CHECK_EQUAL(poly1[2], 1);
 }
 
-BOOST_AUTO_TEST_CASE( function_poly_derivatives_special )
+UNIT_TEST( function_poly_derivatives_special )
 { 
   using namespace sym;
 
   //Check special case derivatives of Functions with constant
   //arguments.
-  BOOST_CHECK(compare_expression(derivative(sin(Polynomial<0>{1}), Var<vidx<'x'> >()), Null()));
-  BOOST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Var<vidx<'x'> >()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(sin(Polynomial<0>{1}), Var<vidx<'x'> >()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Var<vidx<'x'> >()), Null()));
 }
 
-BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
+UNIT_TEST( Poly_Vector_symbolic )
 {
   using namespace sym;
 
   static_assert(sym::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
   
-  BOOST_CHECK(compare_expression(derivative(Vector{1,2,3}, Var<vidx<'x'> >()), Null()));
-  BOOST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
-  BOOST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
+  UNIT_TEST_CHECK(compare_expression(derivative(Vector{1,2,3}, Var<vidx<'x'> >()), Null()));
+  UNIT_TEST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
+  UNIT_TEST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
 
   const Polynomial<1> x{0, 1};
 
@@ -702,9 +695,9 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
   const double errlvl = 1e-10;
 
   Vector test1 = sub(Vector{0,1,2} * Var<vidx<'x'> >(), Var<vidx<'x'> >() == 2);
-  BOOST_CHECK(test1[0] == 0);
-  BOOST_CHECK(test1[1] == 2);
-  BOOST_CHECK(test1[2] == 4);
+  UNIT_TEST_CHECK(test1[0] == 0);
+  UNIT_TEST_CHECK(test1[1] == 2);
+  UNIT_TEST_CHECK(test1[2] == 4);
 
   //A tough test is to implement the Rodriugues formula symbolically.
   RNG.seed();
@@ -719,11 +712,11 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
       auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
       Vector err = end - sub(f, Var<vidx<'x'> >()==angle);
       
-      BOOST_CHECK(std::abs(err[0]) < errlvl);
-      BOOST_CHECK(std::abs(err[1]) < errlvl);
-      BOOST_CHECK(std::abs(err[2]) < errlvl);
+      UNIT_TEST_CHECK(std::abs(err[0]) < errlvl);
+      UNIT_TEST_CHECK(std::abs(err[1]) < errlvl);
+      UNIT_TEST_CHECK(std::abs(err[2]) < errlvl);
     }
 
-  BOOST_CHECK((toArithmetic(Vector{1,2,3}) == Vector{1,2,3}));
+  UNIT_TEST_CHECK((toArithmetic(Vector{1,2,3}) == Vector{1,2,3}));
 }
 

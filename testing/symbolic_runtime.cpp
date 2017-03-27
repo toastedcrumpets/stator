@@ -20,10 +20,7 @@
 #include <iostream>
 //stator
 #include <stator/symbolic/runtime.hpp>
-
-//boost
-#define BOOST_TEST_MODULE Symbolic_math_test
-#include <boost/test/included/unit_test.hpp>
+#include <stator/unit_test.hpp>
 
 #include <random>
 
@@ -61,7 +58,7 @@ bool compare_expression(const T1& f, const T2& g, bool output_error=true) {
 }
 
 
-BOOST_AUTO_TEST_CASE( symbolic_rt_constants )
+UNIT_TEST( symbolic_rt_constants )
 {
   Expr f = Expr(1.0) + Expr(2.0);
   std::cout << f << std::endl;

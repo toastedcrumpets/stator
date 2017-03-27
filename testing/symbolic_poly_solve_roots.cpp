@@ -17,21 +17,17 @@
   along with stator. If not, see <http://www.gnu.org/licenses/>.
 */
 
+//stator
+#include <stator/symbolic/symbolic.hpp>
+#include <stator/unit_test.hpp>
 
 //C++
 #include <iostream>
 #include <vector>
+#include <map>
 #include <cmath>
 #include <complex>
-
-//stator
-#include <stator/symbolic/symbolic.hpp>
-
-//boost
-#define BOOST_TEST_MODULE Polynomial_test
-#include <boost/test/included/unit_test.hpp>
-#include <boost/mpl/assert.hpp>
-
+#include <set>
 #include <random>
 
 std::mt19937 RNG;
@@ -63,9 +59,6 @@ bool compare_expression(const T1& f, const T2& g) {
     std::cerr << f << " != " << g << std::endl;
   return f_str == g_str;
 }
-
-#define CHECK_TYPE(EXPRESSION, TYPE) \
-  BOOST_MPL_ASSERT_MSG((std::is_same<decltype(EXPRESSION), TYPE>::value), TYPE_COMPARE, (decltype(EXPRESSION), TYPE));
 
 struct RootData {
   RootData() : multiplicity(0) {}
@@ -129,11 +122,11 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
     os << "\n Matching data:";
     for (auto test_root: root_data)
       os << "\n   " << test_root.first << ", multiplicity=" << test_root.second.multiplicity << ", matches=" <<  test_root.second.matched_roots.size();
-    BOOST_ERROR(os.str());
+    UNIT_TEST_ERROR(os.str());
   }
 }
 
-BOOST_AUTO_TEST_CASE(poly_quadratic_roots_simple)
+UNIT_TEST(poly_quadratic_roots_simple)
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
@@ -141,33 +134,33 @@ BOOST_AUTO_TEST_CASE(poly_quadratic_roots_simple)
   {//Quadratic with no roots
     auto poly = expand(x * x - 3 * x + 4);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 0);
+    UNIT_TEST_CHECK(roots.size() == 0);
   }
   
   {//Quadratic with one root
     auto poly = expand(-4 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK(roots.size() == 1);
     if (roots.size() == 1)
-      BOOST_CHECK_CLOSE(roots[0], 1.5, 1e-10);
+      UNIT_TEST_CHECK_CLOSE(roots[0], 1.5, 1e-10);
   }
   
   {//quadratic but linear function with one root
     auto poly =  expand(0 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK(roots.size() == 1);
     if (roots.size() == 1)
-      BOOST_CHECK_CLOSE(roots[0], 0.75, 1e-10);
+      UNIT_TEST_CHECK_CLOSE(roots[0], 0.75, 1e-10);
   }
 
   {//constant function, with no roots
     auto poly =  expand(0 * x * x + 0 * x - 9);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 0);
+    UNIT_TEST_CHECK(roots.size() == 0);
   }
 }
 
-BOOST_AUTO_TEST_CASE( poly_quadratic_special_cases)
+UNIT_TEST( poly_quadratic_special_cases)
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
@@ -175,9 +168,9 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_special_cases)
   {//Quadratic with catastrophic cancellation of error
     auto poly = expand(x * x + 712345.12 * x + 1.25);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 2);
-    BOOST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
-    BOOST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10);
+    UNIT_TEST_CHECK(roots.size() == 2);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10);
   }
 
   const double maxsqrt = std::sqrt(std::numeric_limits<double>::max());
@@ -185,31 +178,31 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_special_cases)
   {//Large linear coefficient
     auto poly = expand(x * x + largeterm * x + 1.25);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 2);
+    UNIT_TEST_CHECK(roots.size() == 2);
     //Mathematica value
-    BOOST_CHECK_CLOSE(roots[0], -1.3407807929942599e156, 1e-10);
-    BOOST_CHECK_CLOSE(roots[1], -9.322925914000258e-157, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.3407807929942599e156, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], -9.322925914000258e-157, 1e-10);
   }
 
   {//Large (+ve) constant coefficient
     auto poly = expand(x * x + x + largeterm);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 0);
+    UNIT_TEST_CHECK(roots.size() == 0);
   }
   {//Large (-ve) constant coefficient
     auto poly = expand(x * x + x - largeterm);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 2);
+    UNIT_TEST_CHECK(roots.size() == 2);
 
     //Mathematica value
-    BOOST_CHECK_CLOSE(roots[0], -1.157920892373162e78, 1e-10);
-    BOOST_CHECK_CLOSE(roots[1], 1.157920892373162e78, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.157920892373162e78, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], 1.157920892373162e78, 1e-10);
   }
 }
 
 double cubic_rootvals[] = {-1e6, -1e3, -100, -1, 0, 1, +100, 1e3, 1e6};
 
-BOOST_AUTO_TEST_CASE( poly_linear_roots_full )
+UNIT_TEST( poly_linear_roots_full )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -225,7 +218,7 @@ BOOST_AUTO_TEST_CASE( poly_linear_roots_full )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( poly_quadratic_roots_full )
+UNIT_TEST( poly_quadratic_roots_full )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -242,7 +235,7 @@ BOOST_AUTO_TEST_CASE( poly_quadratic_roots_full )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( poly_cubic_triple_roots )
+UNIT_TEST( poly_cubic_triple_roots )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -258,7 +251,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_triple_roots )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( poly_cubic_single_roots )
+UNIT_TEST( poly_cubic_single_roots )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -284,7 +277,7 @@ BOOST_AUTO_TEST_CASE( poly_cubic_single_roots )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
+UNIT_TEST( poly_cubic_special_cases )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -292,29 +285,29 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
   {//Zero constant term with three roots
     auto poly = expand((x * x + 712345.12 * x + 1.25) * x);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 3);
-    BOOST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
-    BOOST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10);
-    BOOST_CHECK_CLOSE(roots[2], 0, 1e-10);
+    UNIT_TEST_CHECK(roots.size() == 3);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[2], 0, 1e-10);
   }
 
   {//Zero constant term with one root
     auto poly = expand((x * x - 3 * x + 4) * x);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 1);
-    BOOST_CHECK_CLOSE(roots[0], 0, 1e-10);
+    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_CLOSE(roots[0], 0, 1e-10);
   }
 
   {//Special case where f(x) = a * x^3 + d
     auto poly = expand(x * x * x + 1e3);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 1);
-    BOOST_CHECK_CLOSE(roots[0], -10, 1e-10);
+    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -10, 1e-10);
 
     poly = expand(x * x * x - 1e3);
     roots = solve_real_roots(poly);
-    BOOST_CHECK(roots.size() == 1);
-    BOOST_CHECK_CLOSE(roots[0], 10, 1e-10);
+    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_CLOSE(roots[0], 10, 1e-10);
   }
 
   const double maxsqrt = std::sqrt(std::numeric_limits<double>::max());
@@ -323,19 +316,19 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
   {//Large x^2 term
     auto poly = expand(x * x * x - largeterm * x * x + 1.25);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK_EQUAL(roots.size(), 3);
-    BOOST_CHECK_CLOSE(roots[0], -9.655529977168658e-79, 1e-10);
-    BOOST_CHECK_CLOSE(roots[1], +9.655529977168658e-79, 1e-10);
-    BOOST_CHECK_CLOSE(roots[2], 1.3407807929942599e156, 1e-10);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 3);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -9.655529977168658e-79, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], +9.655529977168658e-79, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[2], 1.3407807929942599e156, 1e-10);
   }
 
   {//Large x term
     auto poly = expand(x * x * x - x * x - largeterm * x + 1.25);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK_EQUAL(roots.size(), 3);
-    BOOST_CHECK_CLOSE(roots[0], -1.1579208923731622e78, 1e-10);
-    BOOST_CHECK_CLOSE(roots[1], 9.322925914000258e-157, 1e-10);
-    BOOST_CHECK_CLOSE(roots[2], 1.1579208923731622e78, 1e-10);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 3);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.1579208923731622e78, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], 9.322925914000258e-157, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[2], 1.1579208923731622e78, 1e-10);
   }
 
   const double smallerterm = maxsqrt * 1e-1;
@@ -343,14 +336,14 @@ BOOST_AUTO_TEST_CASE( poly_cubic_special_cases )
     //Large v term
     auto poly = expand(x * x * x  - smallerterm * x * x - smallerterm * x + 2);
     auto roots = solve_real_roots(poly);
-    BOOST_CHECK_EQUAL(roots.size(), 3);
-    BOOST_CHECK_CLOSE(roots[0], -1.0, 1e-10);
-    BOOST_CHECK_CLOSE(roots[1], 1.491668146240041472864517142264024641421371730393e-153, 1e-10);
-    BOOST_CHECK_CLOSE(roots[2], 1.340780792994259598314974448015366224371799690462e153, 1e-10);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 3);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.0, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], 1.491668146240041472864517142264024641421371730393e-153, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[2], 1.340780792994259598314974448015366224371799690462e153, 1e-10);
   }
 }
 
-BOOST_AUTO_TEST_CASE( poly_root_tests)
+UNIT_TEST( poly_root_tests)
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -359,28 +352,28 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
     auto f1 = expand(4 * (x*x*x) - x * x - 2 * x + 12);
     
     auto roots = solve_real_roots(f1);
-    BOOST_CHECK(roots.size() == 1);
-    BOOST_CHECK_CLOSE(roots[0], -1.472711896724616002268033950475380144341, 1e-10);
+    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.472711896724616002268033950475380144341, 1e-10);
     
     auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
-    BOOST_CHECK(droots.size() == 2);
-    BOOST_CHECK_CLOSE(droots[0], -1.0/3, 1e-10);
-    BOOST_CHECK_CLOSE(droots[1], 0.5, 1e-10);
+    UNIT_TEST_CHECK(droots.size() == 2);
+    UNIT_TEST_CHECK_CLOSE(droots[0], -1.0/3, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(droots[1], 0.5, 1e-10);
   }
 
   {//Check quartic
     auto f1 = expand(10 * (x*x*x*x) + x*x*x - 30 * x * x -23);
 
     auto roots = solve_real_roots<>(f1);
-    BOOST_CHECK_EQUAL(roots.size(), 2);
-    BOOST_CHECK_CLOSE(roots[0], -1.949403904489790210996459054473124835057, 1e-10);
-    BOOST_CHECK_CLOSE(roots[1], +1.864235880634589025006445510389799368569, 1e-10);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 2);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.949403904489790210996459054473124835057, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], +1.864235880634589025006445510389799368569, 1e-10);
 
     auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
-    BOOST_CHECK_EQUAL(droots.size(),3);
-    BOOST_CHECK_CLOSE(droots[0], -1.262818836058599076329128653113014315066, 1e-10);
-    BOOST_CHECK_CLOSE(droots[1], 0, 1e-10);
-    BOOST_CHECK_CLOSE(droots[2], +1.187818836058599076329128653113014315066, 1e-10);
+    UNIT_TEST_CHECK_EQUAL(droots.size(),3);
+    UNIT_TEST_CHECK_CLOSE(droots[0], -1.262818836058599076329128653113014315066, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(droots[1], 0, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(droots[2], +1.187818836058599076329128653113014315066, 1e-10);
   }
 
   {//PowerOp quartic
@@ -388,20 +381,20 @@ BOOST_AUTO_TEST_CASE( poly_root_tests)
 
     auto roots = solve_real_roots(f1);
     //FIX THIS UNIT TEST!
-    BOOST_CHECK(roots.size() == 2);
+    UNIT_TEST_CHECK(roots.size() == 2);
     ////NOTE THESE ROOTS ARE DOUBLE ROOTS (roots.size() may equal 2,3, or 4)
-    BOOST_CHECK_CLOSE(roots[0], -0.8924203103613100773375343963347855860436, 1e-7);
-    BOOST_CHECK_CLOSE(roots[1], -0.8924203103613100773375343963347855860436, 1e-7);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -0.8924203103613100773375343963347855860436, 1e-7);
+    UNIT_TEST_CHECK_CLOSE(roots[1], -0.8924203103613100773375343963347855860436, 1e-7);
 
     auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
-    BOOST_CHECK(droots.size() == 3);
-    BOOST_CHECK_CLOSE(droots[0], -0.8924203103613100773375343963347855860436, 1e-10);
-    BOOST_CHECK_CLOSE(droots[1], -0.01666666666666666666666666666666666666667, 1e-10);
-    BOOST_CHECK_CLOSE(droots[2], +0.8590869770279767440042010630014522527103, 1e-10);
+    UNIT_TEST_CHECK(droots.size() == 3);
+    UNIT_TEST_CHECK_CLOSE(droots[0], -0.8924203103613100773375343963347855860436, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(droots[1], -0.01666666666666666666666666666666666666667, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(droots[2], +0.8590869770279767440042010630014522527103, 1e-10);
   }
 }
 
-BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
+UNIT_TEST( generic_solve_real_roots )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};
@@ -455,7 +448,7 @@ BOOST_AUTO_TEST_CASE( generic_solve_real_roots )
 	      }
 }
 
-BOOST_AUTO_TEST_CASE( generic_solve_real_roots_2 )
+UNIT_TEST( generic_solve_real_roots_2 )
 {
   using namespace sym;
   const Polynomial<1> x{0, 1};

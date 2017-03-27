@@ -44,23 +44,6 @@ endfunction()
 add_required_include(${CMAKE_SOURCE_DIR})
 
 ######################################################################
-########## Boost library detection and configuration
-######################################################################
-set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.46 COMPONENTS "unit_test_framework")
-if(NOT Boost_FOUND)
-  message(STATUS "Cannot find a static installation of boost, trying a dynamic version")
-  set(Boost_USE_STATIC_LIBS OFF)
-  find_package(Boost 1.46 REQUIRED COMPONENTS "unit_test_framework")
-  if(NOT Boost_FOUND)
-    message(SEND_ERROR "Cannot find a dynamic installation of boost, failing")
-  endif()
-endif()
-include_directories(${Boost_INCLUDE_DIRS})
-link_libraries(${Boost_SYSTEM_LIBRARY})
-add_required_include(${Boost_INCLUDE_DIRS})
-
-######################################################################
 ########## Eigen library detection and configuration
 ######################################################################
 include(CheckIncludeFileCXX)

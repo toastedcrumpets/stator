@@ -25,13 +25,11 @@
 
 //stator
 #include <stator/symbolic/symbolic.hpp>
+#include <stator/unit_test.hpp>
 
 //C++
 #include <iostream>
 
-//boost
-#define BOOST_TEST_MODULE Integration_test
-#include <boost/test/included/unit_test.hpp>
 
 template<class T1, class T2>
 bool compare_expression(const T1& f, const T2& g) {
@@ -49,7 +47,7 @@ bool compare_expression(const T1& f, const T2& g) {
 
 #define CHECK_TYPE(EXPRESSION, TYPE) static_assert(std::is_same<std::decay<decltype(EXPRESSION)>::type, TYPE>::value, "Type of calculation is not what was expected!")
 
-BOOST_AUTO_TEST_CASE( symbolic_integration_variable )
+UNIT_TEST( symbolic_integration_variable )
 { 
   using namespace sym;  
 
@@ -60,10 +58,10 @@ BOOST_AUTO_TEST_CASE( symbolic_integration_variable )
   CHECK_TYPE(integrate(Null(), x), Null);
 
   //Check integration of Vars
-  BOOST_CHECK(compare_expression(integrate(x, x), C<1,2>() * pow<2>(x)));
-  BOOST_CHECK(compare_expression(integrate(pow<3>(x), x), C<1,4>() * pow<4>(x)));
-  BOOST_CHECK(compare_expression(integrate(3 * pow<3>(x), x), 3 * (C<1,4>() * pow<4>(x))));
-  BOOST_CHECK(compare_expression(C<3>() * integrate(pow<3>(x), x), C<3,4>() * pow<4>(x)));
-  BOOST_CHECK(compare_expression(integrate(y, x), y * x));
-  BOOST_CHECK(compare_expression(integrate(pow<2>(y), x), pow<2>(y) * x));
+  UNIT_TEST_CHECK(compare_expression(integrate(x, x), C<1,2>() * pow<2>(x)));
+  UNIT_TEST_CHECK(compare_expression(integrate(pow<3>(x), x), C<1,4>() * pow<4>(x)));
+  UNIT_TEST_CHECK(compare_expression(integrate(3 * pow<3>(x), x), 3 * (C<1,4>() * pow<4>(x))));
+  UNIT_TEST_CHECK(compare_expression(C<3>() * integrate(pow<3>(x), x), C<3,4>() * pow<4>(x)));
+  UNIT_TEST_CHECK(compare_expression(integrate(y, x), y * x));
+  UNIT_TEST_CHECK(compare_expression(integrate(pow<2>(y), x), pow<2>(y) * x));
 }

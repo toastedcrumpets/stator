@@ -39,9 +39,6 @@ namespace sym {
 #include <stator/symbolic/symbolic.hpp>
 
 namespace sym {
-  typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> RTMatrixReal;
-  typedef Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> RTMatrixComplex;
-
   class RTBase;
 
   /*! \brief The holder for a runtime expression or Abstract Syntax
@@ -65,8 +62,6 @@ namespace sym {
     Expr(const int&);
     Expr(const long&);
     Expr(const double&);
-    Expr(const RTMatrixReal&);
-    Expr(const RTMatrixComplex&);
     Expr(const std::complex<double>&);
     
     template<std::intmax_t Num, std::intmax_t Denom>
@@ -92,8 +87,6 @@ namespace sym {
       virtual void visit(const int&) = 0;
       virtual void visit(const long&) = 0;
       virtual void visit(const double&) = 0;
-      virtual void visit(const RTMatrixReal&) = 0;
-      virtual void visit(const RTMatrixComplex&) = 0;
       virtual void visit(const std::complex<double>&) = 0;
       virtual void visit(const VarRT&) = 0;
       virtual void visit(const BinaryOpRT<detail::Add>& ) = 0;
@@ -113,8 +106,6 @@ namespace sym {
       virtual void visit(const int& x) { static_cast<Derived*>(this)->apply(x); }
       virtual void visit(const long& x) { static_cast<Derived*>(this)->apply(x); }
       virtual void visit(const double& x) { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const RTMatrixReal& x) { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const RTMatrixComplex& x) { static_cast<Derived*>(this)->apply(x); }
       virtual void visit(const std::complex<double>& x) { static_cast<Derived*>(this)->apply(x); }
       virtual void visit(const VarRT& x) { static_cast<Derived*>(this)->apply(x); }
       virtual void visit(const Expr& x) { static_cast<Derived*>(this)->apply(x); }
@@ -263,8 +254,6 @@ namespace sym {
   Expr::Expr(const int& v) : Expr(new ConstantRT<int>(v)) {}
   Expr::Expr(const long& v) : Expr(new ConstantRT<long>(v)) {}
   Expr::Expr(const double& v) : Expr(new ConstantRT<double>(v)) {}
-  Expr::Expr(const RTMatrixReal& v) : Expr(new ConstantRT<RTMatrixReal>(v)) {}
-  Expr::Expr(const RTMatrixComplex& v) : Expr(new ConstantRT<RTMatrixComplex>(v)) {}
   Expr::Expr(const std::complex<double>& v) : Expr(new ConstantRT<std::complex<double> >(v)) {}
   
   template<std::intmax_t Num, std::intmax_t Denom>

@@ -39,33 +39,96 @@ namespace sym {
 #include <stator/symbolic/symbolic.hpp>
 
 namespace sym {
-  typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> RTMatrix;
+  typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> RTMatrixReal;
+  typedef Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> RTMatrixComplex;
 
   class RTBase;
 
+  /*! \brief The holder for a runtime expression or Abstract Syntax
+      Tree (AST).
+
+      This class is simply a smart pointer, with specialised
+      constructors to allow it to convert compile-time expressions
+      into runtime forms. It also inherits from SymbolicOperator to
+      allow it to be used in compile-time expressions.
+   */
   struct Expr : public shared_ptr<RTBase>, public SymbolicOperator {
     Expr() {}
+
+    //Allow the standard shared_ptr interface
     typedef shared_ptr<RTBase> Base;
     using Base::Base;
+
+    Expr(const RTBase&);
+
+    //Type conversion constructors from compile-time objects
+    Expr(const int&);
     Expr(const long&);
     Expr(const double&);
-    Expr(const RTMatrix&);
+    Expr(const RTMatrixReal&);
+    Expr(const RTMatrixComplex&);
     Expr(const std::complex<double>&);
+    
+    template<std::intmax_t Num, std::intmax_t Denom>
+    Expr(const C<Num, Denom>& c);
+
+    template<typename ...Args>
+    Expr(const Var<Args...> v);
+    
     template<class LHS_t, class Op, class RHS_t>
     Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
   };
   
   class VarRT;
-
+  template<typename Op> class BinaryOpRT;
+  
   namespace detail {
-    /*! \brief Base interface for runtime symbolic math to allow the
-      visitor programming pattern.
+    /*! \brief Base interface for the visitor programming pattern.
+
+      This class is used to propogate and evaluate transformations of
+      the AST using the visitor pattern.
     */
     struct VisitorInterface {
+      virtual void visit(const int&) = 0;
+      virtual void visit(const long&) = 0;
       virtual void visit(const double&) = 0;
-      virtual void visit(const RTMatrix&) = 0;
+      virtual void visit(const RTMatrixReal&) = 0;
+      virtual void visit(const RTMatrixComplex&) = 0;
       virtual void visit(const std::complex<double>&) = 0;
-      virtual void visit(Expr) = 0;
+      virtual void visit(const VarRT&) = 0;
+      virtual void visit(const BinaryOpRT<detail::Add>& ) = 0;
+      virtual void visit(const BinaryOpRT<detail::Subtract>& ) = 0;
+      virtual void visit(const BinaryOpRT<detail::Multiply>& ) = 0;
+      virtual void visit(const BinaryOpRT<detail::Divide>& ) = 0;
+      virtual void visit(const BinaryOpRT<detail::Power>& ) = 0;
+      virtual void visit(const Expr&) = 0;
+    };
+
+
+    /*! \brief A CRTP helper to facilitate all the required
+        specialisations for the visitor interface.
+     */
+    template<typename Derived>
+    struct VisitorHelper: public VisitorInterface {
+      virtual void visit(const int& x) { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const long& x) { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const double& x) { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const RTMatrixReal& x) { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const RTMatrixComplex& x) { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const std::complex<double>& x) { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const VarRT& x) { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const Expr& x) { static_cast<Derived*>(this)->apply(x); }
+
+      virtual void visit(const BinaryOpRT<detail::Add>& x)
+      { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const BinaryOpRT<detail::Subtract>& x)
+      { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const BinaryOpRT<detail::Multiply>& x)
+      { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const BinaryOpRT<detail::Divide>& x)
+      { static_cast<Derived*>(this)->apply(x); }
+      virtual void visit(const BinaryOpRT<detail::Power>& x)
+      { static_cast<Derived*>(this)->apply(x); }
     };
   }
 
@@ -78,64 +141,13 @@ namespace sym {
 
     virtual bool operator==(const Expr o) const = 0;
 
-    //! \brief default visitor pattern interface
-    virtual void visit(detail::VisitorInterface& c) {
-      auto selfref = this->shared_from_this();
-      c.visit(selfref);
-    }
+    virtual void visit(detail::VisitorInterface& c) = 0;
 
     virtual std::ostream& output(std::ostream&) const = 0;
-
-    virtual Expr try_collapse() const {
-      return clone();
-    }
   };
 
   std::ostream& operator<<(std::ostream& os, const Expr& e) {
     return e->output(os);
-  }
-
-  namespace detail {
-    template<typename Op, typename LHS_t>
-    struct SecondDispatch: public VisitorInterface {
-      SecondDispatch(const LHS_t& LHS, Op& op) : _LHS(LHS), _op(op) {}
-      
-      virtual void visit(const double& RHS) { run(RHS); }
-      
-      virtual void visit(const RTMatrix& RHS) { run(RHS); }
-      
-      virtual void visit(const std::complex<double>& RHS) { run(RHS); }
-      
-      virtual void visit(Expr RHS) { run(RHS); }
-
-      const LHS_t& _LHS;
-      Op& _op;
-      
-    private:
-      template<class T>
-      void run(const T& RHS) { _op.template apply<LHS_t, T>(_LHS, RHS); }
-    };
-
-    template<typename Op>
-    struct FirstDispatch: public VisitorInterface {
-      FirstDispatch(Expr RHS, Op& op):
-	_RHS(RHS), _op(op) {}
-      
-      virtual void visit(const double& LHS) { run(LHS); }
-      virtual void visit(const RTMatrix& LHS) { run(LHS); }
-      virtual void visit(const std::complex<double>& LHS) { run(LHS); }
-      virtual void visit(Expr LHS) { run(LHS); }
-      
-      Expr _RHS;
-      Op& _op;
-
-    private:
-      template<class T>
-      void run(const T& lhs) {
-	SecondDispatch<Op, T> visitor(lhs, _op);
-	_RHS->visit(visitor);
-      }
-    };
   }
   
   /*! \brief CRTP helper base class which implements the boilerplate
@@ -178,6 +190,10 @@ namespace sym {
       return os << idx;
     }
 
+    void visit(detail::VisitorInterface& c) {
+      c.visit(*this);
+    }
+
     char idx;
   };
 
@@ -195,11 +211,11 @@ namespace sym {
       throw _val;
     };
 
-    virtual std::ostream& output(std::ostream& os) const {
+    std::ostream& output(std::ostream& os) const {
       return os << _val;
     }
 
-    virtual void visit(detail::VisitorInterface& c) {
+    void visit(detail::VisitorInterface& c) {
       c.visit(_val);
     }
 
@@ -207,11 +223,6 @@ namespace sym {
     T _val;
   };
 
-  Expr::Expr(const long& v) : Expr(new ConstantRT<long>(v)) {}
-  Expr::Expr(const double& v) : Expr(new ConstantRT<double>(v)) {}
-  Expr::Expr(const RTMatrix& v) : Expr(new ConstantRT<RTMatrix>(v)) {}
-  Expr::Expr(const std::complex<double>& v) : Expr(new ConstantRT<std::complex<double> >(v)) {}
-  
   template<typename Op>
   class BinaryOpRT : public RTBaseHelper<BinaryOpRT<Op> > {
   public:
@@ -219,13 +230,6 @@ namespace sym {
     
     bool operator==(const BinaryOpRT<Op>& o) const {
       return (_LHS == o._LHS) && (_RHS == o._RHS);
-    }
-        
-    Expr try_collapse() const {
-      OpVisitor result;
-      detail::FirstDispatch<OpVisitor> visitor(_RHS, result);
-      _LHS->visit(visitor);
-      return result._value;
     }
     
     virtual std::ostream& output(std::ostream& os) const {
@@ -236,31 +240,117 @@ namespace sym {
       os << ")";
       return os;
     }
+
+    Expr getLHS() const {
+      return _LHS;
+    }
+    
+    Expr getRHS() const {
+      return _RHS;
+    }
+
+    void visit(detail::VisitorInterface& c) {
+      c.visit(*this);
+    }
     
   private:
     Expr _LHS;
     Expr _RHS;
-
-    struct OpVisitor {
-      template<class LHS, class RHS>
-      void apply(const LHS& l, const RHS& r) {
-	check_avail(l, r, detail::select_overload{});
-      }
-
-      template<class LHS, class RHS>
-      auto check_avail(const LHS& l, const RHS& r, detail::choice<0>) -> decltype(Op::apply(l, r), void())
-      { _value = store(Op::apply(l, r)); }
-
-      template<class LHS, class RHS>
-      void check_avail(const LHS& l, const RHS& r, detail::choice<1>)
-      { stator_throw() << "No operator defined for " << l << Op::str() << r; }
-      
-      Expr _value;
-    };
-    
   };
 
+  Expr::Expr(const RTBase& v) : Expr(v.clone()) {}
+
+  Expr::Expr(const int& v) : Expr(new ConstantRT<int>(v)) {}
+  Expr::Expr(const long& v) : Expr(new ConstantRT<long>(v)) {}
+  Expr::Expr(const double& v) : Expr(new ConstantRT<double>(v)) {}
+  Expr::Expr(const RTMatrixReal& v) : Expr(new ConstantRT<RTMatrixReal>(v)) {}
+  Expr::Expr(const RTMatrixComplex& v) : Expr(new ConstantRT<RTMatrixComplex>(v)) {}
+  Expr::Expr(const std::complex<double>& v) : Expr(new ConstantRT<std::complex<double> >(v)) {}
+  
+  template<std::intmax_t Num, std::intmax_t Denom>
+  Expr::Expr(const C<Num, Denom>& c) : Expr(new ConstantRT<double>(double(Num) / Denom)) {}
+  
   template<class LHS_t, class Op, class RHS_t>
-  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Expr(new BinaryOpRT<Op>(op._l, op._r))
-  {}
+  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Expr(new BinaryOpRT<Op>(op._l, op._r)) {}
+  
+  template<typename ...Args>
+  Expr::Expr(const Var<Args...> v) : Expr(new VarRT(v)) {}
+
+
+  namespace detail {
+    template<typename Visitor, typename LHS_t, typename Op>
+    struct DoubleDispatch2: public VisitorHelper<DoubleDispatch2<Visitor, LHS_t, Op> > {
+      DoubleDispatch2(const LHS_t& LHS, Visitor& visitor) : _LHS(LHS), _visitor(visitor) {}
+      
+      template<class RHS_t>
+      void apply(const RHS_t& RHS) { _visitor.template dd_visit<Op>(_LHS, RHS); }
+
+    private:
+      const LHS_t& _LHS;
+      Visitor& _visitor;
+    };
+
+    template<typename Visitor, typename Op>
+    struct DoubleDispatch1: public VisitorHelper<DoubleDispatch1<Visitor, Op> > {
+      DoubleDispatch1(const Expr& RHS, Visitor& visitor):
+	_RHS(RHS), _visitor(visitor) {}
+      
+      template<class LHS_t>
+      void apply(const LHS_t& lhs) {
+	DoubleDispatch2<Visitor, LHS_t, Op> visitor(lhs, _visitor);
+	_RHS->visit(visitor);
+      }
+
+    private:
+      const Expr& _RHS;
+      Visitor& _visitor;
+    };
+
+    struct SimplifyRT : VisitorHelper<SimplifyRT> {
+
+      //This uses SFINAE to exclude itself when the operator does not apply to those types.
+      template<class Op, class LHS_t, class RHS_t>
+      auto dd_visit(const LHS_t& l, const RHS_t& r) -> decltype((void)Op::apply(l, r)) {
+	_result = Expr(store(Op::apply(l, r)));
+      }
+
+      //As everything is specialised, this requires type conversions to work, thus it should be chosen last
+      template<class Op>
+      void dd_visit(const Expr& l, const Expr& r) {
+	//Do nothing, the existing value has been copied into the result
+	//anyway.
+      }
+
+      //By default, just copy the item
+      template<class T>
+      void apply(const T& v) {
+	_result = Expr(v);
+      }
+
+      //For binary operators, try to collapse them
+      template<typename Op>
+      void apply(const BinaryOpRT<Op>& op) {
+	Expr l = run_simplify(op.getLHS());
+	Expr r = run_simplify(op.getRHS());
+
+	//Incase of failed match, just return the original item
+	_result = op.clone();
+	  
+	DoubleDispatch1<SimplifyRT, Op> visitor(r, *this);
+	l->visit(visitor);
+      }
+      
+      Expr _result;
+
+      static Expr run_simplify(const Expr& f) {
+	SimplifyRT visitor;
+	f->visit(visitor);
+	return visitor._result;
+      }
+    };
+  }
+
+  Expr simplify(const Expr& f) {
+    return detail::SimplifyRT::run_simplify(f);
+  }
 }

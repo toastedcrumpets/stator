@@ -65,6 +65,6 @@ BOOST_AUTO_TEST_CASE( symbolic_rt_constants )
 {
   Expr f = Expr(1.0) + Expr(2.0);
   std::cout << f << std::endl;
-  Expr g = f->try_collapse();
-  std::cout << g << std::endl;  
+  Expr g = simplify(f);
+  std::cout << g << std::endl;
 }

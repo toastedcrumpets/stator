@@ -135,12 +135,13 @@ namespace sym {
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l / r);
     };
 
-    struct Dot {
-      static constexpr bool commutative = false;
-      static constexpr bool associative = false;
-      static inline std::string str() { return "•"; }
-      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l.dot(r));
-    };
+    // This operation is not really general enough. Use a generalisation of the inner product.
+    //struct Dot {
+    //  static constexpr bool commutative = false;
+    //  static constexpr bool associative = false;
+    //  static inline std::string str() { return "•"; }
+    //  template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l.dot(r));
+    //};
 
     struct Power {
       static constexpr bool commutative = false;
@@ -156,7 +157,7 @@ namespace sym {
   template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, detail::Subtract, RHS>;    
   template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, detail::Multiply, RHS>;
   template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, detail::Divide, RHS>;
-  template<class LHS, class RHS> using DotOp      = BinaryOp<LHS, detail::Dot, RHS>;
+  //template<class LHS, class RHS> using DotOp      = BinaryOp<LHS, detail::Dot, RHS>;
   template<class LHS, class RHS> using PowerOp   = BinaryOp<LHS, detail::Power, RHS>;
 
   template <class Op, class OverOp>
@@ -170,8 +171,8 @@ namespace sym {
 
   template<> struct left_distributive<detail::Multiply, detail::Add> : std::true_type {};
   
-  template<> struct left_distributive<detail::Dot, detail::Add> : std::true_type {};
-  template<> struct right_distributive<detail::Dot, detail::Add> : std::true_type {};
+  //template<> struct left_distributive<detail::Dot, detail::Add> : std::true_type {};
+  //template<> struct right_distributive<detail::Dot, detail::Add> : std::true_type {};
   
   template<> struct right_distributive<detail::Divide, detail::Add> : std::true_type {};
 
@@ -222,16 +223,16 @@ namespace sym {
     auto operator/(const LHS& l, const RHS& r) 
   -> STATOR_AUTORETURN((DivideOp<decltype(store(l)), decltype(store(r))>(l, r)))
 
-  /*! \brief Symbolic dot operator. */
-    template<class LHS, class RHS,
-	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto dot(const LHS& l, const RHS& r) 
-  -> STATOR_AUTORETURN((DotOp<decltype(store(l)), decltype(store(r))>(l, r)));
-
-  template<class LHS, class RHS,
-	   typename = typename std::enable_if<!ApplySymbolicOps<LHS, RHS>::value>::type>
-  auto dot(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN(detail::Dot::apply(l, r));
+//  /*! \brief Symbolic dot operator. */
+//    template<class LHS, class RHS,
+//	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
+//    auto dot(const LHS& l, const RHS& r) 
+//  -> STATOR_AUTORETURN((DotOp<decltype(store(l)), decltype(store(r))>(l, r)));
+//
+//  template<class LHS, class RHS,
+//	   typename = typename std::enable_if<!ApplySymbolicOps<LHS, RHS>::value>::type>
+//  auto dot(const LHS& l, const RHS& r) 
+//    -> STATOR_AUTORETURN(detail::Dot::apply(l, r));
   
   /*! \brief Symbolic power operator. */
   template<class LHS, class RHS,

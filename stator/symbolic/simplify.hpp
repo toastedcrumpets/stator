@@ -365,8 +365,9 @@ namespace sym {
   
   /*! \brief Multiplication between two Polynomial types.
    */
-  template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N, class PolyVar1, class PolyVar2, class Op,
-	     typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value || std::is_same<Op,detail::Dot>::value>::type>
+  template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, size_t N,
+	   class PolyVar1, class PolyVar2, class Op,
+	   typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value>::type>
     auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, Op, Polynomial<N, Real2, PolyVar2>>& f)
     -> Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type>
   {
@@ -432,22 +433,19 @@ namespace sym {
   //Sign propagation through multipliction or division
   template<class Config = DefaultSimplifyConfig, class Arg1, class Arg2, class Op,
  	   typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value
-					      || std::is_same<Op,detail::Divide>::value
-					      || std::is_same<Op,detail::Dot>::value>::type>
+					      || std::is_same<Op,detail::Divide>::value>::type>
     auto simplify_BinaryOp(const BinaryOp<UnaryOp<Arg1, detail::Arbsign>, Op, UnaryOp<Arg2, detail::Arbsign> >& f, detail::choice<4>)
     -> STATOR_AUTORETURN(try_simplify<Config>(detail::Arbsign::apply(Op::apply(f._l._arg, f._r._arg))));
   
   template<class Config, class LHS, class Arg, class Op,
 	   typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value
-					      || std::is_same<Op,detail::Divide>::value
-					      || std::is_same<Op,detail::Dot>::value>::type>
+					      || std::is_same<Op,detail::Divide>::value>::type>
     auto simplify_BinaryOp(const BinaryOp<LHS, Op, UnaryOp<Arg, detail::Arbsign> >& f, detail::choice<5>)
     -> STATOR_AUTORETURN(try_simplify<Config>(detail::Arbsign::apply(Op::apply(f._l, f._r._arg))));
 
   template<class Config, class RHS, class Arg, class Op,
  	   typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value
-					      || std::is_same<Op,detail::Divide>::value
-					      || std::is_same<Op,detail::Dot>::value>::type>
+					      || std::is_same<Op,detail::Divide>::value>::type>
     auto simplify_BinaryOp(const BinaryOp<UnaryOp<Arg, detail::Arbsign>, Op,  RHS>& f, detail::choice<5>)
     -> STATOR_AUTORETURN(try_simplify<Config>(detail::Arbsign::apply(Op::apply(f._l._arg, f._r))));
     

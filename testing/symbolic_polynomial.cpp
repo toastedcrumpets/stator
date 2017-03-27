@@ -210,11 +210,6 @@ BOOST_AUTO_TEST_CASE( poly_vector )
   auto poly1 = expand(x+C);
   BOOST_CHECK_EQUAL(poly1[0], (Vector{3,2,1}));
   BOOST_CHECK_EQUAL(poly1[1], (Vector{1,2,3}));
-
-  auto poly2 = expand(dot(poly1, poly1));
-  BOOST_CHECK_EQUAL(poly2[0], 14);
-  BOOST_CHECK_EQUAL(poly2[1], 20);
-  BOOST_CHECK_EQUAL(poly2[2], 14);
 }
 
 BOOST_AUTO_TEST_CASE( poly_lower_order )
@@ -730,6 +725,5 @@ BOOST_AUTO_TEST_CASE( Poly_Vector_symbolic )
     }
 
   BOOST_CHECK((toArithmetic(Vector{1,2,3}) == Vector{1,2,3}));
-  BOOST_CHECK(dot(Vector{1,2,3} , Vector{4,5,6}) == 32);
 }
 

@@ -437,9 +437,9 @@ UNIT_TEST( generic_solve_real_roots )
 		//These root finding methods only work for
 		//squarefree polynomials, so we only test against those
 		if (std::set<double>{*it1, *it2, *it3, *it4, *it5}.size() == 5) {
-		  //Test VCA + TOMS748
-		  compare_roots(solve_real_roots<PolyRootBounder::VCA, PolyRootBisector::TOMS748>(f1), test_roots, f1);
-		  compare_roots(solve_real_roots<PolyRootBounder::VCA, PolyRootBisector::TOMS748>(f2), test_roots, f2);
+		  //Test VCA + BISECTION
+		  compare_roots(solve_real_roots<PolyRootBounder::VCA, PolyRootBisector::BISECTION>(f1), test_roots, f1);
+		  compare_roots(solve_real_roots<PolyRootBounder::VCA, PolyRootBisector::BISECTION>(f2), test_roots, f2);
 			
 		  //Test VAS + BISECTION
 		  compare_roots(solve_real_roots<PolyRootBounder::VAS, PolyRootBisector::BISECTION>(f1), test_roots, f1);

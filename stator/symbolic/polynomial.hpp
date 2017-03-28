@@ -26,9 +26,6 @@
 #include <stator/symbolic/numeric.hpp>
 #include <stator/symbolic/operators.hpp>
 
-//boost
-#include <boost/math/tools/roots.hpp>
-
 //C++
 #include <stdexcept>
 #include <ostream>
@@ -1672,7 +1669,7 @@ namespace sym {
   /*! \brief Enumeration of the types of bisection routines we have
     for solve_real_roots . */
   enum class  PolyRootBisector {
-    BISECTION, TOMS748
+    BISECTION
   };
 
   /*! \brief Solve for a quadratic factor of the passed Polynomial
@@ -1760,7 +1757,10 @@ namespace sym {
     
     const Coeff_t eps = std::max(Coeff_t(std::ldexp(1.0, 1-tol_bits)), Coeff_t(2*std::numeric_limits<Coeff_t>::epsilon()));
 
-    bool try_toms748 = true;
+    bool try_bisection = true;
+
+    auto f_bisection = [&](Coeff_t x) { return sub(f, PolyVar() == x); };
+    
     while(!regions.empty()) {
 	auto range = regions.pop_back();
 	const Coeff_t xmin = std::get<0>(range); 
@@ -1773,7 +1773,7 @@ namespace sym {
 	if (std::abs(xmin - xmax) <= (eps * std::min(std::abs(xmin), std::abs(xmax)))) {
 	  for (size_t i(0); i < roots; ++i)
 	    retval.push_back(xmid);
-	  try_toms748 = true;
+	  try_bisection = true;
 	  continue;
 	}
 	
@@ -1801,34 +1801,30 @@ namespace sym {
 	if (rootsa > 1)
 	  regions.push_back(std::make_tuple(xmin, xmid, rootsa));
 	else if (rootsa == 1) {
-	  if (try_toms748){
-	    try {
-	      boost::uintmax_t iter = 100;
-	      auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return sub(f, PolyVar() == x); }, xmin, xmid, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
-	      retval.push_back((root.first + root.second) / 2);
-	    } catch(...) {
+	  if (try_bisection) {
+	    Coeff_t root;
+	    bool result = stator::numeric::bisection(f_bisection, root, xmin, xmid);
+	    if (result)
+	      retval.push_back(root);
+	    else
 	      regions.push_back(std::make_tuple(xmin, xmid, rootsa));
-	      try_toms748 = false;
-	    }
-	  } else {
-	    regions.push_back(std::make_tuple(xmin, xmid, rootsa));	    
 	  }
+	  else
+	    regions.push_back(std::make_tuple(xmin, xmid, rootsa));
 	}
 	if (rootsb > 1)
 	  regions.push_back(std::make_tuple(xmid, xmax, rootsb));
 	else if (rootsb == 1) {
-	  if (try_toms748){
-	    try {
-	      boost::uintmax_t iter = 100;
-	      auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return sub(f, PolyVar() == x); }, xmid, xmax, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
-	      retval.push_back((root.first + root.second) / 2);
-	    } catch(...) {
+	  if (try_bisection) {
+	    Coeff_t root;
+	    bool result = stator::numeric::bisection(f_bisection, root, xmid, xmax);
+	    if (result)
+	      retval.push_back(root);
+	    else
 	      regions.push_back(std::make_tuple(xmid, xmax, rootsb));
-	      try_toms748 = false;
-	    }
-	  } else {
-	    regions.push_back(std::make_tuple(xmid, xmax, rootsb));
 	  }
+	  else
+	    regions.push_back(std::make_tuple(xmid, xmax, rootsa));
 	}
     }
 	
@@ -1854,23 +1850,19 @@ namespace sym {
           
     //Now bisect to calculate the roots to full precision
     StackVector<Coeff_t, Order> retval;
-    
+
+    auto f_bisection = [&](Coeff_t x) { return sub(f, PolyVar() == x); };
     for (const auto& bound : bounds) {
 	const Coeff_t& a = bound.first;
 	const Coeff_t& b = bound.second;
 	switch(BisectionMode) {
 	case PolyRootBisector::BISECTION: 
 	  {
-	    boost::uintmax_t iter = 100;
-	    auto root = boost::math::tools::bisect([&](Coeff_t x) { return sub(f, PolyVar() == x); }, a, b, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
-	    retval.push_back((root.first + root.second) / 2);
-	    break;
-	  }
-	case PolyRootBisector::TOMS748: 
-	  {
-	    boost::uintmax_t iter = 100;
-	    auto root = boost::math::tools::toms748_solve([&](Coeff_t x) { return sub(f, PolyVar() == x); }, a, b, boost::math::tools::eps_tolerance<Coeff_t>(100), iter);
-	    retval.push_back((root.first + root.second) / 2);
+	    Coeff_t root;
+	    bool result = stator::numeric::bisection(f_bisection, root, a, b);
+	    if (!result)
+	      stator_throw() << "Bisection failed! Impossibru!";
+	    retval.push_back(root);
 	    break;
 	  }
 	}
@@ -1890,7 +1882,7 @@ namespace sym {
 
     Roots are always returned sorted lowest-first.
    */
-  template<PolyRootBounder BoundMode = PolyRootBounder::STURM, PolyRootBisector BisectionMode = PolyRootBisector::TOMS748, size_t Order, class Coeff_t, class PolyVar>
+  template<PolyRootBounder BoundMode = PolyRootBounder::STURM, PolyRootBisector BisectionMode = PolyRootBisector::BISECTION, size_t Order, class Coeff_t, class PolyVar>
   StackVector<Coeff_t, Order>
   solve_real_roots(const Polynomial<Order, Coeff_t, PolyVar>& f) {
     //Handle special cases 

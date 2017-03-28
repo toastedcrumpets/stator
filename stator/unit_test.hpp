@@ -27,7 +27,8 @@
 
 class UnitTests {
 public:
-
+  UnitTests() : _error_counter(0) {}
+  
   static UnitTests& get() {
     static UnitTests instance;
     return instance;
@@ -37,7 +38,7 @@ public:
     _tests.emplace_back(name, cb);
   }
 
-  void run_tests() {
+  int run_tests() {
     for (auto& test : _tests) {
       std::cout << "### Running test: " << test._name << "\n";
       _running_test_name = test._name;
@@ -54,32 +55,51 @@ public:
       auto end = std::chrono::steady_clock::now();
       std::cout << "## " << test._name << " complete in " << std::chrono::duration <double, std::nano> (end-start).count() / 1e6 << " ms" << std::endl;
     }
+    
+    std::cout << "# Tests complete with " << _error_counter << " errors" << std::endl;
+    return _error_counter > 1;
   }
 
   template<class L, class R>
   void check_equal(const L& l, const R& r, std::string file, int line, std::string Lname, std::string Rname) {
-    if (l != r)
+    if (l != r) {
+      ++_error_counter;
       std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": check " << Lname << " == " << Rname << " failed, " << l << " != " << r << std::endl;
+    }
   }
 
   void check(bool l, std::string file, int line, std::string Lname) {
-    if (!l)
+    if (!l) {
+      ++_error_counter;
       std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": check " << Lname << " failed" << std::endl;
+    }
   }
 
   template<class L, class R, class Tol_t>
-  void check_close(L l, R r,  std::string file, int line, std::string Lname, std::string Rname, Tol_t tol) {
-    if (!((std::abs(l - r) / std::abs(l) <= tol) && (std::abs(l - r) / std::abs(r) <= tol)))
-      std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": difference between " << Lname << "{"<<l<<"} and " << Rname << "{"<<r<<"} exceeds " << tol/100.00 << "%" << std::endl;
+  void check_close(L l, R r,  std::string file, int line, std::string Lname, std::string Rname, Tol_t tol)
+  {
+    //Check if the values are close
+    if ((std::abs(l - r) / std::abs(l) <= tol) && (std::abs(l - r) / std::abs(r) <= tol))
+      return;
+
+    //If l is zero, then treat tol as an absolute tolerance
+    if ((l == 0) && (std::abs(r) < tol))
+      return;
+    
+    ++_error_counter;
+    std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": difference between " << Lname << "{"<<l<<"} and " << Rname << "{"<<r<<"} exceeds " << tol/100.00 << "%" << std::endl; 
   }
 
   template<class T, class Tol_t>
   void check_small(T l,  std::string file, int line, std::string Lname,  Tol_t tol) {
-    if (!(std::abs(l) <= std::abs(tol)))
+    if (!(std::abs(l) <= std::abs(tol))) {
+      ++_error_counter;
       std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": absolute value of " << Lname << "{"<<l<<"} exceeds " << tol << std::endl;
+    }
   }
 
   void error(std::string msg, std::string file, int line) {
+    ++_error_counter;
     std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": " << msg << std::endl;
   }
   
@@ -94,6 +114,8 @@ private:
   std::vector<Test> _tests;
 
   std::string _running_test_name;
+
+  size_t _error_counter;
 };
 
 struct UnitTestRegisterer {
@@ -110,4 +132,6 @@ struct UnitTestRegisterer {
 #define UNIT_TEST_CHECK_SMALL(A, TOL) UnitTests::get().check_small(A, __FILE__, __LINE__, #A, TOL)
 #define UNIT_TEST_ERROR(MSG) UnitTests::get().error(MSG, __FILE__, __LINE__)
 
-int main(int argc, char** argv) { UnitTests::get().run_tests(); }
+int main() {
+  return UnitTests::get().run_tests();
+}

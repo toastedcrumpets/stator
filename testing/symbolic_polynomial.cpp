@@ -450,13 +450,13 @@ UNIT_TEST( poly_Sturm_chains )
     UNIT_TEST_CHECK(compare_expression(chain.get(6), Polynomial<0>{0}));
     
     //This polynomial has roots at -1 and +1
-    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(-HUGE_VAL), 3);
-    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(0), 2);
-    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(HUGE_VAL), 1);
+    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(-HUGE_VAL), 3u);
+    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(0), 2u);
+    UNIT_TEST_CHECK_EQUAL(chain.sign_changes(HUGE_VAL), 1u);
     
-    UNIT_TEST_CHECK_EQUAL(chain.roots(0.5, 3.0), 1);
-    UNIT_TEST_CHECK_EQUAL(chain.roots(-2.141, -0.314159265), 1);
-    UNIT_TEST_CHECK_EQUAL(chain.roots(-HUGE_VAL, HUGE_VAL), 2);
+    UNIT_TEST_CHECK_EQUAL(chain.roots(0.5, 3.0), 1u);
+    UNIT_TEST_CHECK_EQUAL(chain.roots(-2.141, -0.314159265), 1u);
+    UNIT_TEST_CHECK_EQUAL(chain.roots(-HUGE_VAL, HUGE_VAL), 2u);
  }
 }
 

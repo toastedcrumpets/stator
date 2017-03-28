@@ -316,7 +316,7 @@ UNIT_TEST( poly_cubic_special_cases )
   {//Large x^2 term
     auto poly = expand(x * x * x - largeterm * x * x + 1.25);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK_EQUAL(roots.size(), 3);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 3u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -9.655529977168658e-79, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], +9.655529977168658e-79, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[2], 1.3407807929942599e156, 1e-10);
@@ -325,7 +325,7 @@ UNIT_TEST( poly_cubic_special_cases )
   {//Large x term
     auto poly = expand(x * x * x - x * x - largeterm * x + 1.25);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK_EQUAL(roots.size(), 3);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 3u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.1579208923731622e78, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], 9.322925914000258e-157, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[2], 1.1579208923731622e78, 1e-10);
@@ -336,7 +336,7 @@ UNIT_TEST( poly_cubic_special_cases )
     //Large v term
     auto poly = expand(x * x * x  - smallerterm * x * x - smallerterm * x + 2);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK_EQUAL(roots.size(), 3);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 3u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.0, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], 1.491668146240041472864517142264024641421371730393e-153, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[2], 1.340780792994259598314974448015366224371799690462e153, 1e-10);
@@ -352,11 +352,11 @@ UNIT_TEST( poly_root_tests)
     auto f1 = expand(4 * (x*x*x) - x * x - 2 * x + 12);
     
     auto roots = solve_real_roots(f1);
-    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK(roots.size() == 1u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.472711896724616002268033950475380144341, 1e-10);
     
     auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
-    UNIT_TEST_CHECK(droots.size() == 2);
+    UNIT_TEST_CHECK(droots.size() == 2u);
     UNIT_TEST_CHECK_CLOSE(droots[0], -1.0/3, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[1], 0.5, 1e-10);
   }
@@ -365,12 +365,12 @@ UNIT_TEST( poly_root_tests)
     auto f1 = expand(10 * (x*x*x*x) + x*x*x - 30 * x * x -23);
 
     auto roots = solve_real_roots<>(f1);
-    UNIT_TEST_CHECK_EQUAL(roots.size(), 2);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.949403904489790210996459054473124835057, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], +1.864235880634589025006445510389799368569, 1e-10);
 
     auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
-    UNIT_TEST_CHECK_EQUAL(droots.size(),3);
+    UNIT_TEST_CHECK_EQUAL(droots.size(),3u);
     UNIT_TEST_CHECK_CLOSE(droots[0], -1.262818836058599076329128653113014315066, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[1], 0, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[2], +1.187818836058599076329128653113014315066, 1e-10);
@@ -381,13 +381,13 @@ UNIT_TEST( poly_root_tests)
 
     auto roots = solve_real_roots(f1);
     //FIX THIS UNIT TEST!
-    UNIT_TEST_CHECK(roots.size() == 2);
+    UNIT_TEST_CHECK(roots.size() == 2u);
     ////NOTE THESE ROOTS ARE DOUBLE ROOTS (roots.size() may equal 2,3, or 4)
     UNIT_TEST_CHECK_CLOSE(roots[0], -0.8924203103613100773375343963347855860436, 1e-7);
     UNIT_TEST_CHECK_CLOSE(roots[1], -0.8924203103613100773375343963347855860436, 1e-7);
 
     auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
-    UNIT_TEST_CHECK(droots.size() == 3);
+    UNIT_TEST_CHECK(droots.size() == 3u);
     UNIT_TEST_CHECK_CLOSE(droots[0], -0.8924203103613100773375343963347855860436, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[1], -0.01666666666666666666666666666666666666667, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[2], +0.8590869770279767440042010630014522527103, 1e-10);

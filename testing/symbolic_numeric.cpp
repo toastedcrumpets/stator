@@ -49,7 +49,7 @@ UNIT_TEST( Newton_Raphson_of_cubic )
   double f_target = 1e-50;
 
   auto f = [&f_target](double x) {
-    return std::array<double,2>{x * x * x - f_target, 3 * x * x};
+    return std::array<double,2>{{x * x * x - f_target, 3 * x * x}};
   };
   
   while (f_target < 1e50) {
@@ -70,7 +70,7 @@ UNIT_TEST( Halleys_method_of_cubic )
   double f_target = 1e-50;
 
   auto f = [&f_target](double x) {
-    return std::array<double,3>{x * x * x - f_target, 3 * x * x, 6 * x};
+    return std::array<double,3>{{x * x * x - f_target, 3 * x * x, 6 * x}};
   };
   
   while (f_target < 1e50) {

@@ -536,8 +536,8 @@ UNIT_TEST( descartes_sturm_and_budan_01_alesina_rootcount_test )
 		      UNIT_TEST_CHECK_EQUAL(chain2.roots(0.0, HUGE_VAL), positive_roots); 
 
 		      //Try some others
-		      UNIT_TEST_CHECK_EQUAL(chain1.roots(-HUGE_VAL, HUGE_VAL), 5);
-		      UNIT_TEST_CHECK_EQUAL(chain2.roots(-HUGE_VAL, HUGE_VAL), 5); 
+		      UNIT_TEST_CHECK_EQUAL(chain1.roots(-HUGE_VAL, HUGE_VAL), 5u);
+		      UNIT_TEST_CHECK_EQUAL(chain2.roots(-HUGE_VAL, HUGE_VAL), 5u); 
 		      UNIT_TEST_CHECK(alesina_galuzzi_test(f1,-1.0, 30.0) >= roots_in_range(-1, 30));
 		      UNIT_TEST_CHECK(alesina_galuzzi_test(f1,-0.01, 5.0) >= roots_in_range(-0.01, 5));
 		    }

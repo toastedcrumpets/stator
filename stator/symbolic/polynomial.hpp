@@ -21,10 +21,10 @@
 #pragma once
 
 //stator
-#include "stator/exception.hpp"
-#include "stator/config.hpp"
-#include "stator/symbolic/numeric.hpp"
-#include "stator/symbolic/operators.hpp"
+#include <stator/exception.hpp>
+#include <stator/config.hpp>
+#include <stator/symbolic/numeric.hpp>
+#include <stator/symbolic/operators.hpp>
 
 //boost
 #include <boost/math/tools/roots.hpp>

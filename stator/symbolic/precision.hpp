@@ -18,6 +18,7 @@
 */
 
 #pragma once
+#include <cstddef>
 #include <cmath>
 #include <limits>
 #include <type_traits>

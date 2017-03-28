@@ -18,8 +18,8 @@
 */
 
 #pragma once
-#include "stator/symbolic/symbolic.hpp"
-#include "stator/symbolic/precision.hpp"
+#include <stator/symbolic/precision.hpp>
+#include <array>
 
 namespace stator {
   namespace numeric {
@@ -168,13 +168,21 @@ namespace stator {
 
       Real delta = x_mid - x;
       
-      if ((std::abs(delta) < std::abs(x_precision * x_mid)) || (new_state[0] == Real(0))) {
-	//std::cout << "Converged!" << std::endl;
-	//We've converged
-	x = x_mid;
-	curr_state = new_state;
-	return 2;
-      }
+      if (//Check if the precision has been reached
+	  (std::abs(delta) < std::abs(x_precision * x_mid))
+	  //Or the function has hit zero on the mid point
+	  || (new_state[0] == Real(0))
+	  //Or if the bounds have numerically converged 
+	  || (x_mid == low_bound)
+	  || (x_mid == high_bound)
+	  )
+	{
+	  //std::cout << "Converged!" << std::endl;
+	  //We've converged
+	  x = x_mid;
+	  curr_state = new_state;
+	  return 2;
+	}
 
       //Update bounds and continue
       if (std::signbit(new_state[0]) == std::signbit(f_high[0])) {
@@ -196,12 +204,14 @@ namespace stator {
       number of iterations was exceeded.
      */
     template<class F, class Real>
-    bool newton_raphson(const F& f, Real& x, size_t iterations = 20, 
-			Real low_bound = -HUGE_VAL, Real high_bound = +HUGE_VAL, 
-			int digits = std::numeric_limits<Real>::digits / 2)
+    bool newton_raphson(const F& f, Real& x, Real low_bound = -HUGE_VAL, Real high_bound = +HUGE_VAL, 
+			size_t iterations = 0, int digits = std::numeric_limits<Real>::digits / 2)
     {
+      if (!iterations)
+	iterations = std::numeric_limits<size_t>::max();
+
       auto last_state = f(x);
-      static_assert(last_state.size() > 1, "Require one derivative of the objective function for Halley's method");
+      static_assert(last_state.size() > 1, "Require one derivative of the objective function for Newton-Raphson method");
 
       Real x_precision = static_cast<Real>(ldexp(1.0, 1 - digits));
 
@@ -227,9 +237,12 @@ namespace stator {
       number of iterations was exceeded.
      */
     template<class F, class Real>
-    bool halleys_method(const F& f, Real& x, size_t iterations = 20, Real low_bound = -HUGE_VAL, 
-			Real high_bound = +HUGE_VAL, int digits = std::numeric_limits<Real>::digits / 2)
+    bool halleys_method(const F& f, Real& x, Real low_bound = -HUGE_VAL, 
+			Real high_bound = +HUGE_VAL, size_t iterations = 0, int digits = std::numeric_limits<Real>::digits / 2)
     {
+      if (!iterations)
+	iterations = std::numeric_limits<size_t>::max();
+
       auto last_state = f(x);
 
       static_assert(last_state.size() > 2, "Require two derivatives of the objective function for Halley's method");
@@ -253,6 +266,64 @@ namespace stator {
 	}
       }
       return (status == 2);
+    }
+
+    template<class F, class Real>
+    bool bisection(const F& f, Real& x, Real low_bound, 
+		   Real high_bound, size_t iterations = 0, int digits = std::numeric_limits<Real>::digits / 2)
+    {      
+      //Check for a valid interval
+      if ((low_bound >= high_bound) || std::isinf(low_bound) || std::isinf(high_bound))
+	return false;
+
+      if (!iterations)
+	iterations = std::numeric_limits<size_t>::max();
+
+      Real x_precision = static_cast<Real>(ldexp(1.0, 1 - digits));
+
+      auto f_low = f(low_bound);
+      auto f_high = f(high_bound);
+      
+      if (std::signbit(f_low) == std::signbit(f_high)) {
+	//No sign change in the interval, no root found!
+	return false;
+      }
+
+      //Initialise the result with a decent guess
+      x = high_bound;
+      if (std::abs(f_low) < std::abs(f_high))
+	x = low_bound;
+      
+      while (--iterations) {
+	Real x_mid = (low_bound + high_bound) / 2;
+	auto new_state = f(x_mid);
+	Real delta = x_mid - x;
+	if (
+	    //Check if the precision has been reached
+	    (std::abs(delta) < std::abs(x_precision * x_mid))
+	    //Or the function has hit zero on the mid point
+	    || (new_state == Real(0))
+	    //Or if the bounds have numerically converged 
+	    || (x_mid == low_bound)
+	    || (x_mid == high_bound)
+	    )
+	  {
+	  x = x_mid;
+	  return true;
+	}
+
+	//Update bounds and continue iterations
+	if (std::signbit(new_state) == std::signbit(f_high)) {
+	  f_high = new_state;
+	  high_bound = x_mid;
+	} else {
+	  f_low = new_state;
+	  low_bound = x_mid;
+	}
+      }
+
+      //Failed to find the root
+      return false;
     }
   }
 }

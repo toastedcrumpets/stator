@@ -70,7 +70,7 @@ install:
   - "export CXX=$COMPILER"
   - "if [ $TRAVIS_OS_NAME = 'linux' ] && [ $COMPILER != 'icpc' ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; fi"
   - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get update -q; fi"
-  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get install -y --force-yes libboost-all-dev cmake cmake-data $COMPILER_PACKAGE; fi"
+  - "if [ $TRAVIS_OS_NAME = 'linux' ]; then sudo apt-get install -y --force-yes cmake cmake-data $COMPILER_PACKAGE; fi"
   - "git submodule init"
   - "git submodule update"
 

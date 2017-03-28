@@ -75,7 +75,7 @@ sym::Polynomial<N, Real1, PolyVar> convert_poly(const sym::Polynomial<N, Real2, 
 }
 
 template<class T1, class T2, class Func>
-void compare_roots(T1 roots, T2 actual_roots, Func f){
+void compare_roots(T1 roots, T2 actual_roots, Func f, double tolerance = 0.00124){
   std::sort(roots.begin(), roots.end());
   std::sort(actual_roots.begin(), actual_roots.end());
 
@@ -88,8 +88,12 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
   for (auto root: roots) {
     bool found = false;
     for (auto& test_root: root_data) {
+      double tol = tolerance;
+      //If the root is a multiple root, then increase tolerance as precision is lost here
+      if (test_root.second.multiplicity > 1)
+	tol *= 2;
       const double root_error = std::abs((root - test_root.first) / (test_root.first + (test_root.first == 0)));
-      if (root_error < 0.00124) {
+      if (root_error < tol) {
 	found = true;
 	test_root.second.matched_roots.push_back(root);
 	break;

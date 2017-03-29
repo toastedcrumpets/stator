@@ -20,8 +20,9 @@
 #pragma once
 
 #include <stator/symbolic/symbolic.hpp>
-
 #include <memory>
+#include <sstream>
+
 namespace sym {
   using std::shared_ptr;
   using std::make_shared;
@@ -62,6 +63,9 @@ namespace sym {
     
     template<class LHS_t, class Op, class RHS_t>
     Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
+
+    template<class T>
+    T as() const;
   };
   
   class VarRT;
@@ -114,7 +118,7 @@ namespace sym {
   }
 
   /*! \brief Interface for runtime symbolic types. */
-  class RTBase : public std::enable_shared_from_this<RTBase> {
+  class RTBase : public std::enable_shared_from_this<RTBase>, public SymbolicOperator {
   public:
     virtual ~RTBase() {}
 
@@ -124,11 +128,15 @@ namespace sym {
 
     virtual void visit(detail::VisitorInterface& c) = 0;
 
-    virtual std::ostream& output(std::ostream&) const = 0;
+    virtual std::string str() const = 0;
+
+    virtual void throw_self() const {
+      stator_throw() << "The expression (" << str() << ") does not resolve to a constant type.";
+    }
   };
 
   std::ostream& operator<<(std::ostream& os, const Expr& e) {
-    return e->output(os);
+    return os << e->str();
   }
   
   /*! \brief CRTP helper base class which implements the boilerplate
@@ -167,8 +175,10 @@ namespace sym {
 	return this->clone();
     }
     
-    virtual std::ostream& output(std::ostream& os) const {
-      return os << idx;
+    virtual std::string str() const {
+      std::ostringstream os;
+      os << idx;
+      return os.str();
     }
 
     void visit(detail::VisitorInterface& c) {
@@ -188,18 +198,20 @@ namespace sym {
       return _val == o._val;
     }
     
-    void throw_self() const {
-      throw _val;
-    };
-
-    std::ostream& output(std::ostream& os) const {
-      return os << _val;
+    std::string str() const {
+      std::ostringstream os;
+      os << _val;
+      return os.str();
     }
 
     void visit(detail::VisitorInterface& c) {
       c.visit(_val);
     }
 
+    void throw_self() const {
+      throw _val;
+    }
+    
   private:
     T _val;
   };
@@ -213,13 +225,10 @@ namespace sym {
       return (_LHS == o._LHS) && (_RHS == o._RHS);
     }
     
-    virtual std::ostream& output(std::ostream& os) const {
-      os << "(";
-      _LHS->output(os);
-      os << " " << Op::str() <<  " ";
-      _RHS->output(os);
-      os << ")";
-      return os;
+    virtual std::string str() const {
+      std::ostringstream os;
+      os << "(" << _LHS->str() << " " << Op::str() <<  " " << _RHS->str() << ")";
+      return os.str();
     }
 
     Expr getLHS() const {
@@ -255,6 +264,18 @@ namespace sym {
   template<typename ...Args>
   Expr::Expr(const Var<Args...> v) : Expr(new VarRT(v)) {}
 
+  template<class T>
+  T Expr::as() const {
+    try {
+      (*this)->throw_self();
+    } catch(const T& v) {
+      return v;
+    } catch(const stator::Exception& e) {
+      throw e;
+    } catch(...) {}
+
+    stator_throw() << "Uncaught error! Check implementation of throw_self in expression (" << (*this)->str() << ")";
+  }
 
   namespace detail {
     template<typename Visitor, typename LHS_t, typename Op>
@@ -332,4 +353,5 @@ namespace sym {
   Expr simplify(const Expr& f) {
     return detail::SimplifyRT::run_simplify(f);
   }
+
 }

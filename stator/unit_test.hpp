@@ -47,10 +47,12 @@ public:
       try {
 	test._callback();
       } catch (std::exception& e) {
-	std::cerr << "Exception caught in test " << test._name << std::endl;
-	throw e;
+	_error_counter += 1;
+	std::cerr << "Aborting test, exception thrown in \"" << test._name << "\":" << std::endl
+		  << e.what() << std::endl;
+	break;
       } catch (...) {
-	std::cerr << "Unknown exception thrown" << std::endl;
+	std::cerr << "Aborting all tests, uncaught exception!" << std::endl;
 	throw;
       }
       auto end = std::chrono::steady_clock::now();
@@ -134,5 +136,9 @@ struct UnitTestRegisterer {
 #define UNIT_TEST_ERROR(MSG) UnitTests::get().error(MSG, __FILE__, __LINE__)
 
 int main() {
-  return UnitTests::get().run_tests();
+  try {
+    return UnitTests::get().run_tests();
+  } catch (const std::exception& e) {
+    std::cerr << "Unit tests aborting due to exception:\n" << e.what() << std::endl;
+  }
 }

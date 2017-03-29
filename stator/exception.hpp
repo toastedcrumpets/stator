@@ -63,7 +63,7 @@ namespace stator {
     To allow the combining of multiple exception types, all exceptions
     should inherit virtually from base exception types.
   */
-  class Exception : public virtual std::exception {
+  class Exception : public std::exception {
    public:
     /*! \brief Constructor called by the stator_throw() macro.
 

@@ -60,8 +60,41 @@ bool compare_expression(const T1& f, const T2& g, bool output_error=true) {
 
 UNIT_TEST( symbolic_rt_constants )
 {
+  //Check the Expr operators are working
   Expr f = Expr(1.0) + Expr(2.0);
-  std::cout << f << std::endl;
   Expr g = simplify(f);
-  std::cout << g << std::endl;
+  UNIT_TEST_CHECK_EQUAL(3.0, g.as<double>());
+
+  f = Expr(1.0) - Expr(2.0);
+  g = simplify(f);
+  UNIT_TEST_CHECK_EQUAL(-1, g.as<double>());
+
+  f = Expr(2.0) * Expr(3.0);
+  g = simplify(f);
+  UNIT_TEST_CHECK_EQUAL(6, g.as<double>());
+
+  f = Expr(2.0) / Expr(3.0);
+  g = simplify(f);
+  UNIT_TEST_CHECK_EQUAL(2.0/3.0, g.as<double>());
+  
+  f = pow(Expr(2.0), Expr(3.0));
+  g = simplify(f);
+  UNIT_TEST_CHECK_EQUAL(8, g.as<double>());
+
+
+  //Check that the particular type operators are working
+  f = ConstantRT<double>(3.0) + ConstantRT<double>(2);
+  UNIT_TEST_CHECK_EQUAL(5.0, simplify(f).as<double>());
+
+  f = ConstantRT<double>(3.0) - ConstantRT<double>(2);
+  UNIT_TEST_CHECK_EQUAL(1.0, simplify(f).as<double>());
+
+  f = ConstantRT<double>(3.0) * ConstantRT<double>(2);
+  UNIT_TEST_CHECK_EQUAL(6.0, simplify(f).as<double>());
+
+  f = ConstantRT<double>(3.0) / ConstantRT<double>(2);
+  UNIT_TEST_CHECK_EQUAL(3.0/2, simplify(f).as<double>());
+
+  f = pow(ConstantRT<double>(3.0),ConstantRT<double>(2));
+  UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
 }

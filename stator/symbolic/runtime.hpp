@@ -61,15 +61,19 @@ namespace sym {
     template<typename ...Args>
     Expr(const Var<Args...> v);
     
+    template<class Op, class Arg_t>
+    Expr(const UnaryOp<Arg_t, Op>&);
+
     template<class LHS_t, class Op, class RHS_t>
     Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
-
+    
     template<class T>
     T as() const;
   };
   
   class VarRT;
   template<typename Op> class BinaryOpRT;
+  template<typename Op> class UnaryOpRT;
   
   namespace detail {
     /*! \brief Base interface for the visitor programming pattern.
@@ -83,6 +87,10 @@ namespace sym {
       virtual Expr visit(const double&) = 0;
       virtual Expr visit(const std::complex<double>&) = 0;
       virtual Expr visit(const VarRT&) = 0;
+      virtual Expr visit(const UnaryOpRT<detail::Sine>& ) = 0;
+      virtual Expr visit(const UnaryOpRT<detail::Cosine>& ) = 0;
+      virtual Expr visit(const UnaryOpRT<detail::Absolute>& ) = 0;
+      virtual Expr visit(const UnaryOpRT<detail::Arbsign>& ) = 0;
       virtual Expr visit(const BinaryOpRT<detail::Add>& ) = 0;
       virtual Expr visit(const BinaryOpRT<detail::Subtract>& ) = 0;
       virtual Expr visit(const BinaryOpRT<detail::Multiply>& ) = 0;
@@ -104,6 +112,14 @@ namespace sym {
       virtual Expr visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const Expr& x) { return static_cast<Derived*>(this)->apply(x); }
 
+      virtual Expr visit(const UnaryOpRT<detail::Sine>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const UnaryOpRT<detail::Cosine>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const UnaryOpRT<detail::Absolute>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const UnaryOpRT<detail::Arbsign>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const BinaryOpRT<detail::Add>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const BinaryOpRT<detail::Subtract>& x)
@@ -168,8 +184,8 @@ namespace sym {
       return idx == o.idx;
     }
 
-    VarSub<VarRT, Expr> operator=(const Expr& f) const {
-      return VarSub<VarRT, Expr>(*this, f);
+    Relation<VarRT, Expr> operator=(const Expr& f) const {
+      return Relation<VarRT, Expr>(*this, f);
     }
     
     virtual std::string str() const {
@@ -214,6 +230,34 @@ namespace sym {
   };
 
   template<typename Op>
+  class UnaryOpRT : public RTBaseHelper<UnaryOpRT<Op> > {
+  public:
+    UnaryOpRT(const Expr& arg): _arg(arg) {}
+    
+    bool operator==(const UnaryOpRT<Op>& o) const {
+      return (_arg == o._arg);
+    }
+    
+    virtual std::string str() const {
+      std::ostringstream os;
+      os << Op::_str_left << _arg << Op::_str_right ;
+      return os.str();
+    }
+
+    Expr getArg() const {
+      return _arg;
+    }
+
+    Expr visit(detail::VisitorInterface& c) {
+      return c.visit(*this);
+    }
+    
+  private:
+    Expr _arg;
+    Expr _RHS;
+  };
+  
+  template<typename Op>
   class BinaryOpRT : public RTBaseHelper<BinaryOpRT<Op> > {
   public:
     BinaryOpRT(const Expr& lhs, const Expr& rhs): _LHS(lhs), _RHS(rhs) {}
@@ -255,6 +299,9 @@ namespace sym {
   template<std::intmax_t Num, std::intmax_t Denom>
   Expr::Expr(const C<Num, Denom>& c) : Expr(new ConstantRT<double>(double(Num) / Denom)) {}
   
+  template<class Op, class Arg_t>
+  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Expr(new UnaryOpRT<Op>(op._arg)) {}
+
   template<class LHS_t, class Op, class RHS_t>
   Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Expr(new BinaryOpRT<Op>(op._l, op._r)) {}
   
@@ -322,6 +369,12 @@ namespace sym {
 	return Expr(v);
       }
 
+      template<typename Op>
+      Expr apply(const UnaryOpRT<Op>& op) {
+	Expr arg = op.getArg()->visit(*this);
+	return Op::apply(arg);
+      }
+
       //For binary operators, try to collapse them
       template<typename Op>
       Expr apply(const BinaryOpRT<Op>& op) {
@@ -368,9 +421,26 @@ namespace sym {
   }
   
   template<class Var, class Arg>
-  Expr sub(const Expr& f, const VarSub<Var, Arg>& rel) {
+  Expr sub(const Expr& f, const Relation<Var, Arg>& rel) {
     detail::SubstituteRT visitor(rel._var, rel._val);
     return f->visit(visitor);
   }
 
+  namespace detail {
+    struct DerivativeRT : VisitorHelper<DerivativeRT> {
+      DerivativeRT(VarRT var): _var(var) {}
+      
+      //By default, things are constant so return zero
+      template<class T>
+      Expr apply(const T& v) { return Expr(derivative(v, _var)); }
+      
+      VarRT _var;
+    };
+  }
+  
+  template<class Var>
+  Expr derivative(const Expr& f, const Var v) {
+    detail::DerivativeRT visitor(v);
+    return f->visit(visitor);
+  }
 }

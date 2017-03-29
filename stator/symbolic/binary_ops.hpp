@@ -40,7 +40,7 @@ namespace sym {
   }
 
   template<class LHS, class RHS, class Op, class Var, class Arg> 
-  auto sub(BinaryOp<LHS, Op, RHS> f, VarSub<Var, Arg> x)
+  auto sub(BinaryOp<LHS, Op, RHS> f, Relation<Var, Arg> x)
     -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
 
   template<class LHS, class RHS,

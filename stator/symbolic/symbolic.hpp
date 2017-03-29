@@ -70,8 +70,8 @@ namespace sym {
 
   /*!\brief Symbolic representation of a variable substitution.
   */
-  template<class Var, class Arg> struct VarSub {
-    VarSub(const Var var, const Arg& val): _var(var), _val(val) {}
+  template<class Var, class Arg> struct Relation {
+    Relation(const Var var, const Arg& val): _var(var), _val(val) {}
 
     const Var _var;
     const Arg& _val;
@@ -92,8 +92,8 @@ namespace sym {
     static constexpr const auto idx = stator::orphan::get_value<vidx<'x'>, Args...>::value;
     
     template<class Arg>
-    VarSub<Var<Args...>, Arg> operator=(const Arg& a) const {
-      return VarSub<Var<Args...>, Arg>(*this, a);
+    Relation<Var<Args...>, Arg> operator=(const Arg& a) const {
+      return Relation<Var<Args...>, Arg>(*this, a);
     }
   };
 
@@ -160,7 +160,7 @@ namespace sym {
   */
   template<class T, class Var, class Arg,
 	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-  auto sub(const T& f, const VarSub<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
+  auto sub(const T& f, const Relation<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
   
   /*! \brief Evaluates a symbolic Var at a given point.
     
@@ -169,7 +169,7 @@ namespace sym {
   */
   template<typename ...Args1, typename ...Args2, class Arg,
 	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
-  auto sub(const Var<Args1...>& f, const VarSub<Var<Args2...>, Arg>& x)
+  auto sub(const Var<Args1...>& f, const Relation<Var<Args2...>, Arg>& x)
    -> STATOR_AUTORETURN_BYVALUE(x._val);
 
   /*! \brief Evaluates a symbolic Var at a given point.
@@ -179,7 +179,7 @@ namespace sym {
   */
   template<class ...Args1, class Arg, class Var2,
 	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
-  Var<Args1...> sub(const Var<Args1...>& f, const VarSub<Var2, Arg>& x)
+  Var<Args1...> sub(const Var<Args1...>& f, const Relation<Var2, Arg>& x)
   { return f; }
   
   /*! \brief Output operator for Var types. */
@@ -189,9 +189,9 @@ namespace sym {
     return os;
   }
 
-  /*! \brief Output operator for VarSub types. */
+  /*! \brief Output operator for Relation types. */
   template<class Var, class Arg>
-  inline std::ostream& operator<<(std::ostream& os, const VarSub<Var, Arg>& sub) {
+  inline std::ostream& operator<<(std::ostream& os, const Relation<Var, Arg>& sub) {
     os << Var::idx << " <- " << sub._val;
     return os;
   }
@@ -252,8 +252,8 @@ namespace sym {
 }
 
 
-#include "stator/symbolic/operators.hpp"
-#include "stator/symbolic/functions.hpp"
+#include "stator/symbolic/binary_ops.hpp"
+#include "stator/symbolic/unary_ops.hpp"
 #include "stator/symbolic/simplify.hpp"
 #include "stator/symbolic/polynomial.hpp"
 #include "stator/symbolic/integrate.hpp"

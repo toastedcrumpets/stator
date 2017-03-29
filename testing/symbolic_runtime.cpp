@@ -115,3 +115,8 @@ UNIT_TEST( symbolic_rt_variables )
   f = sub(f, y = 3.0);
   UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
 }
+
+UNIT_TEST( symbolic_rt_unary_ops )
+{
+  
+}

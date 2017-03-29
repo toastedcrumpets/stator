@@ -100,7 +100,7 @@ namespace sym {
     -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::arbsign(Unity()));
 
   template<class Var, class Arg1, class Arg2, class Op>
-  auto sub(const UnaryOp<Arg1, Op>& f, const VarSub<Var, Arg2>& x)
+  auto sub(const UnaryOp<Arg1, Op>& f, const Relation<Var, Arg2>& x)
     -> STATOR_AUTORETURN(Op::apply(sub(f._arg, x)));
   
   template<class Arg, class Op>

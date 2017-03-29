@@ -132,11 +132,11 @@ UNIT_TEST( poly_variables )
   using namespace sym;
   Polynomial<1> x{0, 1};
   Polynomial<1,double, Var<vidx<'y'> > > y{0, 1};
-  UNIT_TEST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()==Var<vidx<'x'> >()), "P(1 × x)"));
+  UNIT_TEST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()=Var<vidx<'x'> >()), "P(1 × x)"));
 
   UNIT_TEST_CHECK(compare_expression(expand(x * x * x), "P(1 × x³)"));
   UNIT_TEST_CHECK(compare_expression(expand(y * y * y), "P(1 × y³)"));
-  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()==Var<vidx<'x'> >()), "P(1 × x³)"));
+  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()=Var<vidx<'x'> >()), "P(1 × x³)"));
 }
 
 UNIT_TEST( poly_addition )
@@ -218,7 +218,7 @@ UNIT_TEST( poly_lower_order )
   UNIT_TEST_CHECK_EQUAL(poly4[0], 2);
   UNIT_TEST_CHECK_EQUAL(poly4[1], -1);
   UNIT_TEST_CHECK_EQUAL(poly4[2], 1);
-  UNIT_TEST_CHECK_EQUAL(sub(poly3, Var<vidx<'x'> >()==123), sub(poly4, Var<vidx<'x'> >()==123));
+  UNIT_TEST_CHECK_EQUAL(sub(poly3, Var<vidx<'x'> >()=123), sub(poly4, Var<vidx<'x'> >()=123));
 }
 
 UNIT_TEST( poly_simplify )
@@ -252,28 +252,28 @@ UNIT_TEST( poly_eval_limits )
 
   {//Check even positive polynomials
     auto f = expand(x * x - x + 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==0), 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), +HUGE_VAL);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=0), 3);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=+HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=-HUGE_VAL), +HUGE_VAL);
   }
 
   {//Check even negative polynomials
     auto f = expand(-x * x + x + 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==0), 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), -HUGE_VAL);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=0), 3);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=+HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd positive polynomials
     auto f = expand(x * x * x + x + 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), +HUGE_VAL);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=+HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd negative polynomials
     auto f = expand(-x * x * x + x + 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==+HUGE_VAL), -HUGE_VAL);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()==-HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=+HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=-HUGE_VAL), +HUGE_VAL);
   }
 }
 
@@ -289,14 +289,14 @@ UNIT_TEST( poly_derivative )
   UNIT_TEST_CHECK_EQUAL(poly2[2], 3);  
   UNIT_TEST_CHECK_EQUAL(poly2[3], 4);  
 
-  UNIT_TEST_CHECK_CLOSE(sub(poly2, Var<>()==3.14159), eval_derivatives<1>(poly1, 3.14159)[1], 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(poly2, Var<>()=3.14159), eval_derivatives<1>(poly1, 3.14159)[1], 1e-10);
 
   auto poly3 = expand(2.0 - x + 2 * x * x);
   auto poly4 = derivative(poly3, Var<>());
   UNIT_TEST_CHECK_EQUAL(poly4[0], -1);
   UNIT_TEST_CHECK_EQUAL(poly4[1], 4);
-  UNIT_TEST_CHECK_EQUAL(sub(poly4, Var<>()==0), -1);
-  UNIT_TEST_CHECK_EQUAL(sub(poly4, Var<>()==1), 3);
+  UNIT_TEST_CHECK_EQUAL(sub(poly4, Var<>()=0), -1);
+  UNIT_TEST_CHECK_EQUAL(sub(poly4, Var<>()=1), 3);
 
   C<2>() * derivative(x, Var<>()) * pow(x, C<1>());
   //derivative(pow(x, C<2>), Var<vidx<'x'> >());
@@ -366,8 +366,8 @@ UNIT_TEST( poly_shift)
 	for (double shift : {-1.0, 2.0, 1e3, 3.14159265, -1e5}) {
 	  auto g = shift_function(f, shift);
 	  
-	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() == 0), sub(f, Var<vidx<'x'> >() == shift), 1e-10);
-	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() == 1e3), sub(f, Var<vidx<'x'> >() == 1e3 + shift), 1e-10);
+	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() = 0), sub(f, Var<vidx<'x'> >() = shift), 1e-10);
+	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() = 1e3), sub(f, Var<vidx<'x'> >() = 1e3 + shift), 1e-10);
 	}
       }
 }
@@ -694,7 +694,7 @@ UNIT_TEST( Poly_Vector_symbolic )
   const size_t testcount = 100;
   const double errlvl = 1e-10;
 
-  Vector test1 = sub(Vector{0,1,2} * Var<vidx<'x'> >(), Var<vidx<'x'> >() == 2);
+  Vector test1 = sub(Vector{0,1,2} * Var<vidx<'x'> >(), Var<vidx<'x'> >() = 2);
   UNIT_TEST_CHECK(test1[0] == 0);
   UNIT_TEST_CHECK(test1[1] == 2);
   UNIT_TEST_CHECK(test1[2] == 4);
@@ -710,7 +710,7 @@ UNIT_TEST( Poly_Vector_symbolic )
       
       Vector r = axis * axis.dot(start);
       auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
-      Vector err = end - sub(f, Var<vidx<'x'> >()==angle);
+      Vector err = end - sub(f, Var<vidx<'x'> >() = angle);
       
       UNIT_TEST_CHECK(std::abs(err[0]) < errlvl);
       UNIT_TEST_CHECK(std::abs(err[1]) < errlvl);

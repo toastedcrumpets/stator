@@ -65,11 +65,11 @@ UNIT_TEST( symbolic_C )
   Check_Type<decltype(Unity() + Null()), Unity>();
   Check_Type<decltype(Null() + Unity()), Unity>();
 
-  Check_Type<std::decay<decltype(sub(Unity(), x == 100))>::type, Unity>();
+  Check_Type<std::decay<decltype(sub(Unity(), x = 100))>::type, Unity>();
 
   Check_Type<decltype(Unity() * Null()), Null>();
 
-  Check_Type<std::decay<decltype(sub(C<5>(), x == 2))>::type, C<5>>();
+  Check_Type<std::decay<decltype(sub(C<5>(), x = 2))>::type, C<5>>();
   Check_Type<decltype((C<5>() - C<3>() - C<2>()) * x), Null>();
 
   UNIT_TEST_CHECK(compare_expression(pi()*pi()/pi(), "π"));
@@ -86,12 +86,12 @@ UNIT_TEST( symbolic_C )
   Check_Type<decltype(cos(C<5,2>()*pi())), Null>();
 
   Var<vidx<'y'>> y;
-  Check_Type<std::decay<decltype(sub(Null(), y==100))>::type, Null>();
+  Check_Type<std::decay<decltype(sub(Null(), y=100))>::type, Null>();
   Check_Type<decltype(derivative(Null(), x)), Null>();
   Check_Type<decltype(derivative(Unity(),x)), Null>();
-  Check_Type<decltype(sub(Null(), y==100)), Null>();
+  Check_Type<decltype(sub(Null(), y=100)), Null>();
   //Check some subs
-  Check_Type<std::decay<decltype(sub(y*y*y, y == Null()))>::type, Null>();
+  Check_Type<std::decay<decltype(sub(y*y*y, y = Null()))>::type, Null>();
   Check_Type<decltype(derivative(2, x)), Null>();
   Check_Type<decltype(derivative(3.141, x)), Null>();
 
@@ -124,21 +124,21 @@ UNIT_TEST( Sub_of_variables )
   Var<> x;
   Var<vidx<'y'>> y;
 
-  Check_Type<std::decay<decltype(sub(x, x==y))>::type, Var<vidx<'y'>>>();
+  Check_Type<std::decay<decltype(sub(x, x=y))>::type, Var<vidx<'y'>>>();
 }
 
 UNIT_TEST( function_basic )
 {
   Var<> x;
   //Check basic Function operation
-  UNIT_TEST_CHECK_CLOSE(sub(2 * x, x==0.5), 1.0, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(2 * x, x=0.5), 1.0, 1e-10);
     
-  UNIT_TEST_CHECK_CLOSE(sub(sin(x), x==0.5), std::sin(0.5), 1e-10);
-  UNIT_TEST_CHECK_CLOSE(sub(cos(x), x==0.5), std::cos(0.5), 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(sin(x), x=0.5), std::sin(0.5), 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(cos(x), x=0.5), std::cos(0.5), 1e-10);
 
   //Test BinaryOP Addition and subtraction
-  UNIT_TEST_CHECK_CLOSE(sub(x * sin(x) + x, x==0.5), 0.5 * std::sin(0.5) + 0.5, 1e-10);
-  UNIT_TEST_CHECK_CLOSE(sub(x * sin(x) - x, x==0.5), 0.5 * std::sin(0.5) - 0.5, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(x * sin(x) + x, x=0.5), 0.5 * std::sin(0.5) + 0.5, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(x * sin(x) - x, x=0.5), 0.5 * std::sin(0.5) - 0.5, 1e-10);
 }
 
 UNIT_TEST( function_multiplication )
@@ -146,9 +146,9 @@ UNIT_TEST( function_multiplication )
   Var<> x;
   //Check function and Polynomial multiplication
   auto poly1 = sin(x + x) * x;
-  UNIT_TEST_CHECK_CLOSE(sub(poly1, x==0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(poly1, x=0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
   auto poly2 = x * sin(x + x);
-  UNIT_TEST_CHECK_CLOSE(sub(poly2, x==0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(poly2, x=0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
 }
 
 UNIT_TEST( function_derivatives )
@@ -156,9 +156,9 @@ UNIT_TEST( function_derivatives )
   Var<> x;
   //Check function and Polynomial derivatives
   auto f1 = derivative(x * sin(x), x);
-  UNIT_TEST_CHECK_CLOSE(sub(f1, x==0.5), std::sin(0.5) + 0.5 * std::cos(0.5), 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(f1, x=0.5), std::sin(0.5) + 0.5 * std::cos(0.5), 1e-10);
   auto f2 = derivative(x * cos(x), x);
-  UNIT_TEST_CHECK_CLOSE(sub(f2, x==0.5), -0.5 * std::sin(0.5) + std::cos(0.5), 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(f2, x=0.5), -0.5 * std::sin(0.5) + std::cos(0.5), 1e-10);
 }
 
 UNIT_TEST( power_basic )
@@ -167,13 +167,13 @@ UNIT_TEST( power_basic )
   UNIT_TEST_CHECK(sym::pow(3, C<3>()) == 27);
   UNIT_TEST_CHECK(sym::pow(Vector{0,1,2}, C<2>()) == 5);
 
-  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()), x==4.0), 4.0*4.0*4.0, 1e-10);
-  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()), x==0.75), std::pow(0.75, 3), 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()), x=4.0), 4.0*4.0*4.0, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()), x=0.75), std::pow(0.75, 3), 1e-10);
 
   //Test PowerOp algebraic operations
-  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()) - x, x==0.75), std::pow(0.75, 3) - 0.75, 1e-10);
-  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()) + x, x==0.75), std::pow(0.75, 3) + 0.75, 1e-10);
-  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()) * x, x==0.75), std::pow(0.75, 3) * 0.75, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()) - x, x=0.75), std::pow(0.75, 3) - 0.75, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()) + x, x=0.75), std::pow(0.75, 3) + 0.75, 1e-10);
+  UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()) * x, x=0.75), std::pow(0.75, 3) * 0.75, 1e-10);
 
   //Check special case derivatives
   Check_Type<decltype(derivative(pow(x, C<1>()), Var<>())), Unity>();
@@ -189,13 +189,13 @@ UNIT_TEST( Var_tests )
   UNIT_TEST_CHECK(compare_expression(derivative(x, Var<>()), Unity()));
   UNIT_TEST_CHECK(compare_expression(derivative(y, Var<>()), Null()));
   UNIT_TEST_CHECK(compare_expression(derivative(y, Var<vidx<'y'>>()), Unity()));
-  UNIT_TEST_CHECK(compare_expression(sub(x, x == 3.14159265), 3.14159265));
+  UNIT_TEST_CHECK(compare_expression(sub(x, x = 3.14159265), 3.14159265));
 
   //Check that subs in the wrong variable do nothing
-  UNIT_TEST_CHECK(compare_expression(sub(y, x == 3.14159265), "y"));
+  UNIT_TEST_CHECK(compare_expression(sub(y, x = 3.14159265), "y"));
 
   //Check default sub is for x
-  UNIT_TEST_CHECK(compare_expression(sub(y, x == 3.14159265), "y"));
+  UNIT_TEST_CHECK(compare_expression(sub(y, x = 3.14159265), "y"));
 
   //Check that Var derivatives are correct
   UNIT_TEST_CHECK(compare_expression(derivative(sin(x), Var<>()), cos(x)));
@@ -256,7 +256,7 @@ UNIT_TEST( vector_symbolic )
   const size_t testcount = 100;
   const double errlvl = 1e-10;
 
-  Vector test1 = sub(Vector{0,1,2} * x, x == 2);
+  Vector test1 = sub(Vector{0,1,2} * x, x = 2);
   
   UNIT_TEST_CHECK(test1[0] == 0);
   UNIT_TEST_CHECK(test1[1] == 2);
@@ -273,7 +273,7 @@ UNIT_TEST( vector_symbolic )
       
       Vector r = axis * axis.dot(start);
       auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
-      Vector err = end - sub(f, x==angle);
+      Vector err = end - sub(f, x=angle);
       
       UNIT_TEST_CHECK(std::abs(err[0]) < errlvl);
       UNIT_TEST_CHECK(std::abs(err[1]) < errlvl);
@@ -288,7 +288,7 @@ UNIT_TEST( symbolic_abs_arbsign )
   Var<> x;
 
   UNIT_TEST_CHECK(compare_expression(abs(x), "|x|"));
-  UNIT_TEST_CHECK_EQUAL(sub(abs(x*x - 5*x), x==2), 6);
+  UNIT_TEST_CHECK_EQUAL(sub(abs(x*x - 5*x), x=2), 6);
   UNIT_TEST_CHECK_EQUAL(C<6/-2>::num, -3);  
   UNIT_TEST_CHECK_EQUAL(C<-8/-4>::num, 2);
   UNIT_TEST_CHECK(compare_expression(abs(Unity()), Unity()));

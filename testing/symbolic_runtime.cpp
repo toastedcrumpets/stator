@@ -45,16 +45,14 @@ struct Check_Type {
 
 
 template<class T1, class T2>
-bool compare_expression(const T1& f, const T2& g, bool output_error=true) {
+void compare_expression(const T1& f, const T2& g, bool output_error=true) {
   std::ostringstream os;
   os << f;
   std::string f_str = os.str();
   os.str(""); os.clear();
   os << g;
   std::string g_str = os.str();
-  if (!(f_str == g_str) && output_error)
-    std::cerr << f << " != " << g << std::endl;
-  return f_str == g_str;
+  UNIT_TEST_CHECK_EQUAL(f_str, g_str);
 }
 
 
@@ -96,5 +94,24 @@ UNIT_TEST( symbolic_rt_constants )
   UNIT_TEST_CHECK_EQUAL(3.0/2, simplify(f).as<double>());
 
   f = pow(ConstantRT<double>(3.0),ConstantRT<double>(2));
+  UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
+}
+
+UNIT_TEST( symbolic_rt_variables )
+{
+  Var<vidx<'x'> > x;
+  Var<vidx<'y'> > y;
+  Expr f;
+
+  f = x;  
+  compare_expression(f, "x");
+
+  f = x * x;
+  compare_expression(f, x * x);
+
+  f = sub(f, x = y);
+  compare_expression(f, y * y);
+
+  f = sub(f, y = 3.0);
   UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
 }

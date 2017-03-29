@@ -68,11 +68,12 @@ namespace sym {
     static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
   };
 
-  /*!\brief Compile-time symbolic representation of a variable
-    substitution.
+  /*!\brief Symbolic representation of a variable substitution.
   */
   template<class Var, class Arg> struct VarSub {
-    VarSub(const Arg& val): _val(val) {}
+    VarSub(const Var var, const Arg& val): _var(var), _val(val) {}
+
+    const Var _var;
     const Arg& _val;
   };
 
@@ -91,8 +92,8 @@ namespace sym {
     static constexpr const auto idx = stator::orphan::get_value<vidx<'x'>, Args...>::value;
     
     template<class Arg>
-    VarSub<Var<Args...>, Arg> operator==(const Arg& a) const {
-	return VarSub<Var<Args...>, Arg>(a);
+    VarSub<Var<Args...>, Arg> operator=(const Arg& a) const {
+      return VarSub<Var<Args...>, Arg>(*this, a);
     }
   };
 
@@ -267,14 +268,14 @@ namespace sym {
       
 	template<class F, class Real>
 	static auto eval(const F& f, const Real& a) 
-        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * sub(f, Var() == a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a)))
+        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * sub(f, Var() = a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a)))
     };
 
     template<size_t max_Order, class Var>
     struct TaylorSeriesWorker<max_Order,max_Order, Var> {
 	template<class F, class Real>
 	static auto eval(const F& f, const Real& a)
-        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * sub(f, Var() == a)));
+        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * sub(f, Var() = a)));
       
 	template<class Real>
 	static Null eval(const Null& f, const Real& a)

@@ -40,11 +40,11 @@ int main(int argc, char **argv) {
   
   std::cout << f1 << std::endl;
   //Output: ((x × x) + sin(y))
-  auto f1_xsub = sub(f1, x == y + 2);
+  auto f1_xsub = sub(f1, x = y + 2);
   
   std::cout << f1_xsub << std::endl;
   //Output: (((y + 2) × (y + 2)) + sin(y))
-  std::cout << sub(f1_xsub, y == 3.14159265359) << std::endl;
+  std::cout << sub(f1_xsub, y = 3.14159265359) << std::endl;
   //Output: 26.436...
   auto f2 = (3-3) * x;
   std::cout << f2 << std::endl;
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
   Eigen::Matrix<double, 1, 3> r{1.0, 2.0, 3.0};
   Eigen::Matrix<double, 1, 3> v{1.0, 0.5, 0.1};
   auto fvec = r + x * v;
-  std::cout << sub(fvec, x == 12) << std::endl;
+  std::cout << sub(fvec, x = 12) << std::endl;
   //Output:  13   8 4.2
 
   {//A fancy example
@@ -121,12 +121,12 @@ int main(int argc, char **argv) {
 
     //Perform a substitution x=y^2
     Var<vidx<'y'> > y;
-    auto g = sub(f, x == y*y); 
+    auto g = sub(f, x = y*y); 
     std::cout << g << std::endl;
     //Output: (sin((y × y)) + (2 × cos((y × y))))
 
     //Evaluate the function
-    double a = sub(g, y == 2.3);   
+    double a = sub(g, y = 2.3);   
     std::cout << a << std::endl;
     //Output: 0.254279
     //Take the derivative

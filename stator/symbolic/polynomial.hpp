@@ -1092,7 +1092,7 @@ namespace sym {
 	 */
 	template<class Coeff_t2>
 	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
-	  const Coeff_t currentx = sub(_p_n, PolyVar() == x);
+	  const Coeff_t currentx = sub(_p_n, PolyVar() = x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 
@@ -1139,7 +1139,7 @@ namespace sym {
 
 	template<class Coeff_t2>
 	size_t sign_change_helper(const int last_sign, const Coeff_t2& x) const {
-	  const Coeff_t currentx = sub(_p_n, PolyVar() == x);
+	  const Coeff_t currentx = sub(_p_n, PolyVar() = x);
 	  const int current_sign = (currentx != 0) * (1 - 2 * std::signbit(currentx));
 	  const bool sign_change = (current_sign != 0) && (last_sign != 0) && (current_sign != last_sign);
 	  return sign_change;
@@ -1581,7 +1581,7 @@ namespace sym {
 	  continue; //Start again
 	}
 
-	if (std::abs(sub(f, PolyVar() == 1.0)) <= (100 * precision(f, 1.0))) {
+	if (std::abs(sub(f, PolyVar() = 1.0)) <= (100 * precision(f, 1.0))) {
 	  //There is probably a root near x=1.0 as its approached zero
 	  //closely (compared to the precision of the polynomial
 	  //evaluation). Rather than trying to divide it out or do
@@ -1759,7 +1759,7 @@ namespace sym {
 
     bool try_bisection = true;
 
-    auto f_bisection = [&](Coeff_t x) { return sub(f, PolyVar() == x); };
+    auto f_bisection = [&](Coeff_t x) { return sub(f, PolyVar() = x); };
     
     while(!regions.empty()) {
 	auto range = regions.pop_back();
@@ -1851,7 +1851,7 @@ namespace sym {
     //Now bisect to calculate the roots to full precision
     StackVector<Coeff_t, Order> retval;
 
-    auto f_bisection = [&](Coeff_t x) { return sub(f, PolyVar() == x); };
+    auto f_bisection = [&](Coeff_t x) { return sub(f, PolyVar() = x); };
     for (const auto& bound : bounds) {
 	const Coeff_t& a = bound.first;
 	const Coeff_t& b = bound.second;

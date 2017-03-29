@@ -78,17 +78,17 @@ namespace sym {
       the AST using the visitor pattern.
     */
     struct VisitorInterface {
-      virtual void visit(const int&) = 0;
-      virtual void visit(const long&) = 0;
-      virtual void visit(const double&) = 0;
-      virtual void visit(const std::complex<double>&) = 0;
-      virtual void visit(const VarRT&) = 0;
-      virtual void visit(const BinaryOpRT<detail::Add>& ) = 0;
-      virtual void visit(const BinaryOpRT<detail::Subtract>& ) = 0;
-      virtual void visit(const BinaryOpRT<detail::Multiply>& ) = 0;
-      virtual void visit(const BinaryOpRT<detail::Divide>& ) = 0;
-      virtual void visit(const BinaryOpRT<detail::Power>& ) = 0;
-      virtual void visit(const Expr&) = 0;
+      virtual Expr visit(const int&) = 0;
+      virtual Expr visit(const long&) = 0;
+      virtual Expr visit(const double&) = 0;
+      virtual Expr visit(const std::complex<double>&) = 0;
+      virtual Expr visit(const VarRT&) = 0;
+      virtual Expr visit(const BinaryOpRT<detail::Add>& ) = 0;
+      virtual Expr visit(const BinaryOpRT<detail::Subtract>& ) = 0;
+      virtual Expr visit(const BinaryOpRT<detail::Multiply>& ) = 0;
+      virtual Expr visit(const BinaryOpRT<detail::Divide>& ) = 0;
+      virtual Expr visit(const BinaryOpRT<detail::Power>& ) = 0;
+      virtual Expr visit(const Expr&) = 0;
     };
 
 
@@ -97,23 +97,23 @@ namespace sym {
      */
     template<typename Derived>
     struct VisitorHelper: public VisitorInterface {
-      virtual void visit(const int& x) { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const long& x) { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const double& x) { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const std::complex<double>& x) { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const VarRT& x) { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const Expr& x) { static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const int& x) { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const long& x) { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const double& x) { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const std::complex<double>& x) { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const Expr& x) { return static_cast<Derived*>(this)->apply(x); }
 
-      virtual void visit(const BinaryOpRT<detail::Add>& x)
-      { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const BinaryOpRT<detail::Subtract>& x)
-      { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const BinaryOpRT<detail::Multiply>& x)
-      { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const BinaryOpRT<detail::Divide>& x)
-      { static_cast<Derived*>(this)->apply(x); }
-      virtual void visit(const BinaryOpRT<detail::Power>& x)
-      { static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const BinaryOpRT<detail::Add>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const BinaryOpRT<detail::Subtract>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const BinaryOpRT<detail::Multiply>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const BinaryOpRT<detail::Divide>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const BinaryOpRT<detail::Power>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
     };
   }
 
@@ -126,7 +126,7 @@ namespace sym {
 
     virtual bool operator==(const Expr o) const = 0;
 
-    virtual void visit(detail::VisitorInterface& c) = 0;
+    virtual Expr visit(detail::VisitorInterface& c) = 0;
 
     virtual std::string str() const = 0;
 
@@ -168,11 +168,8 @@ namespace sym {
       return idx == o.idx;
     }
 
-    Expr sub(const VarRT& var, Expr exp) const {
-      if (*this == var)
-	return exp->clone();
-      else
-	return this->clone();
+    VarSub<VarRT, Expr> operator=(const Expr& f) const {
+      return VarSub<VarRT, Expr>(*this, f);
     }
     
     virtual std::string str() const {
@@ -181,8 +178,8 @@ namespace sym {
       return os.str();
     }
 
-    void visit(detail::VisitorInterface& c) {
-      c.visit(*this);
+    Expr visit(detail::VisitorInterface& c) {
+      return c.visit(*this);
     }
 
     char idx;
@@ -204,8 +201,8 @@ namespace sym {
       return os.str();
     }
 
-    void visit(detail::VisitorInterface& c) {
-      c.visit(_val);
+    Expr visit(detail::VisitorInterface& c) {
+      return c.visit(_val);
     }
 
     void throw_self() const {
@@ -239,8 +236,8 @@ namespace sym {
       return _RHS;
     }
 
-    void visit(detail::VisitorInterface& c) {
-      c.visit(*this);
+    Expr visit(detail::VisitorInterface& c) {
+      return c.visit(*this);
     }
     
   private:
@@ -283,7 +280,7 @@ namespace sym {
       DoubleDispatch2(const LHS_t& LHS, Visitor& visitor) : _LHS(LHS), _visitor(visitor) {}
       
       template<class RHS_t>
-      void apply(const RHS_t& RHS) { _visitor.template dd_visit<Op>(_LHS, RHS); }
+      Expr apply(const RHS_t& RHS) { return _visitor.template dd_visit<Op>(_LHS, RHS); }
 
     private:
       const LHS_t& _LHS;
@@ -296,9 +293,9 @@ namespace sym {
 	_RHS(RHS), _visitor(visitor) {}
       
       template<class LHS_t>
-      void apply(const LHS_t& lhs) {
+      Expr apply(const LHS_t& lhs) {
 	DoubleDispatch2<Visitor, LHS_t, Op> visitor(lhs, _visitor);
-	_RHS->visit(visitor);
+	return _RHS->visit(visitor);
       }
 
     private:
@@ -310,48 +307,70 @@ namespace sym {
 
       //This uses SFINAE to exclude itself when the operator does not apply to those types.
       template<class Op, class LHS_t, class RHS_t>
-      auto dd_visit(const LHS_t& l, const RHS_t& r) -> decltype((void)Op::apply(l, r)) {
-	_result = Expr(store(Op::apply(l, r)));
-      }
+      auto dd_visit(const LHS_t& l, const RHS_t& r) -> STATOR_AUTORETURN(Expr(store(Op::apply(l, r))))
 
-      //As everything is specialised, this requires type conversions to work, thus it should be chosen last
+      //As everything is specialised, this requires type conversions
+      //to work, thus it should be chosen last
       template<class Op>
-      void dd_visit(const Expr& l, const Expr& r) {
-	//Do nothing, the existing value has been copied into the result
-	//anyway.
+      Expr dd_visit(const Expr& l, const Expr& r) {
+	return Op::apply(l, r);
       }
 
       //By default, just copy the item
       template<class T>
-      void apply(const T& v) {
-	_result = Expr(v);
+      Expr apply(const T& v) {
+	return Expr(v);
       }
 
       //For binary operators, try to collapse them
       template<typename Op>
-      void apply(const BinaryOpRT<Op>& op) {
-	Expr l = run_simplify(op.getLHS());
-	Expr r = run_simplify(op.getRHS());
+      Expr apply(const BinaryOpRT<Op>& op) {
+	Expr l = op.getLHS()->visit(*this);
+	Expr r = op.getRHS()->visit(*this);
 
-	//Incase of failed match, just return the original item
-	_result = op.clone();
-	  
 	DoubleDispatch1<SimplifyRT, Op> visitor(r, *this);
-	l->visit(visitor);
-      }
-      
-      Expr _result;
-
-      static Expr run_simplify(const Expr& f) {
-	SimplifyRT visitor;
-	f->visit(visitor);
-	return visitor._result;
+	return l->visit(visitor);
       }
     };
   }
 
   Expr simplify(const Expr& f) {
-    return detail::SimplifyRT::run_simplify(f);
+    detail::SimplifyRT visitor;
+    return f->visit(visitor);
+  }
+  
+  namespace detail {
+    struct SubstituteRT : VisitorHelper<SubstituteRT> {
+      SubstituteRT(VarRT var, Expr replacement): _var(var), _replacement(replacement) {}
+      
+      //By default, just copy the item
+      template<class T>
+      Expr apply(const T& v) { return Expr(v); }
+
+      //Variable matching
+      Expr apply(const VarRT& v) {
+	if (v == _var)
+	  //Need to ensure a copy is performed here
+	  return Expr(_replacement);
+
+	return Expr(v);
+      }
+      
+      //For binary operators, try to collapse them
+      template<typename Op>
+      Expr apply(const BinaryOpRT<Op>& op) {
+	return Op::apply(op.getLHS()->visit(*this), op.getRHS()->visit(*this));
+      }
+      
+      VarRT _var;
+      Expr _replacement;
+    };
+  }
+  
+  template<class Var, class Arg>
+  Expr sub(const Expr& f, const VarSub<Var, Arg>& rel) {
+    detail::SubstituteRT visitor(rel._var, rel._val);
+    return f->visit(visitor);
   }
 
 }

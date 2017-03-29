@@ -49,7 +49,7 @@ namespace sym {
 
   template<class LHS, std::intmax_t num, std::intmax_t den,
 	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
-  auto pow(const LHS& l, const C<num, den>& r) -> STATOR_AUTORETURN(std::pow(l, decltype(r+l)(r)));
+  auto pow(const LHS& l, const C<num, den>& r) -> STATOR_AUTORETURN(std::pow(l, double(r)));
   
   template<class LHS,
 	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>

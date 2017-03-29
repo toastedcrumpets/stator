@@ -20,6 +20,10 @@
 #pragma once
 
 namespace sym {
+  namespace detail {
+    class NoIdentity {};
+  };
+  
   /*! \brief Base class for sym::BinaryOp.
    */
   struct BinaryOpBase : SymbolicOperator {};
@@ -102,6 +106,8 @@ namespace sym {
       static constexpr bool associative = true;
       typedef Null left_identity;
       typedef Null right_identity;
+      typedef NoIdentity left_zero;
+      typedef NoIdentity right_zero;
       static inline std::string str() { return "+"; }
       //Apply has to accept by const ref, as returned objs may reference/alias the arguments, so everything needs at least the parent scope
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l + r);
@@ -110,7 +116,10 @@ namespace sym {
     struct Subtract {
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
+      typedef NoIdentity left_identity;
       typedef Null right_identity;
+      typedef NoIdentity left_zero;
+      typedef NoIdentity right_zero;
       static inline std::string str() { return "-"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l - r);
     };
@@ -129,8 +138,10 @@ namespace sym {
     struct Divide {
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
+      typedef NoIdentity left_identity;
       typedef Unity right_identity;
       typedef Null left_zero;
+      typedef NoIdentity right_zero;
       static inline std::string str() { return "÷"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l / r);
     };
@@ -139,7 +150,9 @@ namespace sym {
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
       static inline std::string str() { return "^"; }
+      typedef NoIdentity left_identity;
       typedef Unity right_identity;
+      typedef NoIdentity right_zero;
       typedef Unity left_zero;
       //We have to prevent silly powers (i.e. matrix powers) otherwise
       //the MSVSC compiler gets confused

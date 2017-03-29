@@ -66,6 +66,12 @@ namespace sym {
 
     template<class LHS_t, class Op, class RHS_t>
     Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
+
+    bool operator==(const Expr&) const;
+    
+    Expr(const detail::NoIdentity&)
+    { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
+    bool operator==(const detail::NoIdentity&) const { return false; }
     
     template<class T>
     T as() const;
@@ -96,7 +102,6 @@ namespace sym {
       virtual Expr visit(const BinaryOpRT<detail::Multiply>& ) = 0;
       virtual Expr visit(const BinaryOpRT<detail::Divide>& ) = 0;
       virtual Expr visit(const BinaryOpRT<detail::Power>& ) = 0;
-      virtual Expr visit(const Expr&) = 0;
     };
 
 
@@ -110,7 +115,6 @@ namespace sym {
       virtual Expr visit(const double& x) { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const std::complex<double>& x) { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const Expr& x) { return static_cast<Derived*>(this)->apply(x); }
 
       virtual Expr visit(const UnaryOpRT<detail::Sine>& x)
       { return static_cast<Derived*>(this)->apply(x); }
@@ -154,6 +158,11 @@ namespace sym {
   std::ostream& operator<<(std::ostream& os, const Expr& e) {
     return os << e->str();
   }
+
+  bool Expr::operator==(const Expr& e) const {
+    return (*(*this)) == e;
+  }
+
   
   /*! \brief CRTP helper base class which implements the boilerplate
     code for runtime symbolic types.
@@ -381,6 +390,18 @@ namespace sym {
 	Expr l = op.getLHS()->visit(*this);
 	Expr r = op.getRHS()->visit(*this);
 
+	if (r == typename Op::right_zero())
+	  return typename Op::right_zero();
+	
+	if (l == typename Op::left_zero())
+	  return typename Op::left_zero();
+
+	if (r == typename Op::right_identity())
+	  return l;
+	
+	if (l == typename Op::left_identity())
+	  return r;
+	
 	DoubleDispatch1<SimplifyRT, Op> visitor(r, *this);
 	return l->visit(visitor);
       }
@@ -429,10 +450,27 @@ namespace sym {
   namespace detail {
     struct DerivativeRT : VisitorHelper<DerivativeRT> {
       DerivativeRT(VarRT var): _var(var) {}
+
+      template<class T, typename = typename std::enable_if<IsConstant<T>::value>::type>
+      Expr apply(const T& v) {
+	return ConstantRT<int>(0);
+      }
       
-      //By default, things are constant so return zero
-      template<class T>
-      Expr apply(const T& v) { return Expr(derivative(v, _var)); }
+      Expr apply(const VarRT& v) {
+	return Expr((v == _var) ? new ConstantRT<int>(1) : new ConstantRT<int>(0));
+      }
+
+      template<class Op>
+      Expr apply(const UnaryOpRT<Op>& v) {
+	//Hand over to the compile time implementation
+	return derivative(Op::apply(v.getArg()), _var);
+      }
+
+      template<class Op>
+      Expr apply(const BinaryOpRT<Op>& v) {
+	//Hand over to the compile time implementation
+	return derivative(Op::apply(v.getLHS(), v.getRHS()), _var);
+      }
       
       VarRT _var;
     };

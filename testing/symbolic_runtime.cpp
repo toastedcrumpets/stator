@@ -118,5 +118,14 @@ UNIT_TEST( symbolic_rt_variables )
 
 UNIT_TEST( symbolic_rt_unary_ops )
 {
-  
+  Var<vidx<'x'> > x;
+  //As f is Expr, assignment forces runtime conversion
+  Expr f;
+
+  f = sin(x);
+  compare_expression(f, sin(x));
+
+  Expr df = derivative(f, x);
+  std::cout << df << std::endl;
+  std::cout << simplify(df) << std::endl;
 }

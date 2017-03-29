@@ -40,6 +40,16 @@ namespace sym {
   long double cos(long double a) { return std::cos(a); }
   template<class T> std::complex<T> cos(std::complex<T> a) { return std::cos(a); }
 
+  float exp(float a) { return std::exp(a); }
+  double exp(double a) { return std::exp(a); }
+  long double exp(long double a) { return std::exp(a); }
+  template<class T> std::complex<T> exp(std::complex<T> a) { return std::exp(a); }
+
+  float log(float a) { return std::log(a); }
+  double log(double a) { return std::log(a); }
+  long double log(long double a) { return std::log(a); }
+  template<class T> std::complex<T> log(std::complex<T> a) { return std::log(a); }
+  
   int abs(int a) { return std::abs(a); }
   long abs(long a) { return std::abs(a); }
   long long abs(long long a) { return std::abs(a); }
@@ -61,10 +71,21 @@ namespace sym {
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(cos(a));
     };
 
+    struct Exp {
+      static constexpr const char* _str_left = "exp(";
+      static constexpr const char* _str_right = ")";
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(exp(a));
+    };
+
+    struct Log {
+      static constexpr const char* _str_left = "ln(";
+      static constexpr const char* _str_right = ")";
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(log(a));
+    };
+
     struct Absolute {
       static constexpr const char* _str_left = "|";
       static constexpr const char* _str_right = "|";
-
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(abs(a));
     };
 
@@ -82,6 +103,14 @@ namespace sym {
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
   auto cos(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Cosine>(arg)));
+
+  template<class Arg,
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
+  auto exp(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Exp>(arg)));
+
+  template<class Arg,
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
+  auto log(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Log>(arg)));
   
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
@@ -91,9 +120,13 @@ namespace sym {
   auto arbsign(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Arbsign>(arg)));
   
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Sine>& f, Var x)
-    -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::cos(f._arg));  
+    -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::cos(f._arg));
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Cosine>& f, Var x)
     -> STATOR_AUTORETURN(-derivative(f._arg, x) * sym::sin(f._arg));
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Exp>& f, Var x)
+    -> STATOR_AUTORETURN(derivative(f._arg, x) * f);
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Log>& f, Var x)
+    -> STATOR_AUTORETURN(derivative(f._arg, x) / f._arg);
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Absolute>& f, Var x)
     -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::abs(f._arg) / f._arg);
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Arbsign>& f, Var x)
@@ -105,10 +138,6 @@ namespace sym {
   
   template<class Arg, class Op>
   inline std::ostream& operator<<(std::ostream& os, const UnaryOp<Arg, Op>& f)
-  { return os << Op::_str_left << f._arg << Op::_str_right; }
-  
-  /////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////         Complex functions         /////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////    
+  { return os << Op::_str_left << f._arg << Op::_str_right; }  
 }
 

@@ -67,17 +67,14 @@ namespace sym {
     template<class LHS_t, class Op, class RHS_t>
     Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
 
-    bool operator==(const Expr&) const;
-    
-    Expr(const detail::NoIdentity&)
-    { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
-    bool operator==(const detail::NoIdentity&) const { return false; }
-    
-    template<class T>
-    T as() const;
+    Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
 
-    explicit operator bool() const
-    { return shared_ptr<RTBase>::operator bool(); }
+    bool operator==(const Expr&) const;
+    bool operator!=(const Expr& o) const { return !(*this == o); }
+    bool operator==(const detail::NoIdentity&) const { return false; }
+    explicit operator bool() const { return shared_ptr<RTBase>::operator bool(); }
+        
+    template<class T> T as() const;
   };
   
   class VarRT;
@@ -214,7 +211,7 @@ namespace sym {
   public:
     ConstantRT(const T& v): _val(v) {}
     
-    bool operator==(const Expr& o) const;
+    bool operator==(const Expr o) const;
     
     std::string str() const {
       std::ostringstream os;
@@ -240,32 +237,36 @@ namespace sym {
     template<class LHS_t>
     class CompareConstantsVisitor : public VisitorHelper<CompareConstantsVisitor<LHS_t> > {
     public:
-      CompareConstantsVisitor(const LHS_t& l) : _l(l) {}
+      CompareConstantsVisitor(const LHS_t& l) : _l(l), _value(false) {}
       
-      //By default, all comparisons are false
       template<class T> Expr apply(const T& rhs) {
 	return worker(rhs, detail::select_overload{});
       }
 
+      //This implementation is available whenever the two types have a comparison operator defined
       template<class T>
-      auto worker(const T& rhs, detail::choice<0>) -> decltype(LHS_t() == rhs.get(), Expr())
+      auto worker(const T& rhs, detail::choice<0>) -> decltype(LHS_t() == rhs, Expr())
       {
-	return ( _l == rhs.get()) ? Expr(new ConstantRT<int>(1)) : Expr();
+	_value = _l == rhs;
+	return Expr();
       }
       
+      //If they don't have a comparison operator defined, we assume
+      //they are not comparable
       template<class T>
       Expr worker(const T& rhs, detail::choice<1>)
       { return Expr(); }
 	
       const LHS_t& _l;
+      bool _value;
     };
   }
 
   template<class T>
-  bool ConstantRT<T>::operator==(const Expr& o) const {
-    detail::CompareConstantsVisitor<T> vistor(_val);
-    //Expr compares to zero if empty
-    return bool(o->visit(vistor));
+  bool ConstantRT<T>::operator==(const Expr o) const {
+    detail::CompareConstantsVisitor<T> visitor(_val);
+    o->visit(visitor);
+    return visitor._value;
   }
   
 

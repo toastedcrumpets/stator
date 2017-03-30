@@ -116,6 +116,17 @@ UNIT_TEST( symbolic_rt_variables )
   UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
 }
 
+UNIT_TEST( symbolic_comparison_operator )
+{
+  Var<vidx<'x'> > x;
+  UNIT_TEST_CHECK_EQUAL(Expr(2.0), Expr(2.0));
+  UNIT_TEST_CHECK_EQUAL(Expr(2), Expr(2.0));
+  UNIT_TEST_CHECK_EQUAL(Expr(2.0), Expr(2));
+  UNIT_TEST_CHECK_EQUAL(Expr(x), Expr(x));  
+  UNIT_TEST_CHECK_EQUAL(Expr(Expr(x)*Expr(x)), Expr(Expr(x)*Expr(x)));  
+  UNIT_TEST_CHECK_EQUAL(Expr(Expr(2.0)+Expr(1.0)), Expr(Expr(2.0)+Expr(1.0)));
+}
+
 UNIT_TEST( symbolic_rt_unary_ops )
 {
   Var<vidx<'x'> > x;
@@ -124,8 +135,6 @@ UNIT_TEST( symbolic_rt_unary_ops )
 
   f = sin(x);
   compare_expression(f, sin(x));
-
-  Expr df = derivative(f, x);
-  std::cout << df << std::endl;
-  std::cout << simplify(df) << std::endl;
+  Expr df = simplify(derivative(f, x));
+  compare_expression(df, cos(x));
 }

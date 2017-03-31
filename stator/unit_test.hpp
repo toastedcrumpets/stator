@@ -60,7 +60,7 @@ public:
     }
     
     std::cout << "# Tests complete with " << _error_counter << " errors" << std::endl;
-    return _error_counter > 1;
+    return _error_counter > 0;
   }
 
   template<class L, class R>
@@ -140,5 +140,6 @@ int main() {
     return UnitTests::get().run_tests();
   } catch (const std::exception& e) {
     std::cerr << "Unit tests aborting due to exception:\n" << e.what() << std::endl;
+    return 1;
   }
 }

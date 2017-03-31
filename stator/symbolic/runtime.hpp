@@ -50,10 +50,7 @@ namespace sym {
     Expr(const RTBase&);
 
     //Type conversion constructors from compile-time objects
-    Expr(const int&);
-    Expr(const long&);
     Expr(const double&);
-    Expr(const std::complex<double>&);
     
     template<std::intmax_t Num, std::intmax_t Denom>
     Expr(const C<Num, Denom>& c);
@@ -88,13 +85,12 @@ namespace sym {
       the AST using the visitor pattern.
     */
     struct VisitorInterface {
-      virtual Expr visit(const int&) = 0;
-      virtual Expr visit(const long&) = 0;
       virtual Expr visit(const double&) = 0;
-      virtual Expr visit(const std::complex<double>&) = 0;
       virtual Expr visit(const VarRT&) = 0;
       virtual Expr visit(const UnaryOpRT<detail::Sine>& ) = 0;
       virtual Expr visit(const UnaryOpRT<detail::Cosine>& ) = 0;
+      virtual Expr visit(const UnaryOpRT<detail::Log>& ) = 0;
+      virtual Expr visit(const UnaryOpRT<detail::Exp>& ) = 0;
       virtual Expr visit(const UnaryOpRT<detail::Absolute>& ) = 0;
       virtual Expr visit(const UnaryOpRT<detail::Arbsign>& ) = 0;
       virtual Expr visit(const BinaryOpRT<detail::Add>& ) = 0;
@@ -110,15 +106,16 @@ namespace sym {
      */
     template<typename Derived>
     struct VisitorHelper: public VisitorInterface {
-      virtual Expr visit(const int& x) { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const long& x) { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const double& x) { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const std::complex<double>& x) { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
 
       virtual Expr visit(const UnaryOpRT<detail::Sine>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const UnaryOpRT<detail::Cosine>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const UnaryOpRT<detail::Log>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      virtual Expr visit(const UnaryOpRT<detail::Exp>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const UnaryOpRT<detail::Absolute>& x)
       { return static_cast<Derived*>(this)->apply(x); }
@@ -274,7 +271,11 @@ namespace sym {
   class UnaryOpRT : public RTBaseHelper<UnaryOpRT<Op> > {
   public:
     UnaryOpRT(const Expr& arg): _arg(arg) {}
-    
+
+    Expr clone() const {
+      return Expr(new UnaryOpRT(_arg->clone()));
+    }
+
     bool operator==(const UnaryOpRT<Op>& o) const {
       return (_arg == o._arg);
     }
@@ -295,13 +296,16 @@ namespace sym {
     
   private:
     Expr _arg;
-    Expr _RHS;
   };
   
   template<typename Op>
   class BinaryOpRT : public RTBaseHelper<BinaryOpRT<Op> > {
   public:
     BinaryOpRT(const Expr& lhs, const Expr& rhs): _LHS(lhs), _RHS(rhs) {}
+
+    Expr clone() const {
+      return Expr(new BinaryOpRT(_LHS->clone(), _RHS->clone()));
+    }
     
     bool operator==(const BinaryOpRT<Op>& o) const {
       return (_LHS == o._LHS) && (_RHS == o._RHS);
@@ -324,7 +328,7 @@ namespace sym {
     Expr visit(detail::VisitorInterface& c) {
       return c.visit(*this);
     }
-    
+
   private:
     Expr _LHS;
     Expr _RHS;
@@ -332,10 +336,7 @@ namespace sym {
 
   Expr::Expr(const RTBase& v) : Expr(v.clone()) {}
 
-  Expr::Expr(const int& v) : Expr(new ConstantRT<int>(v)) {}
-  Expr::Expr(const long& v) : Expr(new ConstantRT<long>(v)) {}
   Expr::Expr(const double& v) : Expr(new ConstantRT<double>(v)) {}
-  Expr::Expr(const std::complex<double>& v) : Expr(new ConstantRT<std::complex<double> >(v)) {}
   
   template<std::intmax_t Num, std::intmax_t Denom>
   Expr::Expr(const C<Num, Denom>& c) : Expr(new ConstantRT<double>(double(Num) / Denom)) {}
@@ -396,7 +397,12 @@ namespace sym {
     };
 
     struct SimplifyRT : VisitorHelper<SimplifyRT> {
-
+      template<class Op>
+      struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
+	template<class T> Expr apply(const T& arg) { return Op::apply(arg); }
+      };
+      
+      
       //This uses SFINAE to exclude itself when the operator does not apply to those types.
       template<class Op, class LHS_t, class RHS_t>
       auto dd_visit(const LHS_t& l, const RHS_t& r) -> STATOR_AUTORETURN(Expr(store(Op::apply(l, r))))
@@ -416,8 +422,11 @@ namespace sym {
 
       template<typename Op>
       Expr apply(const UnaryOpRT<Op>& op) {
+	//Simplify the argument
 	Expr arg = op.getArg()->visit(*this);
-	return Op::apply(arg);
+	//Try evaluating the unary expression
+	UnaryEval<Op> visitor;
+	return arg->visit(visitor);
       }
 
       //For binary operators, try to collapse them
@@ -466,7 +475,11 @@ namespace sym {
 	return Expr(v);
       }
       
-      //For binary operators, try to collapse them
+      template<typename Op>
+      Expr apply(const UnaryOpRT<Op>& op) {
+	return Op::apply(op.getArg()->visit(*this));
+      }
+
       template<typename Op>
       Expr apply(const BinaryOpRT<Op>& op) {
 	return Op::apply(op.getLHS()->visit(*this), op.getRHS()->visit(*this));
@@ -489,11 +502,11 @@ namespace sym {
 
       template<class T, typename = typename std::enable_if<IsConstant<T>::value>::type>
       Expr apply(const T& v) {
-	return ConstantRT<int>(0);
+	return ConstantRT<double>(0);
       }
       
       Expr apply(const VarRT& v) {
-	return Expr((v == _var) ? new ConstantRT<int>(1) : new ConstantRT<int>(0));
+	return Expr((v == _var) ? new ConstantRT<double>(1) : new ConstantRT<double>(0));
       }
 
       template<class Op>

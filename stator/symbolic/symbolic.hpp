@@ -61,8 +61,7 @@ namespace sym {
 #include "stator/symbolic/constants.hpp"
 #include "stator/orphan/template_config.hpp"
 
-namespace sym {
-  
+namespace sym {  
   template<class T>
   struct IsSymbolic {
     static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;

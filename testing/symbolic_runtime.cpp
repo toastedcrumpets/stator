@@ -125,16 +125,38 @@ UNIT_TEST( symbolic_comparison_operator )
   UNIT_TEST_CHECK_EQUAL(Expr(x), Expr(x));  
   UNIT_TEST_CHECK_EQUAL(Expr(Expr(x)*Expr(x)), Expr(Expr(x)*Expr(x)));  
   UNIT_TEST_CHECK_EQUAL(Expr(Expr(2.0)+Expr(1.0)), Expr(Expr(2.0)+Expr(1.0)));
+  UNIT_TEST_CHECK_EQUAL(Expr(sin(x)), Expr(sin(x)));
+  UNIT_TEST_CHECK(Expr(sin(x)) != Expr(cos(x)));
+  UNIT_TEST_CHECK(Expr(log(x)) != Expr(exp(x)));
 }
 
 UNIT_TEST( symbolic_rt_unary_ops )
 {
   Var<vidx<'x'> > x;
-  //As f is Expr, assignment forces runtime conversion
-  Expr f;
 
-  f = sin(x);
-  compare_expression(f, sin(x));
+  Expr f = sin(x);
+  compare_expression(Expr(f), sin(x));
   Expr df = simplify(derivative(f, x));
   compare_expression(df, cos(x));
+  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, x=1.2)).as<double>(), 0.9320390859672263, 0.000000001);
+  
+  f = cos(x);
+  compare_expression(Expr(f), cos(x));
+  df = simplify(derivative(f, x));
+  compare_expression(df, -1 * sin(x));
+  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, x=1.2)).as<double>(), 0.3623577544766736, 0.000000001);
+
+  f = log(x);
+  compare_expression(Expr(f), log(x));
+  df = simplify(derivative(f, x));
+  compare_expression(df, 1/x);
+  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, x=1.2)).as<double>(), 0.1823215567939546, 0.000000001);
+
+  f = exp(x);
+  compare_expression(Expr(f), exp(x));
+  df = simplify(derivative(f, x));
+  compare_expression(df, exp(x));
+
+  f = exp(log(x));
+  df = derivative(f, x);
 }

@@ -24,7 +24,40 @@
 
 using namespace sym;
 
-UNIT_TEST( symbolic_rt_unary_ops )
+UNIT_TEST( symbolic_parser_tokenizer )
 {
+  UNIT_TEST_CHECK(detail::ExprTokenizer("").empty());
+  UNIT_TEST_CHECK(detail::ExprTokenizer("  ").empty());
 
+  UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer("23 ").next(), "23");
+  UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer("1.11 ").next(), "1.11");
+  UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer("   1.11e12 ").next(), "1.11e12");
+  UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer(" 1.23*12 ").next(), "1.23");
+
+  {
+    detail::ExprTokenizer tk(" 1.23* (12 + 4 )*exp(T)");
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "1.23");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "*");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "(");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "12");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "+");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "4");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), ")");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "*");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "exp");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "(");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "T");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), ")");
+  }
 }

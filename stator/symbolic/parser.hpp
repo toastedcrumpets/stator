@@ -21,6 +21,8 @@
 
 //#include <stator/symbolic/runtime.hpp>
 #include <stator/exception.hpp>
+#include <algorithm>
+#include <cctype>
 
 namespace sym {
   namespace detail {
@@ -58,7 +60,51 @@ namespace sym {
 	_end = _start + 1;
       
 	if (std::isdigit(_str[_start])) {
-	  grabNumber();
+	  bool decimal = false;
+	  bool exponent = false;
+      
+	  while (_end != _str.size()) {
+	    if (_str[_end] == '.') {
+	      if (!decimal && !exponent) {
+		decimal = true;
+		++_end;
+		continue;
+	      } else {
+		stator_throw() << "Unexpected decimal point?\n" << parserLoc();
+	      }
+	    }
+	
+	    if ((_str[_end] == 'e') || (_str[_end] == 'E')) {
+	      if (!exponent) {
+		exponent = true;
+		decimal = true; //Don't allow decimals in the exponent
+		++_end;
+
+		if (_end == _str.size())
+		  stator_throw() << "String ended during parsing of exponent\n" << parserLoc();
+
+		//Eat the exponent sign if present
+		if ((_str[_end] == '+') || (_str[_end] == '-'))
+		  ++_end;
+		
+		if (_end == _str.size())
+		  stator_throw() << "String ended during parsing of exponent\n" << parserLoc();
+		
+		if (!std::isdigit(_str[_end]))
+		  stator_throw() << "Malformed exponent?\n" << parserLoc();
+		
+		continue;
+	      } else {
+		stator_throw() << "Malformed exponent?\n" << parserLoc();
+	      }
+	    }
+	    if (std::isdigit(_str[_end])) {
+	      ++_end;
+	      continue;
+	    }
+	
+	    break;
+	  }
 	  return;
 	}
 
@@ -83,44 +129,12 @@ namespace sym {
 	stator_throw() << "Unrecognised token \"" << _str.substr(_start) << "\"";
       }
 
+      std::string parserLoc() {
+	return _str + "\n"
+	  + std::string(_start, ' ') + std::string(_end - _start, '-') + "^";
+      }
+
     private:
-
-      void grabNumber() {
-	bool decimal = false;
-	bool exponent = false;
-      
-	while (_end != _str.size()) {
-	  if (_str[_end] == '.') {
-	    if (!decimal && !exponent) {
-	      decimal = true;
-	      ++_end;
-	      continue;
-	    } else {
-	      stator_throw() << "Unexpected decimal point\n" << errortxt();
-	    }
-	  }
-	
-	  if ((_str[_end] == 'e') || (_str[_end] == 'E')) {
-	    if (!exponent) {
-	      exponent = true;
-	      ++_end;
-	      continue;
-	    } else {
-	      stator_throw() << "Unexpected exponent\n" << errortxt();
-	    }
-	  }
-	  if (std::isdigit(_str[_end])) {
-	    ++_end;
-	    continue;
-	  }
-	
-	  break;
-	}
-      }
-
-      std::string errortxt() {
-	return _str.substr(0, _end) + "\n" + std::string(_end, ' ') + _str.substr(_end);
-      }
     
       std::string _str;
       std::size_t _start;

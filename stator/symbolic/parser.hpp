@@ -33,6 +33,8 @@ namespace sym {
 	_start(0),
 	_end(0)
       {
+	//The actual tokenisation is done in the consume() member
+	//function. Start the process.
 	consume();
       }
 
@@ -58,7 +60,10 @@ namespace sym {
 
 	//Not at end of sequence so at least one character in symbol
 	_end = _start + 1;
-      
+
+	//Parse numbers with decimal points and (possible signed)
+	//exponents. Signs at the front of numbers are parsed as unary
+	//operators.
 	if (std::isdigit(_str[_start])) {
 	  bool decimal = false;
 	  bool exponent = false;
@@ -108,14 +113,14 @@ namespace sym {
 	  return;
 	}
 
+	//Parsing a string
 	if (std::isalpha(_str[_start])) {
 	  while ((_end < _str.size()) && std::isalpha(_str[_end]))
 	    ++_end;
 	  return;
 	}
 
-	//Everything else should be a single character operator
-
+	//Parsing single character operators (other operators should be strings)
 	switch (_str[_start]) {
 	case '+':
 	case '-':
@@ -126,12 +131,12 @@ namespace sym {
 	  return;
 	}
 
-	stator_throw() << "Unrecognised token \"" << _str.substr(_start) << "\"";
+	stator_throw() << "Unrecognised token \"" << _str.substr(_start) << "\"\n" << parserLoc();
       }
 
       std::string parserLoc() {
 	return _str + "\n"
-	  + std::string(_start, ' ') + std::string(_end - _start, '-') + "^";
+	  + std::string(_start, ' ') + std::string(_end - _start -1, '-') + "^";
       }
 
     private:

@@ -132,11 +132,11 @@ UNIT_TEST( poly_variables )
   using namespace sym;
   Polynomial<1> x{0, 1};
   Polynomial<1,double, Var<vidx<'y'> > > y{0, 1};
-  UNIT_TEST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()=Var<vidx<'x'> >()), "P(1 × x)"));
+  UNIT_TEST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()=Var<vidx<'x'> >()), "P(1*x)"));
 
-  UNIT_TEST_CHECK(compare_expression(expand(x * x * x), "P(1 × x³)"));
-  UNIT_TEST_CHECK(compare_expression(expand(y * y * y), "P(1 × y³)"));
-  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()=Var<vidx<'x'> >()), "P(1 × x³)"));
+  UNIT_TEST_CHECK(compare_expression(expand(x * x * x), "P(1*x^3)"));
+  UNIT_TEST_CHECK(compare_expression(expand(y * y * y), "P(1*y^3)"));
+  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()=Var<vidx<'x'> >()), "P(1*x^3)"));
 }
 
 UNIT_TEST( poly_addition )

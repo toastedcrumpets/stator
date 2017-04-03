@@ -146,5 +146,28 @@ UNIT_TEST( symbolic_parser_Exp ) {
     detail::ExprTokenizer tk("cos sin 1");
     Expr v = tk.parse();
     UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 0.6663667453928805, 1e-10);
-  }   
+  }
+
+}
+
+template<class T>
+void expr_string_expr_conversion_check(const T in_expr) {
+  std::ostringstream os;
+  os << in_expr;
+  std::string initial_string = os.str();
+  os.str("");
+  os.clear();
+
+  Expr e(initial_string);
+  os << e;
+  std::string final_string = os.str();
+
+  UNIT_TEST_CHECK_EQUAL(initial_string, final_string);
+}
+
+UNIT_TEST( symbolic_parser_Expr_string_loop ) {
+  //Check for consistency between saving and loading of expressions
+  Var<vidx<'x'>> x;
+
+  expr_string_expr_conversion_check(x + sin(x));
 }

@@ -47,6 +47,8 @@ namespace sym {
     typedef shared_ptr<RTBase> Base;
     using Base::Base;
 
+    Expr(const std::string&);
+
     Expr(const RTBase&);
 
     //Type conversion constructors from compile-time objects

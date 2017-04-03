@@ -30,7 +30,7 @@ namespace sym {
   namespace detail {
     class ExprTokenizer {
     public:
-      ExprTokenizer(std::string str):
+      ExprTokenizer(const std::string& str):
 	_str(str),
 	_start(0),
 	_end(0)
@@ -39,28 +39,28 @@ namespace sym {
 
 	//These are left-associative operators, so we expect their RBP
 	//to be BP+1, and they can group with themselves
-	_operators["+"].reset(new BinaryOp<detail::Add, 20, 21, 20>());
-	_operators["-"].reset(new BinaryOp<detail::Subtract, 20, 21, 20>());
-	_operators["*"].reset(new BinaryOp<detail::Multiply, 30, 31, 30>());
-	_operators["/"].reset(new BinaryOp<detail::Divide, 30, 31, 30>());
+	_operators["+"].reset(new BinaryOpToken<detail::Add, 20, 21, 20>());
+	_operators["-"].reset(new BinaryOpToken<detail::Subtract, 20, 21, 20>());
+	_operators["*"].reset(new BinaryOpToken<detail::Multiply, 30, 31, 30>());
+	_operators["/"].reset(new BinaryOpToken<detail::Divide, 30, 31, 30>());
 
 	//Power is right-associative, thus its RBP is equal to its BP
 	//to ensure a^b^c is a^(b^c).
-	_operators["^"].reset(new BinaryOp<detail::Power, 50, 50, 49>());
+	_operators["^"].reset(new BinaryOpToken<detail::Power, 50, 50, 49>());
 
 
 	//The parenthesis operator is entirely handled by Parenthesis.
-	_operators["("].reset(new Parenthesis);
+	_operators["("].reset(new ParenthesisToken);
 	//A dummy token is needed here to allow the tokenizer to
 	//identify this as a token, but the actual processing of ( is
 	//handled in the Parenthesis operator above).
 	_operators[")"].reset(new DummyToken);
 
 	//Unary operators
-	_operators["sin"].reset(new UnaryOp<detail::Sine, 0>());
-	_operators["cos"].reset(new UnaryOp<detail::Cosine, 0>());
-	_operators["exp"].reset(new UnaryOp<detail::Exp, 0>());
-	_operators["log"].reset(new UnaryOp<detail::Log, 0>());
+	_operators["sin"].reset(new UnaryOpToken<detail::Sine, 0>());
+	_operators["cos"].reset(new UnaryOpToken<detail::Cosine, 0>());
+	_operators["exp"].reset(new UnaryOpToken<detail::Exp, 0>());
+	_operators["log"].reset(new UnaryOpToken<detail::Log, 0>());
 	
 	//The actual tokenisation is done in the consume() member
 	//function. The first call starts the process and clears the "end" state.
@@ -184,7 +184,7 @@ namespace sym {
       };
 
       template<class Op, int tBP, int tRBP, int tNBP>
-      struct BinaryOp : BinaryOrPostfixOp {
+      struct BinaryOpToken : BinaryOrPostfixOp {
 	Expr apply(Expr l, ExprTokenizer& tk) const {
 	  return Op::apply(l, tk.Exp(tRBP));
 	}
@@ -198,7 +198,7 @@ namespace sym {
 	}
       };
 
-      struct Parenthesis : public PrefixOp {
+      struct ParenthesisToken : public PrefixOp {
 	Expr apply(Expr l, ExprTokenizer& tk) const {
 	  tk.expect(")");
 	  return l;
@@ -211,7 +211,7 @@ namespace sym {
       };
 
       template<class Op, int tBP>
-      struct UnaryOp : PrefixOp {
+      struct UnaryOpToken : PrefixOp {
 	Expr apply(Expr l, ExprTokenizer& tk) const {
 	  return Op::apply(l);
 	}
@@ -301,4 +301,6 @@ namespace sym {
       std::size_t _end;
     };
   }
+
+  Expr::Expr(const std::string& str) : Expr(detail::ExprTokenizer(str).parse()) {}
 }

@@ -177,6 +177,8 @@ namespace sym {
   
   class VarRT : public RTBaseHelper<VarRT> {
   public:
+    VarRT(const char v) : idx(v) {}
+    
     template<typename ...Args>
     VarRT(const Var<Args...> v):
       idx(Var<Args...>::idx)

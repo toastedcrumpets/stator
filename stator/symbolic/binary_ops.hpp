@@ -131,7 +131,7 @@ namespace sym {
       typedef Unity right_identity;
       typedef Null left_zero;
       typedef Null right_zero;
-      static inline std::string str() { return "×"; }
+      static inline std::string str() { return "*"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l * r);
     };
 
@@ -142,7 +142,7 @@ namespace sym {
       typedef Unity right_identity;
       typedef Null left_zero;
       typedef NoIdentity right_zero;
-      static inline std::string str() { return "÷"; }
+      static inline std::string str() { return "/"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l / r);
     };
 

@@ -462,13 +462,9 @@ namespace sym {
 	  oss << " + ";
 	++terms;
       detail::print_coeff(oss, poly[i]);
-	oss << " × " << PolyVar::idx;
+	oss << "*" << PolyVar::idx;
 	if (i > 1)
-	  switch (i) {
-	  case 2: oss << "²"; break;
-	  case 3: oss << "³"; break;
-	  default: oss << "^" << i; break;
-	  }
+	  oss << "^" << i;
     }
     if ((poly[0] != empty_sum(poly[0])) || (terms == 0)) {
 	if (terms != 0)

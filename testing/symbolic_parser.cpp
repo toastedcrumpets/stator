@@ -26,14 +26,16 @@ using namespace sym;
 
 UNIT_TEST( symbolic_parser_tokenizer )
 {
-  UNIT_TEST_CHECK(detail::ExprTokenizer("").empty());
-  UNIT_TEST_CHECK(detail::ExprTokenizer("  ").empty());
-
+  //Some basic checks, such as empty strings, or individual tokens
+  UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer("").next(), "");
+  UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer("  ").next(), "");
   UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer("23 ").next(), "23");
   UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer("1.11 ").next(), "1.11");
   UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer("   1.11e12 ").next(), "1.11e12");
   UNIT_TEST_CHECK_EQUAL(detail::ExprTokenizer(" 1.23*12 ").next(), "1.23");
 
+  //Full test of a expression parse (with deliberately poor formatting choices)
+  //////Unit tests fordetail::ExprTokenizer::P()
   {
     detail::ExprTokenizer tk(" 1.23* (12 + 4 )*exp(T)");
     UNIT_TEST_CHECK_EQUAL(tk.next(), "1.23");
@@ -59,5 +61,90 @@ UNIT_TEST( symbolic_parser_tokenizer )
     UNIT_TEST_CHECK_EQUAL(tk.next(), "T");
     tk.consume();
     UNIT_TEST_CHECK_EQUAL(tk.next(), ")");
+    tk.consume();
+    UNIT_TEST_CHECK_EQUAL(tk.next(), "");
   }
+}
+
+UNIT_TEST( symbolic_parser_P )
+{
+  //Test float recognition and parsing
+  {
+    detail::ExprTokenizer tk(" 1.23*1.2 ");
+    Expr v = tk.P();
+    UNIT_TEST_CHECK_EQUAL(v.as<double>(), 1.23);
+  }
+
+  //Test variable recognition and parsing
+  {
+    detail::ExprTokenizer tk(" p+2");
+    Expr v = tk.P();
+    shared_ptr<VarRT> v2 = dynamic_pointer_cast<VarRT>(v);
+    
+    UNIT_TEST_CHECK(bool(v2));
+    UNIT_TEST_CHECK_EQUAL(v2->idx, 'p');
+  }
+}
+
+UNIT_TEST( symbolic_parser_Exp ) {
+
+  {
+    detail::ExprTokenizer tk("1.23");
+    Expr v = tk.parse();
+    UNIT_TEST_CHECK_EQUAL(v.as<double>(), 1.23);
+  }
+
+  //Test of Add
+  {
+    detail::ExprTokenizer tk("1.23+2.3");
+    Expr v = tk.parse();    
+    UNIT_TEST_CHECK_EQUAL(simplify(v).as<double>(), 3.53);
+  }
+
+  //Test of multiply
+  {
+    detail::ExprTokenizer tk("  2*3 * 4 ");
+    Expr v = tk.parse();
+    UNIT_TEST_CHECK_EQUAL(simplify(v).as<double>(), 24.0);
+  }
+
+  //Test of operator precendence between add and multiply
+  {
+    detail::ExprTokenizer tk("2*3+4");
+    Expr v = tk.parse();    
+    UNIT_TEST_CHECK_EQUAL(simplify(v).as<double>(), 10.0);
+  } 
+  {
+    detail::ExprTokenizer tk("4+2*3");
+    Expr v = tk.parse();    
+    UNIT_TEST_CHECK_EQUAL(simplify(v).as<double>(), 10.0);
+  } 
+
+  //Test of right-associativity of power operations
+  {
+    detail::ExprTokenizer tk("2^3^4");
+    Expr v = tk.parse();    
+    UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 2.417851639e24, 1e-10);
+  } 
+
+  //Test of parenthesis having high binding power
+  {
+    detail::ExprTokenizer tk("(2 + 2 )^3");
+    Expr v = tk.parse();    
+    UNIT_TEST_CHECK_EQUAL(simplify(v).as<double>(), 64);
+  } 
+  
+  //Test of unary operator (sine) binding power
+  {
+    detail::ExprTokenizer tk("2*sin1");
+    Expr v = tk.parse();
+    UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 1.682941969615793, 1e-10);
+  }   
+
+  //Test of unary operator (cosine/sine) binding power
+  {
+    detail::ExprTokenizer tk("cos sin 1");
+    Expr v = tk.parse();
+    UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 0.6663667453928805, 1e-10);
+  }   
 }

@@ -19,10 +19,12 @@
 
 #pragma once
 
-//#include <stator/symbolic/runtime.hpp>
+#include <stator/symbolic/runtime.hpp>
 #include <stator/exception.hpp>
 #include <algorithm>
 #include <cctype>
+#include <map>
+#include <sstream>
 
 namespace sym {
   namespace detail {
@@ -33,19 +35,48 @@ namespace sym {
 	_start(0),
 	_end(0)
       {
+	//Initialise the operators
+
+	//These are left-associative operators, so we expect their RBP
+	//to be BP+1, and they can group with themselves
+	_operators["+"].reset(new BinaryOp<detail::Add, 20, 21, 20>());
+	_operators["-"].reset(new BinaryOp<detail::Subtract, 20, 21, 20>());
+	_operators["*"].reset(new BinaryOp<detail::Multiply, 30, 31, 30>());
+	_operators["/"].reset(new BinaryOp<detail::Divide, 30, 31, 30>());
+
+	//Power is right-associative, thus its RBP is equal to its BP
+	//to ensure a^b^c is a^(b^c).
+	_operators["^"].reset(new BinaryOp<detail::Power, 50, 50, 49>());
+
+
+	//The parenthesis operator is entirely handled by Parenthesis.
+	_operators["("].reset(new Parenthesis);
+	//A dummy token is needed here to allow the tokenizer to
+	//identify this as a token, but the actual processing of ( is
+	//handled in the Parenthesis operator above).
+	_operators[")"].reset(new DummyToken);
+
+	//Unary operators
+	_operators["sin"].reset(new UnaryOp<detail::Sine, 0>());
+	_operators["cos"].reset(new UnaryOp<detail::Cosine, 0>());
+	_operators["exp"].reset(new UnaryOp<detail::Exp, 0>());
+	_operators["log"].reset(new UnaryOp<detail::Log, 0>());
+	
 	//The actual tokenisation is done in the consume() member
-	//function. Start the process.
+	//function. The first call starts the process and clears the "end" state.
 	consume();
       }
 
-      bool empty() {
-	return _start == _str.size();
-      }
-    
       std::string next() {
-	return _str.substr(_start, _end-_start);
+	return (_start == _str.size()) ? "" : _str.substr(_start, _end-_start);
       }
 
+      void expect(std::string token) {
+	if (next() != token)
+	  stator_throw() << "Expected " << ((token.empty()) ? "end of expression": ("\""+token+"\"")) << " but got " << next() << " instead?\n" << parserLoc();
+	consume();
+      }
+      
       void consume() {
 	_start = _end;
 
@@ -120,17 +151,10 @@ namespace sym {
 	  return;
 	}
 
-	//Parsing single character operators (other operators should be strings)
-	switch (_str[_start]) {
-	case '+':
-	case '-':
-	case '/':
-	case '*':
-	case '(':
-	case ')':
+	//Allow non-alpha single character operators (longer operators should be above!)
+	if (_operators.find(_str.substr(_start, 1)) != _operators.end())
 	  return;
-	}
-
+	
 	stator_throw() << "Unrecognised token \"" << _str.substr(_start) << "\"\n" << parserLoc();
       }
 
@@ -139,6 +163,137 @@ namespace sym {
 	  + std::string(_start, ' ') + std::string(_end - _start -1, '-') + "^";
       }
 
+      struct TokenBase {
+	/*! \brief Takes one operand (either left or only operand) and returns the corresponding Expr.
+	  
+	  The token stream is also passed to allow binary operators to
+	  collect their second (right) operand.
+	 */
+	virtual Expr apply(Expr, ExprTokenizer&) const = 0;
+	/*! \brief Left binding power (Precedence of this operator)*/
+	virtual int BP() const = 0;
+	/*! \brief Next binding power (highest precedence of the operator that this operator can be a left operand of)*/
+	virtual int NBP() const = 0;
+      };
+
+      struct PrefixOp: public TokenBase {
+	int NBP() const { stator_throw() << "Should never be called!"; } 
+      };
+
+      struct BinaryOrPostfixOp: public TokenBase {
+      };
+
+      template<class Op, int tBP, int tRBP, int tNBP>
+      struct BinaryOp : BinaryOrPostfixOp {
+	Expr apply(Expr l, ExprTokenizer& tk) const {
+	  return Op::apply(l, tk.Exp(tRBP));
+	}
+
+	int BP() const {
+	  return tBP;
+	}
+
+	int NBP() const {
+	  return tNBP;
+	}
+      };
+
+      struct Parenthesis : public PrefixOp {
+	Expr apply(Expr l, ExprTokenizer& tk) const {
+	  tk.expect(")");
+	  return l;
+	}
+
+	//Parenthesis bind the whole following expression
+	int BP() const {
+	  return 0;
+	}
+      };
+
+      template<class Op, int tBP>
+      struct UnaryOp : PrefixOp {
+	Expr apply(Expr l, ExprTokenizer& tk) const {
+	  return Op::apply(l);
+	}
+
+	int BP() const {
+	  return tBP;
+	}
+      };
+      
+      struct DummyToken : TokenBase {
+	virtual Expr apply(Expr, ExprTokenizer&) const { stator_throw() << "Should never be called!"; }
+	//To ensure it is always treated as a separate expression, its BP is large
+	virtual int BP() const { return -1; }
+	virtual int NBP() const { stator_throw() << "Should never be called!"; }
+      };
+      
+      std::map<std::string, std::shared_ptr<TokenBase> > _operators;
+
+      Expr P() {
+	std::string token = next();
+	consume();
+
+	if (token.empty())
+	  stator_throw() << "Unexpected end of expression?\n" << parserLoc();
+
+	//Parse numbers
+	if (std::isdigit(token[0])) {
+	  std::stringstream ss;
+	  ss << token;
+	  double val;
+	  ss >> val;
+	  return Expr(val);
+	}
+
+	//Parse unary operators which are prefixes
+	auto it = _operators.find(token);
+	if (it != _operators.end()) {
+	  if (!dynamic_pointer_cast<PrefixOp>(it->second))
+	    stator_throw() << "Operator is not a prefix/unary operator?\n" << parserLoc();
+	  return it->second->apply(Exp(it->second->BP()), *this);
+	}
+
+	//Its not a prefix operator or a number, if it is a single
+	//alpha character, then assume its a variable!
+	if ((token.size() == 1) && (std::isalpha(token[0])))
+	  return Expr(VarRT(token[0]));
+
+	stator_throw() << "Could not parse as a valid token?\n" << parserLoc();
+      }
+
+      Expr Exp(int p) {
+	Expr t = P();
+
+	int r = std::numeric_limits<int>::max();
+	while (true) {
+	  std::string token = next();
+
+	  //Handle the special case of end of string
+	  if (token.empty()) break;
+	  
+	  auto it = _operators.find(token);
+
+	  if (it == _operators.end())
+	    stator_throw() << "Expected binary or postfix operator but got \""<< token << "\"?\n" << parserLoc();
+	  
+	  if (dynamic_pointer_cast<PrefixOp>(it->second))
+	    stator_throw() << "Expected binary or postfix operator but found Prefix operator \""<< token << "\"?\n" << parserLoc();
+
+	  if ((p > it->second->BP()) || (it->second->BP() > r)) break;
+	  
+	  consume();
+	  t = it->second->apply(t, *this);
+	  r = it->second->NBP();
+	}
+	
+	return t;
+      }
+
+      Expr parse() {
+	return Exp(0);
+      }
+      
     private:
     
       std::string _str;

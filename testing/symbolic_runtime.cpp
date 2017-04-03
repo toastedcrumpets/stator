@@ -160,3 +160,12 @@ UNIT_TEST( symbolic_rt_unary_ops )
   f = exp(log(x));
   df = derivative(f, x);
 }
+
+UNIT_TEST( symbolic_mixed_expr )
+{
+  Var<vidx<'x'> > x;
+  
+  auto f = x + x * Expr(x);
+  auto g = sub(f, x=2);
+  UNIT_TEST_CHECK_EQUAL(simplify(Expr(g)).as<double>(), 6.0);
+}

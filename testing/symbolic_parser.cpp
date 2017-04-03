@@ -170,4 +170,5 @@ UNIT_TEST( symbolic_parser_Expr_string_loop ) {
   Var<vidx<'x'>> x;
 
   expr_string_expr_conversion_check(x + sin(x));
+  expr_string_expr_conversion_check(x*x*x+x+x*sin(x));
 }

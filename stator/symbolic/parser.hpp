@@ -228,7 +228,7 @@ namespace sym {
 	virtual int NBP() const { stator_throw() << "Should never be called!"; }
       };
       
-      std::map<std::string, std::shared_ptr<TokenBase> > _operators;
+      std::map<std::string, shared_ptr<TokenBase> > _operators;
 
       Expr P() {
 	std::string token = next();
@@ -303,4 +303,5 @@ namespace sym {
   }
 
   Expr::Expr(const std::string& str) : Expr(detail::ExprTokenizer(str).parse()) {}
+  Expr::Expr(const char* str) : Expr(std::string(str)) {}
 }

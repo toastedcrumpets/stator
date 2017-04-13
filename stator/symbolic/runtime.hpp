@@ -23,11 +23,20 @@
 #include <memory>
 #include <sstream>
 
+#ifdef STATOR_USE_BOOST_SHARED_PTR
+# include <boost/shared_ptr.hpp>
+namespace sym {
+  using boost::shared_ptr;
+  using boost::make_shared;
+  using boost::dynamic_pointer_cast;
+}
+#else
 namespace sym {
   using std::shared_ptr;
   using std::make_shared;
   using std::dynamic_pointer_cast;
 }
+#endif
 
 namespace sym {
   class RTBase;
@@ -47,6 +56,7 @@ namespace sym {
     typedef shared_ptr<RTBase> Base;
     using Base::Base;
 
+    Expr(const char*);
     Expr(const std::string&);
 
     Expr(const RTBase&);

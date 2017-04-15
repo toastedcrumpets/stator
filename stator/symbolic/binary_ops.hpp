@@ -23,15 +23,11 @@ namespace sym {
   namespace detail {
     class NoIdentity {};
   };
-  
-  /*! \brief Base class for sym::BinaryOp.
-   */
-  struct BinaryOpBase : SymbolicOperator {};
-  
+    
   /*! \brief Symbolic representation of a binary symbolic operation. 
    */
   template<class LHS, typename Op, class RHS>
-  struct BinaryOp: BinaryOpBase {
+  struct BinaryOp: SymbolicOperator {
     const LHS _l;
     const RHS _r;
     BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}

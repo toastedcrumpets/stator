@@ -40,15 +40,24 @@ namespace sym {
 
 namespace sym {
   class RTBase;
+  struct Expr;
+  template<class Op> struct UnaryOp<Expr, Op>;
+  template<typename Op> using UnaryOpRT = UnaryOp<Expr, Op>;
+  template<class Op> struct BinaryOp<Expr, Op, Expr>;
+  template<typename Op> using BinaryOpRT = BinaryOp<Expr, Op, Expr>;
 
-  /*! \brief The holder for a runtime expression or Abstract Syntax
-      Tree (AST).
+  /*! \brief Type used when template arguments correspond to the runtime specialisation. */
+  struct Dynamic {};
+  typedef Var<Dynamic> VarRT;
 
-      This class is simply a smart pointer, with specialised
-      constructors to allow it to convert compile-time expressions
-      into runtime forms. It also inherits from SymbolicOperator to
-      allow it to be used in compile-time expressions.
-   */
+  /*! \brief The generic holder/smart pointer for a runtime Abstract
+    Syntax Tree (AST) (expression).
+    
+    This class is simply a smart pointer, with specialised
+    constructors to allow it to convert compile-time expressions (and
+    formula strings) into runtime forms. It also inherits from
+    SymbolicOperator and can be used in compile-time expressions.
+  */
   struct Expr : public shared_ptr<RTBase>, public SymbolicOperator {
     Expr() {}
 
@@ -85,16 +94,13 @@ namespace sym {
         
     template<class T> T as() const;
   };
-  
-  class VarRT;
-  template<typename Op> class BinaryOpRT;
-  template<typename Op> class UnaryOpRT;
-  
+    
   namespace detail {
-    /*! \brief Base interface for the visitor programming pattern.
+    /*! \brief Abstract interface class for the visitor programming
+      pattern for Expr types.
 
-      This class is used to propogate and evaluate transformations of
-      the AST using the visitor pattern.
+      This class describes the visitor pattern interface used for all
+      transformations (and evaluations) of runtime Expr (AST).
     */
     struct VisitorInterface {
       virtual Expr visit(const double&) = 0;
@@ -113,8 +119,12 @@ namespace sym {
     };
 
 
-    /*! \brief A CRTP helper to facilitate all the required
-        specialisations for the visitor interface.
+    /*! \brief A CRTP helper base class which transforms the visitor
+        interface into a call to the derived classes apply function.
+
+	This makes implementing visitors simpler, as a generic
+	templated apply function can be used (i.e., all
+	UnaryOp/BinaryOp can be treated with one imlementation each).
      */
     template<typename Derived>
     struct VisitorHelper: public VisitorInterface {
@@ -146,7 +156,13 @@ namespace sym {
     };
   }
 
-  /*! \brief Interface for runtime symbolic types. */
+  /*! \brief Abstract interface class for all runtime symbolic
+      classes. 
+      
+      This class defines the interface for all classes/symbols which
+      can be held by \ref Expr. Most actual functionality is
+      implemented using the \ref VisitorInterface via \ref visit.
+  */
   class RTBase : public std::enable_shared_from_this<RTBase>, public SymbolicOperator {
   public:
     virtual ~RTBase() {}
@@ -164,13 +180,15 @@ namespace sym {
     }
   };
 
+  /*! \brief String output operator for Expr classes.
+   */
   std::ostream& operator<<(std::ostream& os, const Expr& e) {
     return os << e->str();
   }
 
   
-  /*! \brief CRTP helper base class which implements the boilerplate
-    code for runtime symbolic types.
+  /*! \brief CRTP helper base class which implements some of the
+    common boilerplate code for runtime symbolic types.
   */
   template<class Derived>
   class RTBaseHelper : public RTBase {
@@ -186,13 +204,15 @@ namespace sym {
       return *static_cast<const Derived*>(this) == *other;
     }
   };  
-  
-  class VarRT : public RTBaseHelper<VarRT> {
+
+  /*! \brief Specialisation of Var for runtime variables.*/
+  template<>
+  class Var<Dynamic> : public RTBaseHelper<Var<Dynamic> > {
   public:
-    VarRT(const char v) : idx(v) {}
+    Var(const char v) : idx(v) {}
     
     template<typename ...Args>
-    VarRT(const Var<Args...> v):
+    Var(const Var<Args...> v):
       idx(Var<Args...>::idx)
     {}
 
@@ -281,16 +301,18 @@ namespace sym {
   }
   
 
+  /*! \brief Specialisation of unary operator for runtime arguments
+      and use in runtime expressions (Expr).
+   */
   template<typename Op>
-  class UnaryOpRT : public RTBaseHelper<UnaryOpRT<Op> > {
-  public:
-    UnaryOpRT(const Expr& arg): _arg(arg) {}
+  struct UnaryOp<Expr,Op> : public RTBaseHelper<UnaryOp<Expr,Op> > {
+    UnaryOp(const Expr& arg): _arg(arg) {}
 
     Expr clone() const {
-      return Expr(new UnaryOpRT(_arg->clone()));
+      return Expr(new UnaryOp<Expr,Op>(_arg->clone()));
     }
 
-    bool operator==(const UnaryOpRT<Op>& o) const {
+    bool operator==(const UnaryOp<Expr,Op>& o) const {
       return (_arg == o._arg);
     }
     
@@ -308,44 +330,43 @@ namespace sym {
       return c.visit(*this);
     }
     
-  private:
     Expr _arg;
   };
-  
+
+  /*! \brief Specialisation of BinaryOp for runtime arguments (Expr).
+   */
   template<typename Op>
-  class BinaryOpRT : public RTBaseHelper<BinaryOpRT<Op> > {
-  public:
-    BinaryOpRT(const Expr& lhs, const Expr& rhs): _LHS(lhs), _RHS(rhs) {}
+  struct BinaryOp<Expr, Op, Expr> : public RTBaseHelper<BinaryOp<Expr, Op, Expr> > {
+    BinaryOp(const Expr& lhs, const Expr& rhs): _l(lhs), _r(rhs) {}
 
     Expr clone() const {
-      return Expr(new BinaryOpRT(_LHS->clone(), _RHS->clone()));
+      return Expr(new BinaryOp(_l->clone(), _r->clone()));
     }
     
-    bool operator==(const BinaryOpRT<Op>& o) const {
-      return (_LHS == o._LHS) && (_RHS == o._RHS);
+    bool operator==(const BinaryOp& o) const {
+      return (_l == o._l) && (_r == o._r);
     }
     
     virtual std::string str() const {
       std::ostringstream os;
-      os << "(" << _LHS->str() << " " << Op::str() <<  " " << _RHS->str() << ")";
+      os << "(" << _l->str() << " " << Op::str() <<  " " << _r->str() << ")";
       return os.str();
     }
 
     Expr getLHS() const {
-      return _LHS;
+      return _l;
     }
     
     Expr getRHS() const {
-      return _RHS;
+      return _r;
     }
 
     Expr visit(detail::VisitorInterface& c) {
       return c.visit(*this);
     }
 
-  private:
-    Expr _LHS;
-    Expr _RHS;
+    Expr _l;
+    Expr _r;
   };
 
   Expr::Expr(const RTBase& v) : Expr(v.clone()) {}

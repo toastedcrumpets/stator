@@ -112,25 +112,25 @@ int main(int argc, char **argv) {
   std::cout << sub(fvec, x = 12) << std::endl;
   //Output:  13   8 4.2
 
-  {//A fancy example
-    //Create a variable
-    Var<vidx<'x'> > x;
+  {//Quick example
+    
+    Var<vidx<'x'> > x; //Create a variable "x"
+    Var<vidx<'y'> > y; //Create a variable "y"
+    
+    auto f = sin(x) + 2 * cos(x); //Define a function f(x)
 
-    //Define a function f(x)
-    auto f = sin(x) + 2 * cos(x);
+    //Perform a substitution
+    auto g = sub(f, x = y*y); //g(y)=f(y^2)
 
-    //Perform a substitution x=y^2
-    Var<vidx<'y'> > y;
-    auto g = sub(f, x = y*y); 
+    //Print the function to screen
     std::cout << g << std::endl;
     //Output: (sin((y × y)) + (2 × cos((y × y))))
 
     //Evaluate the function
-    double a = sub(g, y = 2.3);   
+    double a = sub(g, y = 2.3); // a = g(2.3)
     std::cout << a << std::endl;
     //Output: 0.254279
-    //Take the derivative
-    auto dg_dy = derivative(g, y); 
+    auto dg_dy = derivative(g, y);  // dg/dy
     std::cout << dg_dy << std::endl;
     //Output: (((y + y) × cos((y × y))) + (2 × ((C<-1>() × (y + y)) × sin((y × y)))))
     //Take a 5th order taylor series of the derivative around y=0

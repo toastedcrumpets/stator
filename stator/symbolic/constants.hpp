@@ -22,7 +22,7 @@
 #include <ratio>
 
 namespace sym {
-  /*! \brief A class representing a compile-time constant.
+  /*! \brief A class representing a compile-time rational constant (i.e., std::ratio).
 
     Fundamentally this is a std::ratio which has been extended to
     support standard "run-time" ops, such as multiplication.
@@ -34,11 +34,13 @@ namespace sym {
     }
   };
 
-  /*! \brief Conversion operator from std::ratio to C.*/
-  template<class stdratio>
-  struct C_wrap {
-    typedef C<stdratio::num, stdratio::den> type;
-  };
+  namespace detail {
+    /*! \brief Conversion operator from std::ratio to C.*/
+    template<class stdratio>
+    struct C_wrap {
+      typedef C<stdratio::num, stdratio::den> type;
+    };
+  }
   
   /*! \brief Compile time type-test for compile-time constants \ref C.*/
   template<class T> struct is_C { static const bool value = false; };
@@ -51,10 +53,10 @@ namespace sym {
   typedef C<1> Unity;
   
   /*! \brief A symbolic/compile-time rational approximation of \f$\pi\f$. */
-  typedef C_wrap<stator::constant_ratio::pi>::type pi;
+  typedef detail::C_wrap<stator::constant_ratio::pi>::type pi;
 
   /*! \brief A symbolic/compile-time rational approximation of \f$\mathrm{e}\f$. */
-  typedef C_wrap<stator::constant_ratio::e>::type e;
+  typedef detail::C_wrap<stator::constant_ratio::e>::type e;
 
   /*! \brief Output operator for compile-time constant (\ref C types).*/
   template<std::intmax_t Num, std::intmax_t Denom>
@@ -104,16 +106,16 @@ namespace sym {
   };
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
-  constexpr auto operator+(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename C_wrap<std::ratio_add<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
+  constexpr auto operator+(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_add<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
-  constexpr auto operator-(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename C_wrap<std::ratio_subtract<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
+  constexpr auto operator-(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_subtract<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
-  constexpr auto operator*(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename C_wrap<std::ratio_multiply<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
+  constexpr auto operator*(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_multiply<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
-  constexpr auto operator/(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename C_wrap<std::ratio_divide<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
+  constexpr auto operator/(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_divide<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
   constexpr bool operator==(const C<n1, d1>&, const C<n2, d2>&)

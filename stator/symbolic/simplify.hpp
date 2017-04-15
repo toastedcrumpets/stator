@@ -247,8 +247,8 @@ namespace sym {
 
 
   // Finally, the gateway to the above series of simplifications for BinaryOps!
-  template<class Config = DefaultSimplifyConfig, class T, typename = typename std::enable_if<std::is_base_of<BinaryOpBase, T>::value >::type >
-  auto simplify(T t) -> STATOR_AUTORETURN(simplify_BinaryOp<Config>(t, detail::select_overload{}));
+  template<class Config = DefaultSimplifyConfig, class L, class Op, class R>
+  auto simplify(BinaryOp<L,Op,R> t) -> STATOR_AUTORETURN(simplify_BinaryOp<Config>(t, detail::select_overload{}));
   
 
   /*! \relates Polynomial 

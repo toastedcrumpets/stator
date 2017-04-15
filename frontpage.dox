@@ -4,41 +4,46 @@
   \section frontpage_about About the stator library
 
   Stator is a Computer Algebra System (CAS) which focuses on using
-  compile-time and stack-allocated algorithms. This means it is
-  really, really, fast (zero overhead, or even speed-up thanks to
-  cancellation of terms) but it lacks the generality of a full CAS.
+  compile-time (template metaprogramming) or runtime stack-allocated
+  algorithms. This means it is really, really, fast (zero overhead, or
+  even a speed-up thanks to compile-time cancellation of terms, when
+  compared to hand coded expressions). Its not as fully featured as a
+  full CAS (such as Mathematica) though yet.
 
-  An example of the available operations and computational costs is given below:
+  Not convinced? Try the simple example below!
 
   \dontinclude symbolic_example.cpp
-  \skip fancy
+  \skip Quick example
   \until //Output: 0.25
 
-  As everything is performed by the compiler, only the last
-  substitution has any run-time cost. In fact, all of the code above
-  has the same computational cost as writing:
+  As everything is performed by the compiler via template
+  metaprogramming, only the last substitution can incur any run-time
+  cost. In fact, all of the code above has the same computational cost
+  as writing:
 
   \code
   double a = std::sin(2.3*2.3)+2*std::cos(2.3*2.3);
   \endcode
 
-  however, as we have a symbolic representation of the function we can
-  perform some interesting transformations of it:
+  Most modern compilers will also eliminate the cost of this too,
+  leading to zero run-time cost.
+
+  As we have a symbolic representation of the function we can perform
+  some interesting transformations of it. Taking the derivative is
+  also carried out at compile time:
 
   \until //Output:
-
-  Even complex operations such as taking the derivative have (at most)
-  the cost of copying a single int (the number two), which the
-  compiler is free to optimise away (as it is constant at compile
-  time). Other operations are only a little more expensive:
+  
+  Basic functionality like this also allows more complex operations,
+  such as creating a truncated sym::taylor_series:
 
   \until }//End
 
-  The call to sym::taylor_series creates a sym::Polynomial type, which
-  is a std::array of the coefficients, and solving for the roots for a
-  5th order polynomial like this one requires iteration; however, both
-  are carried out without dynamic allocation and thus are very fast on
-  any modern compiler.
+  This creates a sym::Polynomial type, which is a std::array of the
+  coefficients again at compile time; however, solving for the roots
+  for a 5th order polynomial like this one requires iterations thus it
+  must be done at run time; however, both are carried out without
+  dynamic allocation and thus are very fast on any modern compiler.
 
   See the \ref symbolic_guide "guide to the symbolic library" for more details on how to use the library.
 
@@ -67,7 +72,21 @@
   
 */
 
+/*! \namespace sym
+  \brief The stator symbolic math library.
+
+  This namespace encapsulates the symbolic math functionality of
+  stator. This library allows you to perform compile-time operations
+  on mathematical expressions, as well as perform run-time
+  calculations, such as root finding on polynomials.    
+*/
 namespace sym {
+  /*! \namespace sym::detail
+    \brief Namespace containing the details of the implmentation for
+    general stator components.
+  */
+  namespace detail {}
+  
   /*! \brief Performs a symbolic derivative on the expression.
    */
   template<typename Expression>
@@ -222,6 +241,13 @@ namespace sym {
   under the namespaces \ref stator::sym, \ref stator::geometry,
   and \ref stator::orphan.  
 */ namespace stator {
+
+     /*! \namespace stator::detail 
+       
+       \brief Namespace containing the details of the implmentation for
+       general stator components.
+     */
+     namespace detail {}
 
      /*! \namespace stator::numeric
 

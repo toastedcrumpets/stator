@@ -35,18 +35,10 @@
 #include <ratio>
 #include <type_traits>
 
-/*! \namespace sym
-  \brief The stator symbolic math library.
-
-  This namespace encapsulates the symbolic math functionality of
-  stator. This library allows you to perform compile-time operations
-  on mathematical expressions, as well as perform run-time
-  calculations, such as root finding on polynomials.    
-*/
 namespace sym {
   using stator::orphan::StackVector;
   using stator::detail::store;
-  
+
   namespace detail {
     using stator::detail::choice;
     using stator::detail::last_choice;

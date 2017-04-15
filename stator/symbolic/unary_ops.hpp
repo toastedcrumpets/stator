@@ -24,6 +24,8 @@ namespace sym {
   /////////////////////////        Standard functions         /////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////
 
+  /*! \brief Symbolic representation of a unary operator (i.e., sin(x)).
+   */
   template<class Arg, typename Op>
   struct UnaryOp: SymbolicOperator {
     Arg _arg;

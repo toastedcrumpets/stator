@@ -58,28 +58,29 @@ namespace sym {
 	//These are left-associative operators, so we expect their RBP
 	//to be BP+1, and they can group with themselves
 	//BP, RBP, NBP
-	_operators["+"].reset(new BinaryOpToken<detail::Add, 20, 21, 20>());
-	_operators["-"].reset(new BinaryOpToken<detail::Subtract, 20, 21, 20>());
-	_operators["*"].reset(new BinaryOpToken<detail::Multiply, 30, 31, 30>());
-	_operators["/"].reset(new BinaryOpToken<detail::Divide, 30, 31, 30>());
-
+	_right_operators["+"].reset(new BinaryOpToken<detail::Add, 20, 21, 20>());
+	_right_operators["-"].reset(new BinaryOpToken<detail::Subtract, 20, 21, 20>());
+	_right_operators["*"].reset(new BinaryOpToken<detail::Multiply, 30, 31, 30>());
+	_right_operators["/"].reset(new BinaryOpToken<detail::Divide, 30, 31, 30>());
 	//Power is right-associative, thus its RBP is equal to its BP
 	//to ensure a^b^c is a^(b^c).
-	_operators["^"].reset(new BinaryOpToken<detail::Power, 50, 50, 49>());
+	_right_operators["^"].reset(new BinaryOpToken<detail::Power, 50, 50, 49>());
 
-
+	//The unar
+	_left_operators["+"].reset(new SkipToken<30>());
+	_left_operators["-"].reset(new UnaryNegative<30>());
+	
 	//The parenthesis operator is entirely handled by Parenthesis.
-	_operators["("].reset(new ParenthesisToken);
-	//A dummy token is needed here to allow the tokenizer to
-	//identify this as a token, but the actual processing of ( is
-	//handled in the Parenthesis operator above).
-	_operators[")"].reset(new DummyToken);
-
-	//Unary operators
-	_operators["sin"].reset(new UnaryOpToken<detail::Sine, 0>());
-	_operators["cos"].reset(new UnaryOpToken<detail::Cosine, 0>());
-	_operators["exp"].reset(new UnaryOpToken<detail::Exp, 0>());
-	_operators["log"].reset(new UnaryOpToken<detail::Log, 0>());
+	_left_operators["("].reset(new ParenthesisToken);
+	//A halt token stops parseExpression processing. The right
+	//parenthesis should be handled by the previous entry.
+	_right_operators[")"].reset(new HaltToken);
+	
+	//Unary operators have a maximum BP 
+	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine, std::numeric_limits<int>::max()>());
+	_left_operators["cos"].reset(new UnaryOpToken<detail::Cosine, std::numeric_limits<int>::max()>());
+	_left_operators["exp"].reset(new UnaryOpToken<detail::Exp, std::numeric_limits<int>::max()>());
+	_left_operators["log"].reset(new UnaryOpToken<detail::Log, std::numeric_limits<int>::max()>());
 	
 	//The actual tokenisation is done in the consume() member
 	//function. The first call starts the process and clears the "end" state.
@@ -170,11 +171,13 @@ namespace sym {
 	  return;
 	}
 
-	//Allow non-alpha single character operators (longer operators should be above!)
-	if (_operators.find(_str.substr(_start, 1)) != _operators.end())
+	//Allow non-alpha single character operators (longer operators are usually strings and caught above!)
+	if (_right_operators.find(_str.substr(_start, 1)) != _right_operators.end())
+	  return;
+	if (_left_operators.find(_str.substr(_start, 1)) != _left_operators.end())
 	  return;
 	
-	stator_throw() << "Unrecognised token \"" << _str.substr(_start) << "\"\n" << parserLoc();
+	stator_throw() << "Unrecognised token \"" << _str[_start] << "\"\n" << parserLoc();
       }
 
       std::string parserLoc() {
@@ -182,11 +185,9 @@ namespace sym {
 	  + std::string(_start, ' ') + std::string(_end - _start -1, '-') + "^";
       }
 
-      struct TokenBase {
-	/*! \brief Takes one operand (either left or only operand) and returns the corresponding Expr.
-	  
-	  The token stream is also passed to allow binary operators to
-	  collect their second (right) operand.
+      struct RightOperatorBase {
+	/*! \brief Takes left operand and returns the corresponding
+            Expr, fetching the right operands from the tokenizer.
 	 */
 	virtual Expr apply(Expr, ExprTokenizer&) const = 0;
 	/*! \brief Left binding power (Precedence of this operator)*/
@@ -195,29 +196,36 @@ namespace sym {
 	virtual int NBP() const = 0;
       };
 
-      struct PrefixOp: public TokenBase {
-	int NBP() const { stator_throw() << "Should never be called!"; } 
+      struct LeftOperatorBase {
+	/*! \brief Takes one operand (either left or only operand) and returns the corresponding Expr.
+	  
+	  The token stream is also passed to allow binary operators to
+	  collect their second (right) operand.
+	*/
+	virtual Expr apply(Expr, ExprTokenizer&) const = 0;
+	/*! \brief Binding power to the right arguments of the Token*/
+	virtual int BP() const = 0;
       };
-
-      struct BinaryOrPostfixOp: public TokenBase {
-      };
-
+      
       template<class Op, int tBP, int tRBP, int tNBP>
-      struct BinaryOpToken : BinaryOrPostfixOp {
+      struct BinaryOpToken : RightOperatorBase {
 	Expr apply(Expr l, ExprTokenizer& tk) const {
 	  return Op::apply(l, tk.parseExpression(tRBP));
 	}
 
-	int BP() const {
-	  return tBP;
-	}
+	int BP() const { return tBP; }
 
-	int NBP() const {
-	  return tNBP;
-	}
+	int NBP() const { return tNBP; }
       };
 
-      struct ParenthesisToken : public PrefixOp {
+      struct HaltToken : RightOperatorBase {
+	virtual Expr apply(Expr, ExprTokenizer&) const { stator_throw() << "Should never be called!"; }
+	//To ensure it is always treated as a separate expression, its BP is negative (nothing can claim it)
+	virtual int BP() const { return -1; }
+	int NBP() const { stator_throw() << "Should never be called!"; }
+      };
+
+      struct ParenthesisToken : public LeftOperatorBase {
 	Expr apply(Expr l, ExprTokenizer& tk) const {
 	  tk.expect(")");
 	  return l;
@@ -228,9 +236,9 @@ namespace sym {
 	  return 0;
 	}
       };
-
+      
       template<class Op, int tBP>
-      struct UnaryOpToken : PrefixOp {
+      struct UnaryOpToken : LeftOperatorBase {
 	Expr apply(Expr l, ExprTokenizer& tk) const {
 	  return Op::apply(l);
 	}
@@ -239,15 +247,31 @@ namespace sym {
 	  return tBP;
 	}
       };
-      
-      struct DummyToken : TokenBase {
-	virtual Expr apply(Expr, ExprTokenizer&) const { stator_throw() << "Should never be called!"; }
-	//To ensure it is always treated as a separate expression, its BP is large
-	virtual int BP() const { return -1; }
-	virtual int NBP() const { stator_throw() << "Should never be called!"; }
+
+      template<int tBP>
+      struct SkipToken : public LeftOperatorBase {
+	Expr apply(Expr l, ExprTokenizer& tk) const {
+	  return l;
+	}
+	
+	int BP() const {
+	  return tBP;
+	}
+      };
+
+      template<int tBP>
+      struct UnaryNegative : public LeftOperatorBase {
+	Expr apply(Expr l, ExprTokenizer& tk) const {
+	  return Expr(-1) * l;
+	}
+	
+	int BP() const {
+	  return tBP;
+	}
       };
       
-      std::map<std::string, shared_ptr<TokenBase> > _operators;
+      std::map<std::string, shared_ptr<LeftOperatorBase> > _left_operators;
+      std::map<std::string, shared_ptr<RightOperatorBase> > _right_operators;
 
       /*!\brief Parses a single token (unary/prefix op, variable, or
          number), where precedence issues do not arise.
@@ -268,11 +292,9 @@ namespace sym {
 	  return Expr(val);
 	}
 
-	//Parse unary operators which are prefixes
-	auto it = _operators.find(token);
-	if (it != _operators.end()) {
-	  if (!dynamic_pointer_cast<PrefixOp>(it->second))
-	    stator_throw() << "Operator is not a prefix/unary operator?\n" << parserLoc();
+	//Parse left operators
+	auto it = _left_operators.find(token);
+	if (it != _left_operators.end()) {
 	  return it->second->apply(parseExpression(it->second->BP()), *this);
 	}
 
@@ -308,22 +330,17 @@ namespace sym {
 	  if (token.empty()) break;
 
 	  //Determine the type of operator found
-	  auto it = _operators.find(token);
+	  auto it = _right_operators.find(token);
 
 	  //If there is no match, then return an error
-	  if (it == _operators.end())
+	  if (it == _right_operators.end())
 	    stator_throw() << "Expected binary or postfix operator but got \""<< token << "\"?\n" << parserLoc();
-
-	  //If the operator is a prefix operator, then return an error
-	  if (dynamic_pointer_cast<PrefixOp>(it->second))
-	    stator_throw() << "Expected binary or postfix operator but found Prefix operator \""<< token << "\"?\n" << parserLoc();
 
 	  //If the operator has a lower binding power than what this
 	  //call can collect, then return. If an operator has already
 	  //been collected, but its next binding power (NBP) doesn't
 	  //allow it to collect this operator, then exit.
-	  if ((p > it->second->BP())
-	      || (it->second->BP() > r)) break;
+	  if ((p > it->second->BP()) || (it->second->BP() > r)) break;
 	  
 	  consume();
 	  t = it->second->apply(t, *this);

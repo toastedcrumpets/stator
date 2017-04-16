@@ -141,6 +141,13 @@ UNIT_TEST( symbolic_parser_Exp ) {
     UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 1.682941969615793, 1e-10);
   }   
 
+  //Test of unary operator (sine) binding power
+  {
+    detail::ExprTokenizer tk("sin1*2");
+    Expr v = tk.parseExpression();
+    UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 1.682941969615793, 1e-10);
+  }   
+
   //Test of unary operator (cosine/sine) binding power
   {
     detail::ExprTokenizer tk("cos sin 1");

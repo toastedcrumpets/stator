@@ -261,8 +261,15 @@ namespace sym {
 
       template<int tBP>
       struct UnaryNegative : public LeftOperatorBase {
+	struct Visitor : VisitorHelper<Visitor> {
+	  template<class T> Expr apply(const T& val) {
+	    return -val;
+	  }
+	};
+	
 	Expr apply(Expr l, ExprTokenizer& tk) const {
-	  return Expr(-1) * l;
+	  Visitor v;
+	  return l->visit(v);
 	}
 	
 	int BP() const {

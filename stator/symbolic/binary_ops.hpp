@@ -33,12 +33,6 @@ namespace sym {
     BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
   };
   
-  template<class LHS, class RHS, class Op>
-  inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, Op, RHS>& op) {
-    os << "(" << op._l << " " << Op::str() <<  " " << op._r << ")";
-    return os;
-  }
-
   template<class LHS, class RHS, class Op, class Var, class Arg> 
   auto sub(BinaryOp<LHS, Op, RHS> f, Relation<Var, Arg> x)
     -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));

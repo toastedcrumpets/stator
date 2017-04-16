@@ -173,19 +173,6 @@ namespace sym {
   Var<Args1...> sub(const Var<Args1...>& f, const Relation<Var2, Arg>& x)
   { return f; }
   
-  /*! \brief Output operator for Var types. */
-  template<class ...Args>
-  inline std::ostream& operator<<(std::ostream& os, const Var<Args...>&) {
-    os << Var<Args...>::idx;
-    return os;
-  }
-
-  /*! \brief Output operator for Relation types. */
-  template<class Var, class Arg>
-  inline std::ostream& operator<<(std::ostream& os, const Relation<Var, Arg>& sub) {
-    os << Var::idx << " <- " << sub._val;
-    return os;
-  }
   
   /*! \brief Determine the derivative of a symbolic expression.
     
@@ -243,42 +230,10 @@ namespace sym {
 }
 
 
-#include "stator/symbolic/binary_ops.hpp"
-#include "stator/symbolic/unary_ops.hpp"
-#include "stator/symbolic/simplify.hpp"
-#include "stator/symbolic/polynomial.hpp"
-#include "stator/symbolic/integrate.hpp"
-
-namespace sym {
-  namespace detail {
-    template<size_t State, size_t max_Order, class Var>
-    struct TaylorSeriesWorker {
-	template<class Real>
-	static Null eval(const Null& f, const Real& a)
-	{ return Null(); }
-      
-	template<class F, class Real>
-	static auto eval(const F& f, const Real& a) 
-        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * sub(f, Var() = a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a)))
-    };
-
-    template<size_t max_Order, class Var>
-    struct TaylorSeriesWorker<max_Order,max_Order, Var> {
-	template<class F, class Real>
-	static auto eval(const F& f, const Real& a)
-        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * sub(f, Var() = a)));
-      
-	template<class Real>
-	static Null eval(const Null& f, const Real& a)
-	{ return Null(); }
-    };
-  }
-
-  /*! \brief Generate a Taylor series representation of a Symbolic
-    expression.
-  */
-  template<size_t Order, class Var, class F, class Real>
-  auto taylor_series(const F& f, Real a, Var)
-    -> STATOR_AUTORETURN(try_simplify(detail::TaylorSeriesWorker<0, Order, Var>::eval(f, a)));
-} // namespace symbolic
-
+#include <stator/symbolic/binary_ops.hpp>
+#include <stator/symbolic/unary_ops.hpp>
+#include <stator/symbolic/simplify.hpp>
+#include <stator/symbolic/polynomial.hpp>
+#include <stator/symbolic/integrate.hpp>
+#include <stator/symbolic/taylor.hpp>
+#include <stator/symbolic/print.hpp>

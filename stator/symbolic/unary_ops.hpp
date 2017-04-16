@@ -137,9 +137,5 @@ namespace sym {
   template<class Var, class Arg1, class Arg2, class Op>
   auto sub(const UnaryOp<Arg1, Op>& f, const Relation<Var, Arg2>& x)
     -> STATOR_AUTORETURN(Op::apply(sub(f._arg, x)));
-  
-  template<class Arg, class Op>
-  inline std::ostream& operator<<(std::ostream& os, const UnaryOp<Arg, Op>& f)
-  { return os << Op::_str_left << f._arg << Op::_str_right; }  
 }
 

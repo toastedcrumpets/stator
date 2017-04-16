@@ -444,38 +444,6 @@ namespace sym {
 	}
     }
   }// namespace detail
-
-  /*! \relates Polynomial 
-    \name Polynomial input/output operations
-    \{
-  */
-  /*! \brief Writes a human-readable representation of the Polynomial to the output stream. */
-  template<class Coeff_t, size_t N, class PolyVar>
-  inline std::ostream& operator<<(std::ostream& os, const Polynomial<N, Coeff_t, PolyVar>& poly) {
-    std::ostringstream oss;
-    oss.precision(os.precision());
-    size_t terms = 0;
-    oss << "P(";
-    for (size_t i(N); i != 0; --i) {
-	if (poly[i] == empty_sum(poly[i])) continue;
-	if (terms != 0)
-	  oss << " + ";
-	++terms;
-      detail::print_coeff(oss, poly[i]);
-	oss << "*" << PolyVar::idx;
-	if (i > 1)
-	  oss << "^" << i;
-    }
-    if ((poly[0] != empty_sum(poly[0])) || (terms == 0)) {
-	if (terms != 0)
-	  oss << " + ";
-	++terms;
-	detail::print_coeff(oss, poly[0]);
-    }
-    os << oss.str() << ")";
-    return os;
-  }
-  /*! \} */
   
   /*! \relates Polynomial 
     \name Polynomial transformations
@@ -1144,14 +1112,6 @@ namespace sym {
 	  os << ",\n           p_" <<  max_order << "=" << _p_n;
 	}
     };
-    
-    template<size_t Order, class Coeff_t, class PolyVar>
-    std::ostream& operator<<(std::ostream& os, const SturmChain<Order, Coeff_t, PolyVar>& c) {
-	os << "SturmChain{p_0=" << c._p_n;
-	c._p_nminus1.output_helper(os, Order);
-	os << "}";
-	return os;
-    }
   }
 
   /*! \brief Helper function to generate a SturmChain from a

@@ -27,7 +27,7 @@ else()
 endif()
 
 ##########   DEBUG MODE
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DEIGEN_INTERNAL_DEBUGGING")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DEIGEN_INTERNAL_DEBUGGING -D_GLIBCXX_DEBUG")
 
 ######################################################################
 ########## Function to add includes to the check_*** tests

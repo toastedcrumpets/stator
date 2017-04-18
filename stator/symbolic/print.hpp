@@ -40,27 +40,51 @@ namespace sym {
   { return os << Op::_str_left << f._arg << Op::_str_right; }  
 
   namespace detail {
-    template<class T> int LBP (const T& v) { return std::numeric_limits<int>::max(); }
-    template<class LHS, class Op, class RHS> int LBP (const BinaryOp<LHS, Op, RHS>& v) {
-      return Op::leftBindingPower;
+    template<class T>
+    std::pair<int, int> BP (const T& v)
+    { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
+    template<class LHS, class Op, class RHS>
+    std::pair<int, int> BP (const BinaryOp<LHS, Op, RHS>& v) {
+      const int L = Op::leftBindingPower;
+      const int R = Op::leftBindingPower + (Op::associativity == Associativity::LEFT) + (Op::associativity == Associativity::NONE);
+      return std::make_pair(L, R);
     }
-    template<class T> int RBP (const T& v) { return std::numeric_limits<int>::max(); }
-    template<class LHS, class Op, class RHS> int RBP (const BinaryOp<LHS, Op, RHS>& v) {
-      return Op::leftBindingPower + (Op::associativity == Associativity::LEFT) + (Op::associativity == Associativity::NONE);
+
+    struct BPVisitor : public VisitorHelper<BPVisitor> {
+      
+      template<class T> Expr apply(const T& rhs) { return Expr(); }
+
+      template<class Op> Expr apply(const BinaryOpRT<Op>& op) {
+	LBP = Op::leftBindingPower;
+	RBP = Op::leftBindingPower + (Op::associativity == Associativity::LEFT) + (Op::associativity == Associativity::NONE);
+	return Expr();
+      }
+      
+      int LBP = std::numeric_limits<int>::max();
+      int RBP = std::numeric_limits<int>::max();
+    };
+    
+    std::pair<int, int> BP (const Expr& v) {
+      BPVisitor vis;
+      v->visit(vis);
+      return std::make_pair(vis.LBP, vis.RBP);
     }
   }
   
   template<class LHS, class RHS, class Op>
   inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, Op, RHS>& op) {
-
-    bool parenL = detail::RBP(op._l) < Op::leftBindingPower;
+    const auto this_BP = detail::BP(op);
+    const auto LHS_BP = detail::BP(op._l);
+    const auto RHS_BP = detail::BP(op._r);
+    
+    bool parenL = LHS_BP.second < this_BP.first;
     if (parenL) os << "(";
     os << op._l;
     if (parenL) os << ")";
 
     os << Op::str();
     
-    bool parenR = detail::RBP(op) > detail::LBP(op._r) ;
+    bool parenR = this_BP.second > RHS_BP.first;
     if (parenR) os << "(";
     os << op._r;
     if (parenR) os << ")";

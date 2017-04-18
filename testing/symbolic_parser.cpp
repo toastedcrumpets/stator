@@ -19,7 +19,7 @@
 
 #include <iostream>
 //stator
-#include <stator/symbolic/parser.hpp>
+#include <stator/symbolic/symbolic.hpp>
 #include <stator/unit_test.hpp>
 
 using namespace sym;
@@ -192,4 +192,5 @@ UNIT_TEST( symbolic_parser_Expr_string_loop ) {
   expr_string_expr_conversion_check(x + sin(x));
   expr_string_expr_conversion_check(x*x*x+x+x*sin(x));
   expr_string_expr_conversion_check(2*x/2*x);
+  expr_string_expr_conversion_check(x*(x*x));
 }

@@ -19,7 +19,7 @@
 
 #include <iostream>
 //stator
-#include <stator/symbolic/runtime.hpp>
+#include <stator/symbolic/symbolic.hpp>
 #include <stator/unit_test.hpp>
 
 #include <random>

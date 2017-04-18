@@ -238,4 +238,6 @@ namespace sym {
 #include <stator/symbolic/polynomial.hpp>
 #include <stator/symbolic/integrate.hpp>
 #include <stator/symbolic/taylor.hpp>
+#include <stator/symbolic/runtime.hpp>
+#include <stator/symbolic/parser.hpp>
 #include <stator/symbolic/print.hpp>

@@ -179,13 +179,6 @@ namespace sym {
       stator_throw() << "The expression (" << str() << ") does not resolve to a constant type.";
     }
   };
-
-  /*! \brief String output operator for Expr classes.
-   */
-  std::ostream& operator<<(std::ostream& os, const Expr& e) {
-    return os << e->str();
-  }
-
   
   /*! \brief CRTP helper base class which implements some of the
     common boilerplate code for runtime symbolic types.
@@ -193,11 +186,17 @@ namespace sym {
   template<class Derived>
   class RTBaseHelper : public RTBase {
   public:
-    virtual Expr clone() const {
+    Expr clone() const {
       return Expr(new Derived(static_cast<const Derived&>(*this)));
     }
 
-    virtual bool operator==(const Expr o) const {
+    std::string str() const {
+      std::ostringstream os;
+      os << static_cast<const Derived&>(*this);
+      return os.str();
+    }
+    
+    bool operator==(const Expr o) const {
       auto other = dynamic_pointer_cast<Derived>(o);
       if (!other)
 	return false;
@@ -224,16 +223,12 @@ namespace sym {
       return Relation<VarRT, Expr>(*this, f);
     }
     
-    virtual std::string str() const {
-      std::ostringstream os;
-      os << idx;
-      return os.str();
-    }
-
     Expr visit(detail::VisitorInterface& c) {
       return c.visit(*this);
     }
-
+    
+    char getidx() const { return idx; } 
+    
     char idx;
   };
 
@@ -244,12 +239,6 @@ namespace sym {
     
     bool operator==(const Expr o) const;
     
-    std::string str() const {
-      std::ostringstream os;
-      os << _val;
-      return os.str();
-    }
-
     Expr visit(detail::VisitorInterface& c) {
       return c.visit(_val);
     }
@@ -264,6 +253,11 @@ namespace sym {
     T _val;
   };
 
+  template<class T>
+  std::ostream& operator<<(std::ostream& os, const ConstantRT<T>& v) {
+    return os << v.get();
+  }
+  
   namespace detail {
     template<class LHS_t>
     class CompareConstantsVisitor : public VisitorHelper<CompareConstantsVisitor<LHS_t> > {
@@ -316,12 +310,6 @@ namespace sym {
       return (_arg == o._arg);
     }
     
-    virtual std::string str() const {
-      std::ostringstream os;
-      os << Op::_str_left << _arg << Op::_str_right ;
-      return os.str();
-    }
-
     Expr getArg() const {
       return _arg;
     }
@@ -347,12 +335,6 @@ namespace sym {
       return (_l == o._l) && (_r == o._r);
     }
     
-    virtual std::string str() const {
-      std::ostringstream os;
-      os << "(" << _l->str() << " " << Op::str() <<  " " << _r->str() << ")";
-      return os.str();
-    }
-
     Expr getLHS() const {
       return _l;
     }
@@ -402,6 +384,12 @@ namespace sym {
     return (*(*this)) == e;
   }
 
+  /*! \brief String output operator for Expr classes.
+   */
+  std::ostream& operator<<(std::ostream& os, const Expr& e) {
+    return os << e->str();
+  }
+  
   namespace detail {
     template<typename Visitor, typename LHS_t, typename Op>
     struct DoubleDispatch2: public VisitorHelper<DoubleDispatch2<Visitor, LHS_t, Op> > {

@@ -155,6 +155,19 @@ UNIT_TEST( symbolic_parser_Exp ) {
     UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 0.6663667453928805, 1e-10);
   }
 
+  //Test of division/multiplication binding
+  {
+    detail::ExprTokenizer tk("2.0/3.0*4.0");
+    Expr v = tk.parseExpression();
+    UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 2.0/3.0*4.0, 1e-10);
+  }
+
+  //Test unary positive and negative parsing
+  {
+    detail::ExprTokenizer tk("+---+-+1");
+    Expr v = tk.parseExpression();
+    UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 1, 1e-10);
+  }
 }
 
 template<class T>
@@ -178,4 +191,5 @@ UNIT_TEST( symbolic_parser_Expr_string_loop ) {
 
   expr_string_expr_conversion_check(x + sin(x));
   expr_string_expr_conversion_check(x*x*x+x+x*sin(x));
+  expr_string_expr_conversion_check(2*x/2*x);
 }

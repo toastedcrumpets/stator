@@ -91,7 +91,11 @@ namespace sym {
     -> STATOR_AUTORETURN(PowerOpSub<num2>::eval(sub(l, num2)));
 
   namespace detail {
+    enum class Associativity { LEFT, RIGHT, NONE };
+    
     struct Add {
+      static constexpr int leftBindingPower = 20;
+      static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = true;
       static constexpr bool associative = true;
       typedef Null left_identity;
@@ -104,6 +108,8 @@ namespace sym {
     };
 
     struct Subtract {
+      static constexpr int leftBindingPower = 20;
+      static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
       typedef NoIdentity left_identity;
@@ -115,6 +121,8 @@ namespace sym {
     };
 
     struct Multiply {
+      static constexpr int leftBindingPower = 30;
+      static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = true;
       static constexpr bool associative = true;
       typedef Unity left_identity;
@@ -126,6 +134,8 @@ namespace sym {
     };
 
     struct Divide {
+      static constexpr int leftBindingPower = 30;
+      static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
       typedef NoIdentity left_identity;
@@ -137,6 +147,8 @@ namespace sym {
     };
 
     struct Power {
+      static constexpr int leftBindingPower = 40;
+      static constexpr auto associativity = Associativity::RIGHT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
       static inline std::string str() { return "^"; }

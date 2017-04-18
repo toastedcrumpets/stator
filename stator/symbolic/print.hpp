@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
+  Copyright (C) 2017 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
   This file is part of stator.
 
@@ -24,8 +24,8 @@
 
 namespace sym {
   template<class ...Args>
-  inline std::ostream& operator<<(std::ostream& os, const Var<Args...>&) {
-    os << Var<Args...>::idx;
+  inline std::ostream& operator<<(std::ostream& os, const Var<Args...>& v) {
+    os << v.getidx();
     return os;
   }
 
@@ -39,9 +39,32 @@ namespace sym {
   inline std::ostream& operator<<(std::ostream& os, const UnaryOp<Arg, Op>& f)
   { return os << Op::_str_left << f._arg << Op::_str_right; }  
 
+  namespace detail {
+    template<class T> int LBP (const T& v) { return std::numeric_limits<int>::max(); }
+    template<class LHS, class Op, class RHS> int LBP (const BinaryOp<LHS, Op, RHS>& v) {
+      return Op::leftBindingPower;
+    }
+    template<class T> int RBP (const T& v) { return std::numeric_limits<int>::max(); }
+    template<class LHS, class Op, class RHS> int RBP (const BinaryOp<LHS, Op, RHS>& v) {
+      return Op::leftBindingPower + (Op::associativity == Associativity::LEFT) + (Op::associativity == Associativity::NONE);
+    }
+  }
+  
   template<class LHS, class RHS, class Op>
   inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, Op, RHS>& op) {
-    os << "(" << op._l << " " << Op::str() <<  " " << op._r << ")";
+
+    bool parenL = detail::RBP(op._l) < Op::leftBindingPower;
+    if (parenL) os << "(";
+    os << op._l;
+    if (parenL) os << ")";
+
+    os << Op::str();
+    
+    bool parenR = detail::RBP(op) > detail::LBP(op._r) ;
+    if (parenR) os << "(";
+    os << op._r;
+    if (parenR) os << ")";
+    
     return os;
   }
 

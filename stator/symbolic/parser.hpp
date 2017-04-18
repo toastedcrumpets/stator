@@ -30,20 +30,27 @@ namespace sym {
   namespace detail {
     /*! \brief Implementation of expression tokenization and parsing into Expr types.
 
+      The structure of the code:
+        - The splitting of the string into tokens occurs in the ExprTokenizer::consume member function. 
+        - Conversion of tokens into unary/prefix operators occurs in \ref ExprTokenizer::parseToken. 
+	- Finally, the binary operator precedence and parsing takes place in .
+	
       The implementation is largely based around the pseudocode
       implementations of Theodore Norvell from <a
       href="http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm">here</a>
       and in particular <a
       href="http://www.engr.mun.ca/~theo/Misc/pratt_parsing.htm">here</a>.
       
-      The actual ideas of Top Down Operator Precedence parsing is
-      explained well <a
-      href="http://eli.thegreenplace.net/2010/01/02/top-down-operator-precedence-parsing">here</a>.
+      The algorithm is implemented over four key functions:
+        1. Initialisation of all operator definitions takes place in the constructor ExprTokenizer::ExprTokenizer.
+        2. Expression strings are first broken down into tokens. Tokens are substrings such as "2", "*", "sin", or "(". ExprTokenizer::next yields the current token, and the system is moved onto the next using ExprTokenizer::consume (where the actual tokenization takes place).
+	3. Parsing of "leaves" of the Abstract Syntax Tree (AST), such as variables, numbers, including functions/prefix-operators are handled via ExprTokenizer::parseToken. Functions and prefix-operators may contain sub-trees and these are parsed recursively. 
+	4. Full expression strings/trees are parsed via \ref ExprTokenizer::parseExpression. Its main purpose is to resolve binary operator precedence.
 
-      The splitting of the string into tokens occurs in the ExprTokenizer::consume
-      member function. Conversion of tokens into unary/prefix operators occurs
-      in \ref ExprTokenizer::parseToken. Finally, the binary operator
-      precedence and parsing takes place in \ref
+      The hardest part for me to understand from the work of Theodore
+      Norvell was how the ExprTokenizer::parseExpression function
+      created the AST via recursion and "precedence climbing". My
+      notes on this are available in the documentation for
       ExprTokenizer::parseExpression.
     */
     class ExprTokenizer {
@@ -56,19 +63,34 @@ namespace sym {
 	//Initialise the operators
 
 	//These are left-associative operators, so we expect their RBP
-	//to be BP+1, and they can group with themselves
-	//BP, RBP, NBP
-	_right_operators["+"].reset(new BinaryOpToken<detail::Add, 20, 21, 20>());
-	_right_operators["-"].reset(new BinaryOpToken<detail::Subtract, 20, 21, 20>());
-	_right_operators["*"].reset(new BinaryOpToken<detail::Multiply, 30, 31, 30>());
-	_right_operators["/"].reset(new BinaryOpToken<detail::Divide, 30, 31, 30>());
-	//Power is right-associative, thus its RBP is equal to its BP
-	//to ensure a^b^c is a^(b^c).
-	_right_operators["^"].reset(new BinaryOpToken<detail::Power, 50, 50, 49>());
+	//to be LBP+1, and they can group with themselves
+	//LBP, RBP, NBP
 
-	//The unar
-	_left_operators["+"].reset(new SkipToken<30>());
-	_left_operators["-"].reset(new UnaryNegative<30>());
+	////////  Right operators appear to the right of one of their operands
+	//
+	//LBP: Left binding power is the precedence of the right operator.
+	//
+	//RBP: Right binding power is the precedence that the operator
+	//will collect as its right arguments (prefix operators have
+	//no right arguments, thus RBP is unused). If this is higher
+	//than the binding power, it will not collect itself (thus it
+	//is left-associative). If it is equal or greater, it will
+	//collect itself in its right argument (thus it is right
+	//associative).
+	//
+	//NBP: Next binding power 
+	
+	_right_operators["+"].reset(new BinaryOpToken<detail::Add>());
+	_right_operators["-"].reset(new BinaryOpToken<detail::Subtract>());
+	_right_operators["*"].reset(new BinaryOpToken<detail::Multiply>());
+	_right_operators["/"].reset(new BinaryOpToken<detail::Divide>());
+	//Power is right-associative, thus its RBP is equal to its LBP
+	//to ensure a^b^c is a^(b^c).
+	_right_operators["^"].reset(new BinaryOpToken<detail::Power>());
+
+	//The unary operators have the same precendence as
+	_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower>());
+	_left_operators["-"].reset(new UnaryNegative<detail::Add::leftBindingPower>());
 	
 	//The parenthesis operator is entirely handled by Parenthesis.
 	_left_operators["("].reset(new ParenthesisToken);
@@ -191,37 +213,38 @@ namespace sym {
 	 */
 	virtual Expr apply(Expr, ExprTokenizer&) const = 0;
 	/*! \brief Left binding power (Precedence of this operator)*/
-	virtual int BP() const = 0;
+	virtual int LBP() const = 0;
 	/*! \brief Next binding power (highest precedence of the operator that this operator can be a left operand of)*/
 	virtual int NBP() const = 0;
       };
 
       struct LeftOperatorBase {
-	/*! \brief Takes one operand (either left or only operand) and returns the corresponding Expr.
-	  
-	  The token stream is also passed to allow binary operators to
-	  collect their second (right) operand.
+	/*! \brief Takes one operand and returns the corresponding Expr.
 	*/
 	virtual Expr apply(Expr, ExprTokenizer&) const = 0;
 	/*! \brief Binding power to the right arguments of the Token*/
 	virtual int BP() const = 0;
       };
       
-      template<class Op, int tBP, int tRBP, int tNBP>
+      template<class Op>
       struct BinaryOpToken : RightOperatorBase {
 	Expr apply(Expr l, ExprTokenizer& tk) const {
-	  return Op::apply(l, tk.parseExpression(tRBP));
+	  const int RBP = Op::leftBindingPower + (Op::associativity == Associativity::LEFT) + (Op::associativity == Associativity::NONE);
+	  return Op::apply(l, tk.parseExpression(RBP));
 	}
+	    
+	int LBP() const { return Op::leftBindingPower; }
 
-	int BP() const { return tBP; }
-
-	int NBP() const { return tNBP; }
+	int NBP() const {
+	  const int nextBindingPower = Op::leftBindingPower - (Op::associativity == Associativity::RIGHT) - (Op::associativity == Associativity::NONE);
+	  return nextBindingPower;
+	}
       };
 
       struct HaltToken : RightOperatorBase {
 	virtual Expr apply(Expr, ExprTokenizer&) const { stator_throw() << "Should never be called!"; }
 	//To ensure it is always treated as a separate expression, its BP is negative (nothing can claim it)
-	virtual int BP() const { return -1; }
+	virtual int LBP() const { return -1; }
 	int NBP() const { stator_throw() << "Should never be called!"; }
       };
 
@@ -315,21 +338,59 @@ namespace sym {
 
       /*!\brief Main parsing entry function.
 	
-	\arg p The minimum binding power of an operator that this call
+	\arg minLBP The minimum binding power of an operator that this call
 	can collect. A value of zero collects all operators.
 
-	This handles all cases where operator precedence arises. Each
-	operator has a binding power.
+	This function handles all cases where operator precedence
+	arises.
+	
+	Expressions are streams of tokens. As the tokens are read
+	left-to-right, we always begin with the leftmost leaf of the
+	AST. The first call to parseExpression must then climb UP the
+	AST to its top. The variable maxLBP ensures that each call to
+	parseExpression only climbs up by ensuring that operators with
+	higher precendence than p are handled by a recursion, possibly
+	to become left leafs of a lower-precedence operator higher up
+	the AST (low precedence operators always end up high up the
+	AST). The variable minLBP is used to make sure that each
+	recursive call to parseExpression does not climb above its
+	parent parseExpression call.
+	
+	There are three types of precedence used.
+	
+	Left Binding Precedence (LBP) and Right Binding Precedence
+	(RBP) are used to determine which operator binds to an
+	argument between two operators. For example, in the expression
+	2*3+4, the multiply binds to the 3 as its RBP is higher than
+	the addition's LBP. If the LBP and RBP are equal, the right
+	operator "wins". Thus operators who are left-associative must
+	have their RBP > LBP, and right-associative operators must
+	have RBP <= LBP.
+
+	The last argument is the Next Binding Precedence (NBP). As
+	parseExpression climbs up the AST, the NBP of each operator is
+	used to determine the maximum LBP which will cause the
+	parseExpression to replace its current root with a higher
+	level. Generally, an operator must have NBP<=LBP. For
+	left-associative operators we have NBP=LBP, and for right
+	associative we have NBP<LBP, as we are moving from left to
+	right along the tree and thus only left-associative operators
+	allow us to ascend (which we do at each repeated
+	left-associative operator).
+
        */
-      Expr parseExpression(int p = 0) {
+      Expr parseExpression(int minLBP = 0) {
 	//Grab the first token (should be either a unary/prefix
 	//operator or a number/variable all of which may be a LHS of a
-	//multi arg operator which is handled here. Unary/prefix
-	//operators are handled by parseToken()
+	//multi arg operator (which are handled in this
+	//function). Unary/prefix operators are handled directly by
+	//parseToken()
 	Expr t = parseToken();
-
-	//Here we cache the next binding power
-	int r = std::numeric_limits<int>::max();
+	
+	//maxLBP is only allowed to decrease as it ensures the while
+	//loop climbs down the precedence tree (up the AST) to the
+	//root of the expression.
+	int maxLBP = std::numeric_limits<int>::max();
 	while (true) {
 	  std::string token = next();
 
@@ -341,17 +402,19 @@ namespace sym {
 
 	  //If there is no match, then return an error
 	  if (it == _right_operators.end())
-	    stator_throw() << "Expected binary or postfix operator but got \""<< token << "\"?\n" << parserLoc();
+	    stator_throw() << "Expected right operator but got \""<< token << "\"?\n" << parserLoc();
 
 	  //If the operator has a lower binding power than what this
-	  //call can collect, then return. If an operator has already
-	  //been collected, but its next binding power (NBP) doesn't
-	  //allow it to collect this operator, then exit.
-	  if ((p > it->second->BP()) || (it->second->BP() > r)) break;
+	  //call can collect (as limited by minLBP), then return. If
+	  //an operator has already been collected and its next
+	  //binding power (stored in maxLBP) doesn't allow it to
+	  //collect this operator, then exit and allow the calling
+	  //function to handle this operator.
+	  if ((minLBP > it->second->LBP()) || (it->second->LBP() > maxLBP)) break;
 	  
 	  consume();
 	  t = it->second->apply(t, *this);
-	  r = it->second->NBP();
+	  maxLBP = it->second->NBP();
 	}
 	
 	return t;
@@ -366,5 +429,6 @@ namespace sym {
   }
 
   Expr::Expr(const std::string& str) : Expr(detail::ExprTokenizer(str).parseExpression()) {}
+
   Expr::Expr(const char* str) : Expr(std::string(str)) {}
 }

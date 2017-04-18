@@ -86,6 +86,8 @@ namespace sym {
     Relation<Var<Args...>, Arg> operator=(const Arg& a) const {
       return Relation<Var<Args...>, Arg>(*this, a);
     }
+
+    char getidx() const { return Var::idx; }
   };
 
   template<typename Var1, typename Var2>

@@ -90,7 +90,7 @@ UNIT_TEST( poly_taylor )
   UNIT_TEST_CHECK(compare_expression(expand(taylor_series<3>(f, Null(), x)), ffinal_expanded));
 
   //Test Taylor expansion again at a non-zero location
-  UNIT_TEST_CHECK(compare_expression(expand(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x)), expand(82.77908670866608 * x*x*x - 688.8330378984795 * x*x + 1895.079543801394 * x - 1721.740734454172)));
+  UNIT_TEST_CHECK(compare_expression(expand(taylor_series<3>(sin(cos(x)+2*x*x - x + 3), 3.0, x)), expand(82.779086708666071 * x*x*x - 688.83303789847946 * x*x + 1895.0795438013947 * x - 1721.7407344541725)));
 
   //Partially truncate a Polynomial through expansion
   UNIT_TEST_CHECK(compare_expression(expand(taylor_series<2>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<2,int,Var<vidx<'y'> > >{1,2,3}));

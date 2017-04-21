@@ -229,16 +229,12 @@ namespace sym {
       template<class Op>
       struct BinaryOpToken : RightOperatorBase {
 	Expr apply(Expr l, ExprTokenizer& tk) const {
-	  const int RBP = Op::leftBindingPower + (Op::associativity == Associativity::LEFT) + (Op::associativity == Associativity::NONE);
-	  return Op::apply(l, tk.parseExpression(RBP));
+	  return Op::apply(l, tk.parseExpression(detail::RBP<Op>()));
 	}
 	    
 	int LBP() const { return Op::leftBindingPower; }
 
-	int NBP() const {
-	  const int nextBindingPower = Op::leftBindingPower - (Op::associativity == Associativity::RIGHT) - (Op::associativity == Associativity::NONE);
-	  return nextBindingPower;
-	}
+	int NBP() const { return detail::NBP<Op>(); }
       };
 
       struct HaltToken : RightOperatorBase {

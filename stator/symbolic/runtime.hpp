@@ -20,8 +20,11 @@
 #pragma once
 
 #include <stator/symbolic/symbolic.hpp>
+#include <stator/repr.hpp>
+
 #include <memory>
 #include <sstream>
+
 
 #ifdef STATOR_USE_BOOST_SHARED_PTR
 # include <boost/shared_ptr.hpp>
@@ -173,10 +176,10 @@ namespace sym {
 
     virtual Expr visit(detail::VisitorInterface& c) = 0;
 
-    virtual std::string str() const = 0;
+    virtual std::string repr() const = 0;
 
     virtual void throw_self() const {
-      stator_throw() << "The expression (" << str() << ") does not resolve to a constant type.";
+      stator_throw() << "The expression (" << repr() << ") does not resolve to a constant type.";
     }
   };
   
@@ -190,7 +193,7 @@ namespace sym {
       return Expr(new Derived(static_cast<const Derived&>(*this)));
     }
 
-    std::string str() const {
+    std::string repr() const {
       std::ostringstream os;
       os << static_cast<const Derived&>(*this);
       return os.str();
@@ -248,15 +251,14 @@ namespace sym {
     }
 
     const T& get() const { return _val; }
+
+    std::string repr() const {
+      return stator::repr(_val);
+    }
     
   private:
     T _val;
   };
-
-  template<class T>
-  std::ostream& operator<<(std::ostream& os, const ConstantRT<T>& v) {
-    return os << v.get();
-  }
   
   namespace detail {
     template<class LHS_t>
@@ -377,17 +379,11 @@ namespace sym {
       throw e;
     } catch(...) {}
 
-    stator_throw() << "Uncaught error! Check implementation of throw_self in expression (" << (*this)->str() << ")";
+    stator_throw() << "Uncaught error! Check implementation of throw_self in expression (" << (*this)->repr() << ")";
   }
 
   bool Expr::operator==(const Expr& e) const {
     return (*(*this)) == e;
-  }
-
-  /*! \brief String output operator for Expr classes.
-   */
-  std::ostream& operator<<(std::ostream& os, const Expr& e) {
-    return os << e->str();
   }
   
   namespace detail {

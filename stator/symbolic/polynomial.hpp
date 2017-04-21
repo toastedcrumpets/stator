@@ -417,34 +417,6 @@ namespace sym {
   Null derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Var<VarArgs...>) 
   { return Null(); }
 
-  namespace detail {
-    template<class T>
-    typename std::enable_if<!std::is_base_of<Eigen::EigenBase<T>, T>::value>::type print_coeff(std::ostream& os, const T& val) {
-	os << val;
-    }
-
-    template<class T>
-    typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type print_coeff(std::ostream& os, const T& val) {
-	if ((val.cols() == 1) && (val.rows()==1))
-	  os << val;
-	else if (val.cols() == 1) {
-	  os << "{ ";
-	  for (int i(0); i < val.rows(); ++i)
-	    os << val(i, 0) << " ";
-	  os << "}^T";
-	} else {
-	  os << "{ ";
-	  for (int i(0); i < val.cols(); ++i) {
-	    os << "{ ";
-	    for (int j(0); j < val.rows(); ++j)
-	      os << val(i, j) << " ";
-	    os << "} ";
-	  }
-	  os << "}";
-	}
-    }
-  }// namespace detail
-  
   /*! \relates Polynomial 
     \name Polynomial transformations
     \{
@@ -1860,4 +1832,14 @@ namespace sym {
     std::sort(roots.begin(), roots.end());
     return roots;
   }
+
+  namespace detail {
+    template<size_t Order, class Coeff_t, class PolyVar>
+    std::ostream& operator<<(std::ostream& os, const SturmChain<Order, Coeff_t, PolyVar>& c) {
+      os << "SturmChain{p_0=" << c._p_n;
+	c._p_nminus1.output_helper(os, Order);
+	os << "}";
+	return os;
+    }
+  }  
 } // namespace sym

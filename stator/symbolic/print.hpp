@@ -19,118 +19,159 @@
 
 #pragma once
 
-// stator
-#include <stator/symbolic/symbolic.hpp>
+namespace stator {
 
-namespace sym {
+  template<std::intmax_t Num, std::intmax_t Denom>
+  inline std::string repr(const sym::C<Num, Denom>)
+  { return "C<" + repr(Num) + ", " + repr (Denom) + ">"; }
+
+  /*! \brief String output operator for Expr classes.
+   */
+  inline std::string repr(const sym::Expr& e) {
+    return e->repr();
+  }
+
   template<class ...Args>
-  inline std::ostream& operator<<(std::ostream& os, const Var<Args...>& v) {
-    os << v.getidx();
-    return os;
+  inline std::string repr(const sym::Var<Args...>& v) {
+    return std::string(1, v.getidx());
   }
 
   template<class Var, class Arg>
-  inline std::ostream& operator<<(std::ostream& os, const Relation<Var, Arg>& sub) {
-    os << Var::idx << " <- " << sub._val;
-    return os;
+  inline std::string repr(const sym::Relation<Var, Arg>& sub) {
+    return repr(sub._var) << "=" << repr(sub._val);
   }
   
   template<class Arg, class Op>
-  inline std::ostream& operator<<(std::ostream& os, const UnaryOp<Arg, Op>& f)
-  { return os << Op::_str_left << f._arg << Op::_str_right; }  
+  inline std::string repr(const sym::UnaryOp<Arg, Op>& f)
+  { return std::string(Op::_repr_left)+repr(f._arg) + Op::_repr_right; }
 
+  template<class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
+  std::string repr(const T& val) {
+    std::ostringstream os;
+    if ((val.cols() == 1) && (val.rows()==1))
+      os << val;
+    else if (val.cols() == 1) {
+      os << "{ ";
+      for (int i(0); i < val.rows(); ++i)
+	os << val(i, 0) << " ";
+      os << "}^T";
+    } else {
+      os << "{ ";
+      for (int i(0); i < val.cols(); ++i) {
+	os << "{ ";
+	for (int j(0); j < val.rows(); ++j)
+	  os << val(i, j) << " ";
+	os << "} ";
+      }
+      os << "}";
+    }
+    return os.str();
+  }
+  
+  /*! \relates Polynomial 
+    \name Polynomial input/output operations
+    \{
+  */
+  /*! \brief Returns a human-readable representation of the Polynomial. */
+  template<class Coeff_t, size_t N, class PolyVar>
+  inline std::string repr(const sym::Polynomial<N, Coeff_t, PolyVar>& poly) {
+    std::ostringstream oss;
+    size_t terms = 0;
+    oss << "P(";
+    for (size_t i(N); i != 0; --i) {
+      if (poly[i] == sym::empty_sum(poly[i])) continue;
+	if (terms != 0)
+	  oss << " + ";
+	++terms;
+	oss << repr(poly[i]) << "*" << PolyVar::idx;
+	if (i > 1)
+	  oss << "^" << i;
+    }
+    if ((poly[0] != sym::empty_sum(poly[0])) || (terms == 0)) {
+	if (terms != 0)
+	  oss << " + ";
+	++terms;
+	oss << repr(poly[0]);
+    }
+    oss << ")";
+    return oss.str();
+  }
+  /*! \} */
+
+  
   namespace detail {
+    /*! \brief Returns the binding powers (precedence) of binary operators.
+      
+      As unary operators/tokens have no arguments which can be bound
+      by other operators, we return a large binding power (which
+      should exclude them from any binding power calculations).
+     */
     template<class T>
     std::pair<int, int> BP (const T& v)
     { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
+
+    /*! \brief Returns the binding powers (precedence) of binary
+        operators (specialisation for binary ops).
+     */
     template<class LHS, class Op, class RHS>
-    std::pair<int, int> BP (const BinaryOp<LHS, Op, RHS>& v) {
+    std::pair<int, int> BP (const sym::BinaryOp<LHS, Op, RHS>& v) {
       const int L = Op::leftBindingPower;
-      const int R = Op::leftBindingPower + (Op::associativity == Associativity::LEFT) + (Op::associativity == Associativity::NONE);
+      const int R = sym::detail::RBP<Op>();
       return std::make_pair(L, R);
     }
 
-    struct BPVisitor : public VisitorHelper<BPVisitor> {
+    /*! \brief Binding power visitor for sym::detail::BP(const Expr&). */
+    struct BPVisitor : public sym::detail::VisitorHelper<BPVisitor> {
       
-      template<class T> Expr apply(const T& rhs) { return Expr(); }
+      template<class T> sym::Expr apply(const T& rhs) { return sym::Expr(); }
 
-      template<class Op> Expr apply(const BinaryOpRT<Op>& op) {
+      template<class Op> sym::Expr apply(const sym::BinaryOpRT<Op>& op) {
 	LBP = Op::leftBindingPower;
-	RBP = Op::leftBindingPower + (Op::associativity == Associativity::LEFT) + (Op::associativity == Associativity::NONE);
-	return Expr();
+	RBP = sym::detail::RBP<Op>();
+	return sym::Expr();
       }
       
       int LBP = std::numeric_limits<int>::max();
       int RBP = std::numeric_limits<int>::max();
     };
-    
-    std::pair<int, int> BP (const Expr& v) {
+
+    /*! \brief Returns the binding powers (precedence) of binary
+        operators (specialisation for Expr).
+     */
+    std::pair<int, int> BP (const sym::Expr& v) {
       BPVisitor vis;
       v->visit(vis);
       return std::make_pair(vis.LBP, vis.RBP);
     }
   }
-  
+
   template<class LHS, class RHS, class Op>
-  inline std::ostream& operator<<(std::ostream& os, const BinaryOp<LHS, Op, RHS>& op) {
+  inline std::string repr(const sym::BinaryOp<LHS, Op, RHS>& op) {
     const auto this_BP = detail::BP(op);
     const auto LHS_BP = detail::BP(op._l);
     const auto RHS_BP = detail::BP(op._r);
+
+    std::string retval;
     
     bool parenL = LHS_BP.second < this_BP.first;
-    if (parenL) os << "(";
-    os << op._l;
-    if (parenL) os << ")";
+    if (parenL) retval = "(";
+    retval = retval + repr(op._l);
+    if (parenL) retval = retval + ")";
 
-    os << Op::str();
+    retval = retval + Op::repr();
     
     bool parenR = this_BP.second > RHS_BP.first;
-    if (parenR) os << "(";
-    os << op._r;
-    if (parenR) os << ")";
+    if (parenR) retval = retval + "(";
+    retval = retval + repr(op._r);
+    if (parenR) retval = retval + ")";
     
-    return os;
+    return retval;
   }
+}
 
-  /*! \relates Polynomial 
-    \name Polynomial input/output operations
-    \{
-  */
-  /*! \brief Writes a human-readable representation of the Polynomial to the output stream. */
-  template<class Coeff_t, size_t N, class PolyVar>
-  inline std::ostream& operator<<(std::ostream& os, const Polynomial<N, Coeff_t, PolyVar>& poly) {
-    std::ostringstream oss;
-    oss.precision(os.precision());
-    size_t terms = 0;
-    oss << "P(";
-    for (size_t i(N); i != 0; --i) {
-	if (poly[i] == empty_sum(poly[i])) continue;
-	if (terms != 0)
-	  oss << " + ";
-	++terms;
-      detail::print_coeff(oss, poly[i]);
-	oss << "*" << PolyVar::idx;
-	if (i > 1)
-	  oss << "^" << i;
-    }
-    if ((poly[0] != empty_sum(poly[0])) || (terms == 0)) {
-	if (terms != 0)
-	  oss << " + ";
-	++terms;
-	detail::print_coeff(oss, poly[0]);
-    }
-    os << oss.str() << ")";
-    return os;
-  }
-  /*! \} */
-
-  namespace detail {
-    template<size_t Order, class Coeff_t, class PolyVar>
-    std::ostream& operator<<(std::ostream& os, const SturmChain<Order, Coeff_t, PolyVar>& c) {
-      os << "SturmChain{p_0=" << c._p_n;
-	c._p_nminus1.output_helper(os, Order);
-	os << "}";
-	return os;
-    }
+namespace sym {
+  template<class T, typename = typename std::enable_if<sym::IsSymbolic<T>::value>::type>
+  std::ostream& operator<<(std::ostream& os, const T& v) {
+    return os << stator::repr(v);
   }
 }

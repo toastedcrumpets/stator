@@ -513,7 +513,11 @@ namespace sym {
     struct DerivativeRT : VisitorHelper<DerivativeRT> {
       DerivativeRT(VarRT var): _var(var) {}
 
-      /*! \brief Visitor to allow the compile time derivative implementation for unary operators. */
+      /*! \brief Visitor to allow the compile time derivative
+          implementation for unary operators. 
+	  
+	  This visitor is used to determine the type of the argument.
+      */
       template<class Op>
       struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
 	UnaryEval(VarRT var): _var(var) {}
@@ -539,7 +543,7 @@ namespace sym {
       template<class Op>
       Expr apply(const UnaryOpRT<Op>& v) {
 	UnaryEval<Op> visitor(_var);
-	return v.visit(visitor);
+	return v.getArg()->visit(visitor);
       }
 
       template<typename Op>

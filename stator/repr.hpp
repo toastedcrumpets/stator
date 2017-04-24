@@ -98,13 +98,17 @@ namespace stator {
     inline std::string repr_float(Float a) {
       std::string basic_output = stator::string_format("%.*g", std::numeric_limits<Float>::max_digits10, a);
       if (Config::Latex_output) {
-	//Try replacing the exponential notation with a nicer formatted string
-	auto fin = search_replace(basic_output, "e", "\\times10^{");
+	//Strip the unneeded exponent leading plus sign if present
+	auto fin = search_replace(basic_output, "e+", "\\times10^{");
+	//If the number is in exponential notation, the replacement
+	//should have succeeded, so close the brackets around the
+	//exponent
+	if (fin.second) return fin.first + "}";
 
-	//If it was in exponential notation, the replacement should
-	//have succeeded, so close the brackets around the exponent
-	if (fin.second)
-	  return fin.first + "}";
+	//Repeat, but for the case where the exponent is negative
+	fin = search_replace(basic_output, "e", "\\times10^{");
+	if (fin.second) return fin.first + "}";
+
       }
       return basic_output;
     }

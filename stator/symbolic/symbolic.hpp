@@ -53,7 +53,19 @@ namespace sym {
 #include <stator/symbolic/constants.hpp>
 #include <stator/orphan/template_config.hpp>
 
-namespace sym {  
+namespace sym {
+  
+  /*! \brief Template argument for dynamic types, as well as their
+      base class.
+
+      This class is used to provide specialisations of compile time
+      types, such as UnaryOp, BinaryOp, for the run-time CAS
+      implementation. These types also inherit from this class, to
+      allow their identification.
+  */
+  struct Dynamic {};
+
+  
   template<class T>
   struct IsSymbolic {
     static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
@@ -192,8 +204,9 @@ namespace sym {
     Unity.
   */
   template<class ...Args1, class ...Args2,
-	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
-  Unity derivative(Var<Args1...>, Var<Args2...>) { return Unity(); }
+	   typename = typename std::enable_if<!std::is_base_of<Dynamic, Var<Args1...> >::value && !std::is_base_of<Dynamic, Var<Args2...> >::value>::type>
+  auto derivative(Var<Args1...>, Var<Args2...>) -> typename std::enable_if<Var<Args1...>::idx == Var<Args2...>::idx, Unity>::type
+  { return Unity(); } 
 
   inline StackVector<double, 0> solve_real_roots(Null f) {
     return StackVector<double, 0>();
@@ -206,8 +219,9 @@ namespace sym {
     Null.
   */
   template<class ...Args1, class ...Args2,
-	     typename = typename enable_if_var_not_in<Var<Args1...>, Var<Args2...> >::type>
-  Null derivative(Var<Args1...>, Var<Args2...>) { return Null(); }
+	   typename = typename std::enable_if<!std::is_base_of<Dynamic, Var<Args1...> >::value && !std::is_base_of<Dynamic, Var<Args2...> >::value>::type>
+    auto derivative(Var<Args1...>, Var<Args2...>) -> typename std::enable_if<Var<Args1...>::idx != Var<Args2...>::idx, Null>::type
+  { return Null(); }
 
   /*! \brief Shift a function forward. It returns \f$g(x)=f(x+a)\f$
 

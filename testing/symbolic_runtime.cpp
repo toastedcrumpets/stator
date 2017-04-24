@@ -169,3 +169,10 @@ UNIT_TEST( symbolic_mixed_expr )
   auto g = sub(f, x=2);
   UNIT_TEST_CHECK_EQUAL(simplify(Expr(g)).as<double>(), 6.0);
 }
+
+UNIT_TEST( symbolic_runtime_derivative )
+{
+  UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), VarRT('x')), Expr("0"));
+  UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), Var<vidx<'x'>>()), Expr("0"));
+  //UNIT_TEST_CHECK_EQUAL(derivative(Expr("2*x"), Var<vidx<'x'>>()), Expr("2"));
+}

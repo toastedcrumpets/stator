@@ -57,8 +57,6 @@ namespace sym {
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
   template<typename Op> using BinaryOpRT = BinaryOp<Expr, Op, Expr>;
   
-  /*! \brief Type used when template arguments correspond to the runtime specialisation. */
-  struct Dynamic {};
   typedef Var<Dynamic> VarRT;
 
   /*! \brief The generic holder/smart pointer for a runtime Abstract
@@ -209,7 +207,7 @@ namespace sym {
 
   /*! \brief Specialisation of Var for runtime variables.*/
   template<>
-  class Var<Dynamic> : public RTBaseHelper<Var<Dynamic> > {
+  class Var<Dynamic> : public RTBaseHelper<Var<Dynamic> >, public Dynamic {
   public:
     Var(const char v) : idx(v) {}
     
@@ -297,7 +295,7 @@ namespace sym {
       and use in runtime expressions (Expr).
    */
   template<typename Op>
-  struct UnaryOp<Expr,Op> : public RTBaseHelper<UnaryOp<Expr,Op> > {
+  struct UnaryOp<Expr,Op> : public RTBaseHelper<UnaryOp<Expr,Op> >, public Dynamic {
     UnaryOp(const Expr& arg): _arg(arg) {}
 
     Expr clone() const {
@@ -322,7 +320,7 @@ namespace sym {
   /*! \brief Specialisation of BinaryOp for runtime arguments (Expr).
    */
   template<typename Op>
-  struct BinaryOp<Expr, Op, Expr> : public RTBaseHelper<BinaryOp<Expr, Op, Expr> > {
+  struct BinaryOp<Expr, Op, Expr> : public RTBaseHelper<BinaryOp<Expr, Op, Expr> >, public Dynamic {
     BinaryOp(const Expr& lhs, const Expr& rhs): _l(lhs), _r(rhs) {}
 
     Expr clone() const {
@@ -515,25 +513,39 @@ namespace sym {
     struct DerivativeRT : VisitorHelper<DerivativeRT> {
       DerivativeRT(VarRT var): _var(var) {}
 
+      /*! \brief Visitor to allow the compile time derivative implementation for unary operators. */
+      template<class Op>
+      struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
+	UnaryEval(VarRT var): _var(var) {}
+	template<class T> Expr apply(const T& arg) { return derivative(Op::apply(arg), _var); }
+	VarRT _var;
+      };
+
+      /*! \brief Handover to compile-time implementation for binary op derivatives. */
+      template<class Op, class LHS_t, class RHS_t>
+      Expr dd_visit(const LHS_t& l, const RHS_t& r) {
+	return derivative(Op::apply(l, r), _var);
+      }
+
       template<class T, typename = typename std::enable_if<IsConstant<T>::value>::type>
       Expr apply(const T& v) {
 	return ConstantRT<double>(0);
       }
-      
+
       Expr apply(const VarRT& v) {
 	return Expr((v == _var) ? new ConstantRT<double>(1) : new ConstantRT<double>(0));
       }
 
       template<class Op>
       Expr apply(const UnaryOpRT<Op>& v) {
-	//Hand over to the compile time implementation
-	return derivative(Op::apply(v.getArg()), _var);
+	UnaryEval<Op> visitor(_var);
+	return v.visit(visitor);
       }
 
-      template<class Op>
-      Expr apply(const BinaryOpRT<Op>& v) {
-	//Hand over to the compile time implementation
-	return derivative(Op::apply(v.getLHS(), v.getRHS()), _var);
+      template<typename Op>
+      Expr apply(const BinaryOpRT<Op>& op) {
+	DoubleDispatch1<DerivativeRT, Op> visitor(_var, *this);
+	return op.visit(visitor);
       }
       
       VarRT _var;

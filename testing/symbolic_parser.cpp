@@ -178,6 +178,8 @@ void expr_string_expr_conversion_check(const T in_expr) {
   os.str("");
   os.clear();
 
+  Expr f("2*x+sin(x^x)");
+  
   Expr e(initial_string);
   os << e;
   std::string final_string = os.str();

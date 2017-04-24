@@ -44,11 +44,19 @@ namespace sym {
 namespace sym {
   class RTBase;
   struct Expr;
+}
+
+namespace stator {
+  template<class Config = DefaultReprConfig> std::string repr(const sym::RTBase&);
+  template<class Config = DefaultReprConfig> std::string repr(const sym::Expr&);
+}
+
+namespace sym {
   template<class Op> struct UnaryOp<Expr, Op>;
   template<typename Op> using UnaryOpRT = UnaryOp<Expr, Op>;
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
   template<typename Op> using BinaryOpRT = BinaryOp<Expr, Op, Expr>;
-
+  
   /*! \brief Type used when template arguments correspond to the runtime specialisation. */
   struct Dynamic {};
   typedef Var<Dynamic> VarRT;
@@ -174,12 +182,10 @@ namespace sym {
 
     virtual bool operator==(const Expr o) const = 0;
 
-    virtual Expr visit(detail::VisitorInterface& c) = 0;
-
-    virtual std::string repr() const = 0;
+    virtual Expr visit(detail::VisitorInterface& c) const = 0;
 
     virtual void throw_self() const {
-      stator_throw() << "The expression (" << repr() << ") does not resolve to a constant type.";
+      stator_throw() << "The expression (" << stator::repr(*this) << ") does not resolve to a constant type.";
     }
   };
   
@@ -191,12 +197,6 @@ namespace sym {
   public:
     Expr clone() const {
       return Expr(new Derived(static_cast<const Derived&>(*this)));
-    }
-
-    std::string repr() const {
-      std::ostringstream os;
-      os << static_cast<const Derived&>(*this);
-      return os.str();
     }
     
     bool operator==(const Expr o) const {
@@ -225,14 +225,14 @@ namespace sym {
     Relation<VarRT, Expr> operator=(const Expr& f) const {
       return Relation<VarRT, Expr>(*this, f);
     }
-    
-    Expr visit(detail::VisitorInterface& c) {
-      return c.visit(*this);
-    }
-    
+        
     char getidx() const { return idx; } 
     
     char idx;
+
+    Expr visit(detail::VisitorInterface& c) const {
+      return c.visit(*this);
+    }
   };
 
   template<typename T>
@@ -242,7 +242,7 @@ namespace sym {
     
     bool operator==(const Expr o) const;
     
-    Expr visit(detail::VisitorInterface& c) {
+    Expr visit(detail::VisitorInterface& c) const {
       return c.visit(_val);
     }
 
@@ -251,10 +251,6 @@ namespace sym {
     }
 
     const T& get() const { return _val; }
-
-    std::string repr() const {
-      return stator::repr(_val);
-    }
     
   private:
     T _val;
@@ -316,7 +312,7 @@ namespace sym {
       return _arg;
     }
 
-    Expr visit(detail::VisitorInterface& c) {
+    Expr visit(detail::VisitorInterface& c) const {
       return c.visit(*this);
     }
     
@@ -345,7 +341,7 @@ namespace sym {
       return _r;
     }
 
-    Expr visit(detail::VisitorInterface& c) {
+    Expr visit(detail::VisitorInterface& c) const {
       return c.visit(*this);
     }
 
@@ -379,7 +375,7 @@ namespace sym {
       throw e;
     } catch(...) {}
 
-    stator_throw() << "Uncaught error! Check implementation of throw_self in expression (" << (*this)->repr() << ")";
+    stator_throw() << "Uncaught error! Check implementation of throw_self in expression (" << stator::repr(*this) << ")";
   }
 
   bool Expr::operator==(const Expr& e) const {

@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <stator/orphan/template_config.hpp>
 #include <limits>
 #include <memory>
 #include <cstdio>
@@ -44,8 +45,9 @@ namespace stator {
     \param to A string with the replacement text sequence.
     \returns The string "in" with all occurences of "from" replaced with "to".
    */
-  inline std::string search_replace(std::string in, const std::string& from, const std::string& to)
+  inline std::pair<std::string, size_t> search_replace(std::string in, const std::string& from, const std::string& to)
   {
+    size_t replacements = 0;
     if (!in.empty())
       {
 	std::string::size_type toLen = to.length();
@@ -56,26 +58,63 @@ namespace stator {
 	  {
 	    in.replace(loc, frLen, to);
 	    loc += toLen;
+	    ++replacements;
 	    
 	    if (loc >= in.length())
 	      break;
 	  }
       }
-    return in;
+    
+    return std::make_pair(in, replacements);
   }
 
+  namespace detail {
+    struct Latex_output_ID;
+  };
+
+  struct Latex_output : stator::orphan::basic_conf_t<detail::Latex_output_ID> {};
+
+  template <typename ...Args>
+  struct ReprConfig {
+    static constexpr const auto Latex_output = stator::orphan::is_present<stator::Latex_output, Args...>::value;
+  };
+
+  using DefaultReprConfig = ReprConfig<>;
   
+  template<class Config = DefaultReprConfig>
   inline std::string repr(int a) { return std::to_string(a); }
   
+  template<class Config = DefaultReprConfig>
   inline std::string repr(long a) { return std::to_string(a); }
   
+  template<class Config = DefaultReprConfig>
   inline std::string repr(unsigned a) { return std::to_string(a); }
   
+  template<class Config = DefaultReprConfig>
   inline std::string repr(unsigned long a) { return std::to_string(a); }
+
+  namespace detail {
+    template<class Config, class Float>
+    inline std::string repr_float(Float a) {
+      std::string basic_output = stator::string_format("%.*g", std::numeric_limits<Float>::max_digits10, a);
+      if (Config::Latex_output) {
+	//Try replacing the exponential notation with a nicer formatted string
+	auto fin = search_replace(basic_output, "e", "\\times10^{");
+
+	//If it was in exponential notation, the replacement should
+	//have succeeded, so close the brackets around the exponent
+	if (fin.second)
+	  return fin.first + "}";
+      }
+      return basic_output;
+    }
+  }
   
+  template<class Config = DefaultReprConfig>
   inline std::string repr(float a)
-  { return stator::string_format("%.*g", std::numeric_limits<float>::max_digits10, a); }
+  { return detail::repr_float<Config>(a); }
   
+  template<class Config = DefaultReprConfig>
   inline std::string repr(double a)
-  { return stator::string_format("%.*g", std::numeric_limits<double>::max_digits10, a); }
+  { return detail::repr_float<Config>(a); }
 }

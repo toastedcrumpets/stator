@@ -45,7 +45,8 @@
   \endcode  
 
   This reduces the amount of code that has to be written and ensures
-  consistency between the two definitions.
+  consistency between the two definitions. It is redundant in later
+  C++ standards.
 */
 #define STATOR_AUTORETURN(EXPR) decltype(EXPR) { return EXPR; }
 

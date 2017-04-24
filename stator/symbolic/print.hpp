@@ -20,32 +20,25 @@
 #pragma once
 
 namespace stator {
-
-  template<std::intmax_t Num, std::intmax_t Denom>
+  template<class Config = DefaultReprConfig, std::intmax_t Num, std::intmax_t Denom>
   inline std::string repr(const sym::C<Num, Denom>)
   { return "C<" + repr(Num) + ", " + repr (Denom) + ">"; }
 
-  /*! \brief String output operator for Expr classes.
-   */
-  inline std::string repr(const sym::Expr& e) {
-    return e->repr();
-  }
-
-  template<class ...Args>
+  template<class Config = DefaultReprConfig, class ...Args>
   inline std::string repr(const sym::Var<Args...>& v) {
     return std::string(1, v.getidx());
   }
 
-  template<class Var, class Arg>
+  template<class Config = DefaultReprConfig, class Var, class Arg>
   inline std::string repr(const sym::Relation<Var, Arg>& sub) {
-    return repr(sub._var) << "=" << repr(sub._val);
+    return repr<Config>(sub._var) << "=" << repr<Config>(sub._val);
   }
   
-  template<class Arg, class Op>
+  template<class Config = DefaultReprConfig, class Arg, class Op>
   inline std::string repr(const sym::UnaryOp<Arg, Op>& f)
-  { return std::string(Op::_repr_left)+repr(f._arg) + Op::_repr_right; }
+  { return std::string(Op::_repr_left)+repr<Config>(f._arg) + Op::_repr_right; }
 
-  template<class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
+  template<class Config = DefaultReprConfig, class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
   std::string repr(const T& val) {
     std::ostringstream os;
     if ((val.cols() == 1) && (val.rows()==1))
@@ -73,7 +66,7 @@ namespace stator {
     \{
   */
   /*! \brief Returns a human-readable representation of the Polynomial. */
-  template<class Coeff_t, size_t N, class PolyVar>
+  template<class Config = DefaultReprConfig, class Coeff_t, size_t N, class PolyVar>
   inline std::string repr(const sym::Polynomial<N, Coeff_t, PolyVar>& poly) {
     std::ostringstream oss;
     size_t terms = 0;
@@ -83,7 +76,7 @@ namespace stator {
 	if (terms != 0)
 	  oss << " + ";
 	++terms;
-	oss << repr(poly[i]) << "*" << PolyVar::idx;
+	oss << repr<Config>(poly[i]) << "*" << PolyVar::idx;
 	if (i > 1)
 	  oss << "^" << i;
     }
@@ -91,7 +84,7 @@ namespace stator {
 	if (terms != 0)
 	  oss << " + ";
 	++terms;
-	oss << repr(poly[0]);
+	oss << repr<Config>(poly[0]);
     }
     oss << ")";
     return oss.str();
@@ -145,7 +138,7 @@ namespace stator {
     }
   }
 
-  template<class LHS, class RHS, class Op>
+  template<class Config = DefaultReprConfig, class LHS, class RHS, class Op>
   inline std::string repr(const sym::BinaryOp<LHS, Op, RHS>& op) {
     const auto this_BP = detail::BP(op);
     const auto LHS_BP = detail::BP(op._l);
@@ -155,17 +148,42 @@ namespace stator {
     
     bool parenL = LHS_BP.second < this_BP.first;
     if (parenL) retval = "(";
-    retval = retval + repr(op._l);
+    retval = retval + repr<Config>(op._l);
     if (parenL) retval = retval + ")";
 
     retval = retval + Op::repr();
     
     bool parenR = this_BP.second > RHS_BP.first;
     if (parenR) retval = retval + "(";
-    retval = retval + repr(op._r);
+    retval = retval + repr<Config>(op._r);
     if (parenR) retval = retval + ")";
     
     return retval;
+  }
+
+
+  namespace detail {
+    template<class Config>
+    struct ReprVisitor : public sym::detail::VisitorHelper<ReprVisitor<Config> > {
+      template<class T> sym::Expr apply(const T& rhs) {
+	_repr = repr<Config>(rhs);
+	return sym::Expr();
+      }
+
+      std::string _repr;
+    };
+  }
+
+  template<class Config>
+  std::string repr(const sym::RTBase& b) {
+    detail::ReprVisitor<Config> visitor;
+    b.visit(visitor);
+    return visitor._repr;
+  }
+
+  template<class Config>
+  std::string repr(const sym::Expr& b) {
+    return repr<Config>(*b);
   }
 }
 

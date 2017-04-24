@@ -23,12 +23,12 @@
 #pragma once
 
 // stator
-#include "stator/config.hpp"
-#include "stator/constants.hpp"
-#include "stator/orphan/stack_vector.hpp"
+#include <stator/config.hpp>
+#include <stator/constants.hpp>
+#include <stator/orphan/stack_vector.hpp>
 
 // Eigen
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 
 // C++
 #include <complex>
@@ -50,8 +50,8 @@ namespace sym {
   struct SymbolicOperator {};
 }
 
-#include "stator/symbolic/constants.hpp"
-#include "stator/orphan/template_config.hpp"
+#include <stator/symbolic/constants.hpp>
+#include <stator/orphan/template_config.hpp>
 
 namespace sym {  
   template<class T>

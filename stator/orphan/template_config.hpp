@@ -6,8 +6,9 @@
 //  http://opensource.org/licenses/MIT)
 //=======================================================================
 
-#include <type_traits>
+#pragma once
 
+#include <type_traits>
 
 namespace stator {
   namespace orphan {

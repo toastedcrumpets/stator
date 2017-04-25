@@ -68,12 +68,10 @@ namespace sym {
     SymbolicOperator and can be used in compile-time expressions.
   */
   struct Expr : public shared_ptr<RTBase>, public SymbolicOperator {
-    Expr() {}
-
-    //Allow the standard shared_ptr interface
     typedef shared_ptr<RTBase> Base;
-    using Base::Base;
 
+    Expr() {}
+    Expr(RTBase* n) : Base(n) {}    
     Expr(const char*);
     Expr(const std::string&);
 

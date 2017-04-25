@@ -416,7 +416,7 @@ namespace sym {
       }
 
     private:
-      const Expr& _RHS;
+      Expr _RHS;
       Visitor& _visitor;
     };
 

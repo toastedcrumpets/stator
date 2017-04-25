@@ -174,5 +174,10 @@ UNIT_TEST( symbolic_runtime_derivative )
 {
   UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), VarRT('x')), Expr("0"));
   UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), Var<vidx<'x'>>()), Expr("0"));
-  //UNIT_TEST_CHECK_EQUAL(derivative(Expr("2*x"), Var<vidx<'x'>>()), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("2*x"), Var<vidx<'x'>>())), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*x"), Var<vidx<'x'>>())), Expr("x+x"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x+x"), Var<vidx<'x'>>())), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("ln(x)"), Var<vidx<'x'>>())), Expr("1/x"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("exp(x)"), Var<vidx<'x'>>())), Expr("exp(x)"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), Var<vidx<'x'>>())), Expr("exp(x)+x*exp(x)"));
 }

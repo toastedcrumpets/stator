@@ -172,7 +172,7 @@ namespace sym {
       can be held by \ref Expr. Most actual functionality is
       implemented using the \ref VisitorInterface via \ref visit.
   */
-  class RTBase : public std::enable_shared_from_this<RTBase>, public SymbolicOperator {
+  class RTBase : public SymbolicOperator {
   public:
     virtual ~RTBase() {}
 
@@ -233,6 +233,19 @@ namespace sym {
     }
   };
 
+  /*! \brief Determine the derivative of a variable by another variable.
+
+    If the variable is NOT the variable in which a derivative is
+    being taken, then this overload should be selected to return
+    Null.
+  */
+  template<class ...Args1, class ...Args2,
+	   typename = typename std::enable_if<std::is_base_of<Dynamic, Var<Args1...> >::value || std::is_base_of<Dynamic, Var<Args2...> >::value>::type >
+  Expr derivative(Var<Args1...> v1, Var<Args2...> v2) {
+    return Expr(v1.getidx() == v2.getidx());
+  }
+
+  
   template<typename T>
   class ConstantRT : public RTBaseHelper<ConstantRT<T> > {
   public:
@@ -528,7 +541,8 @@ namespace sym {
       /*! \brief Handover to compile-time implementation for binary op derivatives. */
       template<class Op, class LHS_t, class RHS_t>
       Expr dd_visit(const LHS_t& l, const RHS_t& r) {
-	return derivative(Op::apply(l, r), _var);
+	auto e = Op::apply(l, r);
+	return derivative(e, _var);
       }
 
       template<class T, typename = typename std::enable_if<IsConstant<T>::value>::type>
@@ -548,8 +562,8 @@ namespace sym {
 
       template<typename Op>
       Expr apply(const BinaryOpRT<Op>& op) {
-	DoubleDispatch1<DerivativeRT, Op> visitor(_var, *this);
-	return op.visit(visitor);
+	DoubleDispatch1<DerivativeRT, Op> visitor(op.getRHS(), *this);
+	return op.getLHS()->visit(visitor);
       }
       
       VarRT _var;

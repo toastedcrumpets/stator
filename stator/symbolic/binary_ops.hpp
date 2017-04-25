@@ -249,28 +249,28 @@ namespace sym {
   /*! \brief Derivatives of AddOp operations.
    */
   template<class Var, class LHS, class RHS>
-  auto derivative(const AddOp<LHS, RHS>& f, Var)
-    -> STATOR_AUTORETURN(derivative(f._l, Var()) + derivative(f._r, Var()))
+  auto derivative(const AddOp<LHS, RHS>& f, Var v)
+    -> STATOR_AUTORETURN(derivative(f._l, v) + derivative(f._r, v))
 
   /*! \brief Derivatives of SubtractOp operations.
    */
     template<class Var, class LHS, class RHS>
-    auto derivative(const SubtractOp<LHS, RHS>& f, Var) 
-    -> STATOR_AUTORETURN(derivative(f._l, Var()) - derivative(f._r, Var()))
+    auto derivative(const SubtractOp<LHS, RHS>& f, Var v)
+    -> STATOR_AUTORETURN(derivative(f._l, v) - derivative(f._r, v))
 
   /*! \brief Derivatives of MultiplyOp operations.
    */
     template<class Var, class LHS, class RHS>
-    auto derivative(const MultiplyOp<LHS, RHS>& f, Var) 
-    -> STATOR_AUTORETURN(derivative(f._l, Var()) * f._r + f._l * derivative(f._r, Var()))
+    auto derivative(const MultiplyOp<LHS, RHS>& f, Var v)
+    -> STATOR_AUTORETURN(derivative(f._l, v) * f._r + f._l * derivative(f._r, v))
 
   /*! \} */
 
   /*! \brief Derivatives of PowerOp operations.
    */
   template<class Var, class Arg, std::intmax_t num, std::intmax_t den>
-  auto derivative(const PowerOp<Arg, C<num, den> >& f, Var)
-    -> STATOR_AUTORETURN((C<num, den>() * derivative(f._l, Var()) * pow(f._l, C<num, den>()-C<1>())));
+    auto derivative(const PowerOp<Arg, C<num, den> >& f, Var v)
+    -> STATOR_AUTORETURN((C<num, den>() * derivative(f._l, v) * pow(f._l, C<num, den>()-C<1>())));
   /*! \}*/
 }
 

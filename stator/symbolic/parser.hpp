@@ -102,7 +102,7 @@ namespace sym {
 	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine, std::numeric_limits<int>::max()>());
 	_left_operators["cos"].reset(new UnaryOpToken<detail::Cosine, std::numeric_limits<int>::max()>());
 	_left_operators["exp"].reset(new UnaryOpToken<detail::Exp, std::numeric_limits<int>::max()>());
-	_left_operators["log"].reset(new UnaryOpToken<detail::Log, std::numeric_limits<int>::max()>());
+	_left_operators["ln"].reset(new UnaryOpToken<detail::Log, std::numeric_limits<int>::max()>());
 	
 	//The actual tokenisation is done in the consume() member
 	//function. The first call starts the process and clears the "end" state.

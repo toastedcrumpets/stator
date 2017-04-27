@@ -126,8 +126,4 @@ namespace stator {
   template<class Config = DefaultReprConfig>
   inline std::string repr(double a)
   { return detail::repr_float<Config>(a); }
-
-  template<class T>
-  inline std::string latex(const T& v)
-  { return repr<ReprConfig<Latex_output, Rounding_digits<2> > >(v); }
 }

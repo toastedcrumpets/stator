@@ -62,38 +62,26 @@ namespace sym {
 
   namespace detail {
     struct Sine {
-      static constexpr const char* _repr_left = "sin(";
-      static constexpr const char* _repr_right = ")";
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sin(a));
     };
 
     struct Cosine {
-      static constexpr const char* _repr_left = "cos(";
-      static constexpr const char* _repr_right = ")";
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(cos(a));
     };
 
     struct Exp {
-      static constexpr const char* _repr_left = "exp(";
-      static constexpr const char* _repr_right = ")";
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(exp(a));
     };
 
     struct Log {
-      static constexpr const char* _repr_left = "ln(";
-      static constexpr const char* _repr_right = ")";
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(log(a));
     };
 
     struct Absolute {
-      static constexpr const char* _repr_left = "|";
-      static constexpr const char* _repr_right = "|";
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(abs(a));
     };
 
     struct Arbsign {
-      static constexpr const char* _repr_left = "±|";
-      static constexpr const char* _repr_right = "|";
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Arbsign>(a)));
     };
   }

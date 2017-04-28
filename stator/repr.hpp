@@ -70,13 +70,18 @@ namespace stator {
 
   namespace detail {
     struct Latex_output_ID;
+    struct Rounding_digits_ID {};
   };
 
   struct Latex_output : stator::orphan::basic_conf_t<detail::Latex_output_ID> {};
 
+  template<int digits>
+  struct Rounding_digits : stator::orphan::value_conf_t<detail::Rounding_digits_ID, int, digits> {};
+  
   template <typename ...Args>
   struct ReprConfig {
     static constexpr const auto Latex_output = stator::orphan::is_present<stator::Latex_output, Args...>::value;
+    static constexpr const auto Rounding_digits = stator::orphan::get_value<stator::Rounding_digits<0>, Args...>::value;
   };
 
   using DefaultReprConfig = ReprConfig<>;
@@ -89,7 +94,7 @@ namespace stator {
   inline
   typename std::enable_if<std::is_floating_point<Float>::value, std::string>::type
   repr(Float a) {
-    std::string basic_output = stator::string_format("%.*g", std::numeric_limits<Float>::max_digits10, a);
+    std::string basic_output = stator::string_format("%.*g", std::numeric_limits<Float>::max_digits10 - Config::Rounding_digits, a);
     if (Config::Latex_output) {
       //Strip the unneeded exponent leading plus sign if present
       auto fin = search_replace(basic_output, "e+", "\\times10^{");

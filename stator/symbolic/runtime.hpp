@@ -54,7 +54,7 @@ namespace stator {
 namespace sym {
   template<class Op> struct UnaryOp<Expr, Op>;
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
-  
+
   typedef Var<Dynamic> VarRT;
 
   /*! \brief The generic holder/smart pointer for a runtime Abstract

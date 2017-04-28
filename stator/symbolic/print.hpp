@@ -33,27 +33,81 @@ namespace stator {
   inline std::string repr(const sym::Relation<Var, Arg>& sub) {
     return repr<Config>(sub._var) << "=" << repr<Config>(sub._val);
   }
+    
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Sine>& f)
+  {
+    return std::string((Config::Latex_output) ? "\\sin\\left(" : "sin(")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right)" : ")")
+      ;
+  }
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Cosine>& f)
+  {
+    return std::string((Config::Latex_output) ? "\\cos\\left(" : "cos(")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right)" : ")")
+      ;
+  }
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Exp>& f)
+  {
+    return
+      std::string((Config::Latex_output) ? "\\mathrm{e}^{" : "exp(")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "}" : ")")
+      ;
+  }
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Log>& f)
+  {
+    return
+      std::string((Config::Latex_output) ? "\\ln\\left(" : "ln(")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right)" : ")")
+      ;
+  }
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Absolute>& f)
+  {
+    return
+      std::string((Config::Latex_output) ? "\\left|" : "|")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right|" : "|")
+      ;
+  }
   
-  template<class Config = DefaultReprConfig, class Arg, class Op>
-  inline std::string repr(const sym::UnaryOp<Arg, Op>& f)
-  { return std::string(Op::_repr_left)+repr<Config>(f._arg) + Op::_repr_right; }
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Arbsign>& f)
+  {
+    return
+      std::string((Config::Latex_output) ? "\\pm\\left|" : "|")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right|" : "|")
+      ;
+  }
 
   template<class Config = DefaultReprConfig, class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
   std::string repr(const T& val) {
     std::ostringstream os;
     if ((val.cols() == 1) && (val.rows()==1))
-      os << val;
+      os << repr<Config>(val(0,0));
     else if (val.cols() == 1) {
       os << "{ ";
       for (int i(0); i < val.rows(); ++i)
-	os << val(i, 0) << " ";
+	os << repr<Config>(val(i, 0)) << " ";
       os << "}^T";
     } else {
       os << "{ ";
       for (int i(0); i < val.cols(); ++i) {
 	os << "{ ";
 	for (int j(0); j < val.rows(); ++j)
-	  os << val(i, j) << " ";
+	  os << repr<Config>(val(i, j)) << " ";
 	os << "} ";
       }
       os << "}";
@@ -136,6 +190,11 @@ namespace stator {
       v->visit(vis);
       return std::make_pair(vis.LBP, vis.RBP);
     }
+
+    template<class Config>
+    std::string paren_wrap(std::string arg) {
+      return ((Config::Latex_output) ? "\\left(" : "(") + arg + ((Config::Latex_output) ? "\\right)" : ")");
+    }
   }
 
   template<class Config = DefaultReprConfig, class LHS, class RHS, class Op>
@@ -144,24 +203,52 @@ namespace stator {
     const auto LHS_BP = detail::BP(op._l);
     const auto RHS_BP = detail::BP(op._r);
 
-    std::string retval;
-    
-    bool parenL = LHS_BP.second < this_BP.first;
-    if (parenL) retval = "(";
-    retval = retval + repr<Config>(op._l);
-    if (parenL) retval = retval + ")";
+    std::string LHS_repr = repr<Config>(op._l);
+    if (LHS_BP.second < this_BP.first) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
 
-    retval = retval + Op::repr();
-    
-    bool parenR = this_BP.second > RHS_BP.first;
-    if (parenR) retval = retval + "(";
-    retval = retval + repr<Config>(op._r);
-    if (parenR) retval = retval + ")";
-    
-    return retval;
+    std::string RHS_repr = repr<Config>(op._r);
+    if (this_BP.second > RHS_BP.first) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
+
+    return LHS_repr + Op::repr() + RHS_repr;
   }
 
+  template<class Config = DefaultReprConfig, class LHS, class RHS>
+  inline std::string repr(const sym::BinaryOp<LHS, sym::detail::Power, RHS>& op) {
+    const auto this_BP = detail::BP(op);
+    const auto LHS_BP = detail::BP(op._l);
+    const auto RHS_BP = detail::BP(op._r);
 
+    std::string LHS_repr = repr<Config>(op._l);
+    if (LHS_BP.second < this_BP.first) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
+    
+    std::string RHS_repr = repr<Config>(op._r);
+    if (!Config::Latex_output) {
+      if (this_BP.second > RHS_BP.first) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
+    } else {
+      RHS_repr = "{" + RHS_repr + "}";
+    }
+
+    return LHS_repr + sym::detail::Power::repr() + RHS_repr;
+  }
+  
+  template<class Config = DefaultReprConfig, class LHS, class RHS>
+  inline std::string repr(const sym::BinaryOp<LHS, sym::detail::Divide, RHS>& op) {
+    const auto this_BP = detail::BP(op);
+    const auto LHS_BP = detail::BP(op._l);
+    const auto RHS_BP = detail::BP(op._r);
+
+    std::string LHS_repr = repr<Config>(op._l);
+    std::string RHS_repr = repr<Config>(op._r);
+
+    if (!Config::Latex_output) {
+      if (LHS_BP.second < this_BP.first) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
+      if (this_BP.second > RHS_BP.first) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
+      return LHS_repr + sym::detail::Divide::repr() + RHS_repr;
+    } else {
+      return "\\frac{" + LHS_repr + "}{" + RHS_repr + "}";
+    }
+  }
+  
   namespace detail {
     template<class Config>
     struct ReprVisitor : public sym::detail::VisitorHelper<ReprVisitor<Config> > {

@@ -118,7 +118,7 @@ namespace stator {
       
       template<class T> sym::Expr apply(const T& rhs) { return sym::Expr(); }
 
-      template<class Op> sym::Expr apply(const sym::BinaryOpRT<Op>& op) {
+      template<class Op> sym::Expr apply(const sym::BinaryOp<sym::Expr, Op, sym::Expr>& op) {
 	LBP = Op::leftBindingPower;
 	RBP = sym::detail::RBP<Op>();
 	return sym::Expr();

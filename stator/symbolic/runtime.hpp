@@ -53,9 +53,7 @@ namespace stator {
 
 namespace sym {
   template<class Op> struct UnaryOp<Expr, Op>;
-  template<typename Op> using UnaryOpRT = UnaryOp<Expr, Op>;
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
-  template<typename Op> using BinaryOpRT = BinaryOp<Expr, Op, Expr>;
   
   typedef Var<Dynamic> VarRT;
 
@@ -112,17 +110,17 @@ namespace sym {
     struct VisitorInterface {
       virtual Expr visit(const double&) = 0;
       virtual Expr visit(const VarRT&) = 0;
-      virtual Expr visit(const UnaryOpRT<detail::Sine>& ) = 0;
-      virtual Expr visit(const UnaryOpRT<detail::Cosine>& ) = 0;
-      virtual Expr visit(const UnaryOpRT<detail::Log>& ) = 0;
-      virtual Expr visit(const UnaryOpRT<detail::Exp>& ) = 0;
-      virtual Expr visit(const UnaryOpRT<detail::Absolute>& ) = 0;
-      virtual Expr visit(const UnaryOpRT<detail::Arbsign>& ) = 0;
-      virtual Expr visit(const BinaryOpRT<detail::Add>& ) = 0;
-      virtual Expr visit(const BinaryOpRT<detail::Subtract>& ) = 0;
-      virtual Expr visit(const BinaryOpRT<detail::Multiply>& ) = 0;
-      virtual Expr visit(const BinaryOpRT<detail::Divide>& ) = 0;
-      virtual Expr visit(const BinaryOpRT<detail::Power>& ) = 0;
+      virtual Expr visit(const UnaryOp<Expr, detail::Sine>& ) = 0;
+      virtual Expr visit(const UnaryOp<Expr, detail::Cosine>& ) = 0;
+      virtual Expr visit(const UnaryOp<Expr, detail::Log>& ) = 0;
+      virtual Expr visit(const UnaryOp<Expr, detail::Exp>& ) = 0;
+      virtual Expr visit(const UnaryOp<Expr, detail::Absolute>& ) = 0;
+      virtual Expr visit(const UnaryOp<Expr, detail::Arbsign>& ) = 0;
+      virtual Expr visit(const BinaryOp<Expr, detail::Add, Expr>& ) = 0;
+      virtual Expr visit(const BinaryOp<Expr, detail::Subtract, Expr>& ) = 0;
+      virtual Expr visit(const BinaryOp<Expr, detail::Multiply, Expr>& ) = 0;
+      virtual Expr visit(const BinaryOp<Expr, detail::Divide, Expr>& ) = 0;
+      virtual Expr visit(const BinaryOp<Expr, detail::Power, Expr>& ) = 0;
     };
 
 
@@ -138,27 +136,27 @@ namespace sym {
       virtual Expr visit(const double& x) { return static_cast<Derived*>(this)->apply(x); }
       virtual Expr visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
 
-      virtual Expr visit(const UnaryOpRT<detail::Sine>& x)
+      virtual Expr visit(const UnaryOp<Expr, detail::Sine>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOpRT<detail::Cosine>& x)
+      virtual Expr visit(const UnaryOp<Expr, detail::Cosine>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOpRT<detail::Log>& x)
+      virtual Expr visit(const UnaryOp<Expr, detail::Log>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOpRT<detail::Exp>& x)
+      virtual Expr visit(const UnaryOp<Expr, detail::Exp>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOpRT<detail::Absolute>& x)
+      virtual Expr visit(const UnaryOp<Expr, detail::Absolute>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOpRT<detail::Arbsign>& x)
+      virtual Expr visit(const UnaryOp<Expr, detail::Arbsign>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOpRT<detail::Add>& x)
+      virtual Expr visit(const BinaryOp<Expr, detail::Add, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOpRT<detail::Subtract>& x)
+      virtual Expr visit(const BinaryOp<Expr, detail::Subtract, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOpRT<detail::Multiply>& x)
+      virtual Expr visit(const BinaryOp<Expr, detail::Multiply, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOpRT<detail::Divide>& x)
+      virtual Expr visit(const BinaryOp<Expr, detail::Divide, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOpRT<detail::Power>& x)
+      virtual Expr visit(const BinaryOp<Expr, detail::Power, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
     };
   }
@@ -366,10 +364,10 @@ namespace sym {
   Expr::Expr(const C<Num, Denom>& c) : Expr(new ConstantRT<double>(double(Num) / Denom)) {}
   
   template<class Op, class Arg_t>
-  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Expr(new UnaryOpRT<Op>(op._arg)) {}
+  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Expr(new UnaryOp<Expr, Op>(op._arg)) {}
 
   template<class LHS_t, class Op, class RHS_t>
-  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Expr(new BinaryOpRT<Op>(op._l, op._r)) {}
+  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Expr(new BinaryOp<Expr, Op, Expr>(op._l, op._r)) {}
   
   template<typename ...Args>
   Expr::Expr(const Var<Args...> v) : Expr(new VarRT(v)) {}
@@ -445,7 +443,7 @@ namespace sym {
       }
 
       template<typename Op>
-      Expr apply(const UnaryOpRT<Op>& op) {
+      Expr apply(const UnaryOp<Expr, Op>& op) {
 	//Simplify the argument
 	Expr arg = op.getArg()->visit(*this);
 	//Try evaluating the unary expression
@@ -455,7 +453,7 @@ namespace sym {
 
       //For binary operators, try to collapse them
       template<typename Op>
-      Expr apply(const BinaryOpRT<Op>& op) {
+      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
 	Expr l = op.getLHS()->visit(*this);
 	Expr r = op.getRHS()->visit(*this);
 
@@ -500,12 +498,12 @@ namespace sym {
       }
       
       template<typename Op>
-      Expr apply(const UnaryOpRT<Op>& op) {
+      Expr apply(const UnaryOp<Expr, Op>& op) {
 	return Op::apply(op.getArg()->visit(*this));
       }
 
       template<typename Op>
-      Expr apply(const BinaryOpRT<Op>& op) {
+      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
 	return Op::apply(op.getLHS()->visit(*this), op.getRHS()->visit(*this));
       }
       
@@ -553,13 +551,13 @@ namespace sym {
       }
 
       template<class Op>
-      Expr apply(const UnaryOpRT<Op>& v) {
+      Expr apply(const UnaryOp<Expr, Op>& v) {
 	UnaryEval<Op> visitor(_var);
 	return v.getArg()->visit(visitor);
       }
 
       template<typename Op>
-      Expr apply(const BinaryOpRT<Op>& op) {
+      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
 	DoubleDispatch1<DerivativeRT, Op> visitor(op.getRHS(), *this);
 	return op.getLHS()->visit(visitor);
       }

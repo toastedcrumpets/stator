@@ -81,44 +81,28 @@ namespace stator {
 
   using DefaultReprConfig = ReprConfig<>;
   
-  template<class Config = DefaultReprConfig>
-  inline std::string repr(int a) { return std::to_string(a); }
+  template<class Config = DefaultReprConfig, typename T>
+  typename std::enable_if<std::is_integral<T>::value, std::string>::type
+  repr(T a) { return std::to_string(a); }
   
-  template<class Config = DefaultReprConfig>
-  inline std::string repr(long a) { return std::to_string(a); }
-  
-  template<class Config = DefaultReprConfig>
-  inline std::string repr(unsigned a) { return std::to_string(a); }
-  
-  template<class Config = DefaultReprConfig>
-  inline std::string repr(unsigned long a) { return std::to_string(a); }
+  template<class Config, class Float>
+  inline
+  typename std::enable_if<std::is_floating_point<Float>::value, std::string>::type
+  repr(Float a) {
+    std::string basic_output = stator::string_format("%.*g", std::numeric_limits<Float>::max_digits10, a);
+    if (Config::Latex_output) {
+      //Strip the unneeded exponent leading plus sign if present
+      auto fin = search_replace(basic_output, "e+", "\\times10^{");
+      //If the number is in exponential notation, the replacement
+      //should have succeeded, so close the brackets around the
+      //exponent
+      if (fin.second) return fin.first + "}";
 
-  namespace detail {
-    template<class Config, class Float>
-    inline std::string repr_float(Float a) {
-      std::string basic_output = stator::string_format("%.*g", std::numeric_limits<Float>::max_digits10, a);
-      if (Config::Latex_output) {
-	//Strip the unneeded exponent leading plus sign if present
-	auto fin = search_replace(basic_output, "e+", "\\times10^{");
-	//If the number is in exponential notation, the replacement
-	//should have succeeded, so close the brackets around the
-	//exponent
-	if (fin.second) return fin.first + "}";
+      //Repeat, but for the case where the exponent is negative
+      fin = search_replace(basic_output, "e", "\\times10^{");
+      if (fin.second) return fin.first + "}";
 
-	//Repeat, but for the case where the exponent is negative
-	fin = search_replace(basic_output, "e", "\\times10^{");
-	if (fin.second) return fin.first + "}";
-
-      }
-      return basic_output;
     }
+    return basic_output;
   }
-  
-  template<class Config = DefaultReprConfig>
-  inline std::string repr(float a)
-  { return detail::repr_float<Config>(a); }
-  
-  template<class Config = DefaultReprConfig>
-  inline std::string repr(double a)
-  { return detail::repr_float<Config>(a); }
 }

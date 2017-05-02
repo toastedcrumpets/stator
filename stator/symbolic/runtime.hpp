@@ -99,7 +99,7 @@ namespace sym {
         
     template<class T> T as() const;
   };
-    
+  
   namespace detail {
     /*! \brief Abstract interface class for the visitor programming
       pattern for Expr types.
@@ -224,9 +224,7 @@ namespace sym {
     
     char idx;
 
-    Expr visit(detail::VisitorInterface& c) const {
-      return c.visit(*this);
-    }
+	Expr visit(detail::VisitorInterface& c) const;
   };
 
   /*! \brief Determine the derivative of a variable by another variable.
@@ -249,9 +247,7 @@ namespace sym {
     
     bool operator==(const Expr o) const;
     
-    Expr visit(detail::VisitorInterface& c) const {
-      return c.visit(_val);
-    }
+	Expr visit(detail::VisitorInterface& c) const;
 
     void throw_self() const {
       throw _val;
@@ -319,9 +315,7 @@ namespace sym {
       return _arg;
     }
 
-    Expr visit(detail::VisitorInterface& c) const {
-      return c.visit(*this);
-    }
+	Expr visit(detail::VisitorInterface& c) const;
     
     Expr _arg;
   };
@@ -348,9 +342,7 @@ namespace sym {
       return _r;
     }
 
-    Expr visit(detail::VisitorInterface& c) const {
-      return c.visit(*this);
-    }
+	Expr visit(detail::VisitorInterface& c) const;
 
     Expr _l;
     Expr _r;
@@ -388,7 +380,18 @@ namespace sym {
   bool Expr::operator==(const Expr& e) const {
     return (*(*this)) == e;
   }
-  
+
+  template<class Op>
+  Expr BinaryOp<Expr, Op, Expr>::visit(detail::VisitorInterface& c) const { return c.visit(*this); }
+
+  template<class Op>
+  Expr UnaryOp<Expr, Op>::visit(detail::VisitorInterface& c) const { return c.visit(*this); }
+
+  template<class T>
+  Expr ConstantRT<T>::visit(detail::VisitorInterface& c) const { return c.visit(_val); }
+
+  Expr Var<Dynamic>::visit(detail::VisitorInterface& c) const { return c.visit(*this); }
+
   namespace detail {
     template<typename Visitor, typename LHS_t, typename Op>
     struct DoubleDispatch2: public VisitorHelper<DoubleDispatch2<Visitor, LHS_t, Op> > {

@@ -10,6 +10,9 @@ enable_testing() #Enable build of test executables and 'make test' command
 include(CTest)
 
 
+IF(WIN32)
+ENDIF(WIN32)
+
 ##########   RELEASE MODE
 if(MSVC)
   #MSVC has crazy warnings for -Wall, we'll build up support to the higher warning levels
@@ -22,6 +25,14 @@ if(MSVC)
   add_definitions(-DNOMINMAX)
   #MSVC is scared of long type names (sigh). Disable the warning.
   add_definitions("/wd4503")
+  #MSVC actually needs to be told to use big object files, when
+  #there's a lot of template shennanigans to store.
+  ADD_DEFINITIONS(/bigobj)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
+  SET(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /bigobj")
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /bigobj")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /bigobj")
 else()
   add_compile_options(-Wall)
 endif()

@@ -265,9 +265,9 @@ namespace stator {
       return LHS_repr + sym::detail::Multiply::repr() + RHS_repr;
     } else {
       if (sym::is_constant(op._l) && sym::is_constant(op._r))
-	return LHS_repr + "\\," + RHS_repr;
+	return LHS_repr + "\\times " + RHS_repr;
       else
-	return LHS_repr + "\\times" + RHS_repr;
+	return LHS_repr + "\\," + RHS_repr;
     }
   }
 

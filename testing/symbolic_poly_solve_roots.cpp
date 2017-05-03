@@ -277,7 +277,7 @@ UNIT_TEST( poly_cubic_single_roots )
 
 	  auto roots = solve_real_roots(f);
 	  decltype(roots) actual_roots = {root1};
-	  compare_roots(roots, actual_roots, f);	  
+	  compare_roots(roots, actual_roots, f);
 	}
 }
 

@@ -248,7 +248,29 @@ namespace stator {
       return "\\frac{" + LHS_repr + "}{" + RHS_repr + "}";
     }
   }
-  
+
+  template<class Config = DefaultReprConfig, class LHS, class RHS>
+  inline std::string repr(const sym::BinaryOp<LHS, sym::detail::Multiply, RHS>& op) {
+    const auto this_BP = detail::BP(op);
+    const auto LHS_BP = detail::BP(op._l);
+    const auto RHS_BP = detail::BP(op._r);
+
+    std::string LHS_repr = repr<Config>(op._l);
+    std::string RHS_repr = repr<Config>(op._r);
+
+    if (LHS_BP.second < this_BP.first) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
+    if (this_BP.second > RHS_BP.first) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
+    
+    if (!Config::Latex_output) {
+      return LHS_repr + sym::detail::Multiply::repr() + RHS_repr;
+    } else {
+      if (sym::is_constant(op._l) && sym::is_constant(op._r))
+	return LHS_repr + "\\," + RHS_repr;
+      else
+	return LHS_repr + "\\times" + RHS_repr;
+    }
+  }
+
   namespace detail {
     template<class Config>
     struct ReprVisitor : public sym::detail::VisitorHelper<ReprVisitor<Config> > {

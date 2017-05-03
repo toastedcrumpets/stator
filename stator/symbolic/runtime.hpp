@@ -574,4 +574,38 @@ namespace sym {
     detail::DerivativeRT visitor(v);
     return f->visit(visitor);
   }
+
+  namespace detail {
+    struct IsConstantVisitor: public VisitorHelper<IsConstantVisitor> {
+      template<class T>
+      Expr apply(const T& a) {
+	_value = IsConstant<T>::value;
+	return Expr();
+      }
+
+      template<class Op>
+      Expr apply(const UnaryOp<Expr,Op>& a) {
+	//If the argument is constant, then so is this
+	a.getArg()->visit(*this);
+	return Expr();
+      }
+      
+      template<class Op>
+      Expr apply(const BinaryOp<Expr,Op,Expr>& o) {
+	//If the two arguments are constant, then so is this.
+	o.getLHS()->visit(*this);
+	//If the LHS is constant, then check the RHS
+	if (_value) o.getRHS()->visit(*this);
+	return Expr();
+      }
+      
+      bool _value = false;
+    };    
+  }
+  bool is_constant(const Expr& a) {
+    detail::IsConstantVisitor visitor;
+    a->visit(visitor);
+    return visitor._value;
+  }
+
 }

@@ -136,6 +136,12 @@ namespace sym {
     
   }// namespace detail
 
+  template<class T>
+  constexpr typename std::enable_if<detail::IsConstant<T>::value, bool>::type is_constant(const T&) { return true;}
+
+  template<class T>
+  constexpr typename std::enable_if<!detail::IsConstant<T>::value, bool>::type is_constant(const T&) { return false;}
+  
   /*! \brief Returns the empty sum of a type.
     
     The empty sum is a term whose additive (and typically its

@@ -68,6 +68,19 @@ namespace stator {
     return std::make_pair(in, replacements);
   }
 
+  std::string strip(const std::string& str,
+		    const std::string& whitespace = " \t")
+  {
+    const auto strBegin = str.find_first_not_of(whitespace);
+    if (strBegin == std::string::npos)
+      return ""; // no content
+
+    const auto strEnd = str.find_last_not_of(whitespace);
+    const auto strRange = strEnd - strBegin + 1;
+
+    return str.substr(strBegin, strRange);
+  }
+  
   namespace detail {
     struct Latex_output_ID;
     struct Rounding_digits_ID {};

@@ -264,13 +264,25 @@ namespace sym {
     auto derivative(const MultiplyOp<LHS, RHS>& f, Var v)
     -> STATOR_AUTORETURN(derivative(f._l, v) * f._r + f._l * derivative(f._r, v))
 
-  /*! \} */
+  /*! \brief Derivatives of DivideOp operations.
 
-  /*! \brief Derivatives of PowerOp operations.
+    This is the quotient rule
+   */
+    template<class Var, class LHS, class RHS>
+    auto derivative(const DivideOp<LHS, RHS>& f, Var v)
+    -> STATOR_AUTORETURN((derivative(f._l, v) * f._r - f._l * derivative(f._r, v)) / pow(f._r, C<2>()))
+
+  /*! \brief Derivatives of PowerOp operation specialised for constant powers.
    */
   template<class Var, class Arg, std::intmax_t num, std::intmax_t den>
     auto derivative(const PowerOp<Arg, C<num, den> >& f, Var v)
     -> STATOR_AUTORETURN((C<num, den>() * derivative(f._l, v) * pow(f._l, C<num, den>()-C<1>())));
+
+  /*! \brief Derivative of a PowerOp operation.
+   */
+  template<class Var, class Arg, class Power>
+    auto derivative(const PowerOp<Arg, Power>& f, Var v)
+    -> STATOR_AUTORETURN(f._r * derivative(f._l, v) * pow(f._l, f._r - C<1>()) + derivative(f._r, v) * log(f._l) * f);
   /*! \}*/
 }
 

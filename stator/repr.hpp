@@ -25,6 +25,23 @@
 #include <cstdio>
 
 namespace stator {
+  /*! \brief A C++ version of python's string trim function
+    \in str The string to be trimmed.
+    \in whitespace A string of characters to be treated as whitespace and trimmed from the start and end of the string.
+    \returns The final resultant string.
+  */
+  std::string strip(const std::string& str,
+		    const std::string& whitespace = " \t")
+  {
+    const auto strBegin = str.find_first_not_of(whitespace);
+    if (strBegin == std::string::npos)
+      return ""; // no content
+    const auto strEnd = str.find_last_not_of(whitespace);
+    const auto strRange = strEnd - strBegin + 1;
+    return str.substr(strBegin, strRange);
+  }
+
+  
   /*! \brief A C++ version of snprintf allowing simple formatting of output.
     \in format A printf-style formatting string, such as "%.17f %s %g".
     \in args The arguments for substitution into the placeholders in the formatting string.
@@ -66,19 +83,6 @@ namespace stator {
       }
     
     return std::make_pair(in, replacements);
-  }
-
-  std::string strip(const std::string& str,
-		    const std::string& whitespace = " \t")
-  {
-    const auto strBegin = str.find_first_not_of(whitespace);
-    if (strBegin == std::string::npos)
-      return ""; // no content
-
-    const auto strEnd = str.find_last_not_of(whitespace);
-    const auto strRange = strEnd - strBegin + 1;
-
-    return str.substr(strBegin, strRange);
   }
   
   namespace detail {

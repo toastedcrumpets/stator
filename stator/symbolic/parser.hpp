@@ -88,9 +88,9 @@ namespace sym {
 	//to ensure a^b^c is a^(b^c).
 	_right_operators["^"].reset(new BinaryOpToken<detail::Power>());
 
-	//The unary operators have the same precendence as
-	_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower>());
-	_left_operators["-"].reset(new UnaryNegative<detail::Add::leftBindingPower>());
+	//The unary operators collect anything with a higher precendence than subtraction or addition
+	_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower+1>());
+	_left_operators["-"].reset(new UnaryNegative<detail::Add::leftBindingPower+1>());
 	
 	//The parenthesis operator is entirely handled by Parenthesis.
 	_left_operators["("].reset(new ParenthesisToken);

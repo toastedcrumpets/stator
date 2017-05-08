@@ -79,7 +79,7 @@ UNIT_TEST( symbolic_parser_P )
   {
     detail::ExprTokenizer tk(" p+2");
     Expr v = tk.parseToken();
-    shared_ptr<VarRT> v2 = dynamic_pointer_cast<VarRT>(v);
+    shared_ptr<const VarRT> v2 = dynamic_pointer_cast<const VarRT>(v);
     
     UNIT_TEST_CHECK(bool(v2));
     UNIT_TEST_CHECK_EQUAL(v2->idx, 'p');

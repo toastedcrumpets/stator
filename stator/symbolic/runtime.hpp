@@ -65,11 +65,11 @@ namespace sym {
     formula strings) into runtime forms. It also inherits from
     SymbolicOperator and can be used in compile-time expressions.
   */
-  struct Expr : public shared_ptr<RTBase>, public SymbolicOperator {
-    typedef shared_ptr<RTBase> Base;
+  struct Expr : public shared_ptr<const RTBase>, public SymbolicOperator {
+    typedef shared_ptr<const RTBase> Base;
 
     Expr() {}
-    Expr(RTBase* n) : Base(n) {}    
+    Expr(const std::shared_ptr<const RTBase>& p) : Base(p) {}
     Expr(const char*);
     Expr(const std::string&);
 
@@ -95,7 +95,7 @@ namespace sym {
     bool operator==(const Expr&) const;
     bool operator!=(const Expr& o) const { return !(*this == o); }
     bool operator==(const detail::NoIdentity&) const { return false; }
-    explicit operator bool() const { return shared_ptr<RTBase>::operator bool(); }
+    explicit operator bool() const { return Base::operator bool(); }
         
     template<class T> T as() const;
   };
@@ -168,7 +168,7 @@ namespace sym {
       can be held by \ref Expr. Most actual functionality is
       implemented using the \ref VisitorInterface via \ref visit.
   */
-  class RTBase : public SymbolicOperator {
+  class RTBase : public SymbolicOperator, public std::enable_shared_from_this<RTBase> {
   public:
     virtual ~RTBase() {}
 
@@ -190,11 +190,11 @@ namespace sym {
   class RTBaseHelper : public RTBase {
   public:
     Expr clone() const {
-      return Expr(new Derived(static_cast<const Derived&>(*this)));
+      return Expr(std::make_shared<Derived>(static_cast<const Derived&>(*this)));
     }
     
     bool operator==(const Expr o) const {
-      auto other = dynamic_pointer_cast<Derived>(o);
+      auto other = dynamic_pointer_cast<const Derived>(o);
       if (!other)
 	return false;
       return *static_cast<const Derived*>(this) == *other;
@@ -224,7 +224,7 @@ namespace sym {
     
     char idx;
 
-	Expr visit(detail::VisitorInterface& c) const;
+    Expr visit(detail::VisitorInterface& c) const;
   };
 
   /*! \brief Determine the derivative of a variable by another variable.
@@ -304,7 +304,7 @@ namespace sym {
     UnaryOp(const Expr& arg): _arg(arg) {}
 
     Expr clone() const {
-      return Expr(new UnaryOp<Expr,Op>(_arg->clone()));
+      return Expr(std::make_shared<UnaryOp>(_arg->clone()));
     }
 
     bool operator==(const UnaryOp<Expr,Op>& o) const {
@@ -315,7 +315,7 @@ namespace sym {
       return _arg;
     }
 
-	Expr visit(detail::VisitorInterface& c) const;
+    Expr visit(detail::VisitorInterface& c) const;
     
     Expr _arg;
   };
@@ -327,7 +327,7 @@ namespace sym {
     BinaryOp(const Expr& lhs, const Expr& rhs): _l(lhs), _r(rhs) {}
 
     Expr clone() const {
-      return Expr(new BinaryOp(_l->clone(), _r->clone()));
+      return Expr(std::make_shared<BinaryOp>(_l->clone(), _r->clone()));
     }
     
     bool operator==(const BinaryOp& o) const {
@@ -342,27 +342,27 @@ namespace sym {
       return _r;
     }
 
-	Expr visit(detail::VisitorInterface& c) const;
+    Expr visit(detail::VisitorInterface& c) const;
 
     Expr _l;
     Expr _r;
   };
 
-  Expr::Expr(const RTBase& v) : Expr(v.clone()) {}
+  Expr::Expr(const RTBase& v) : Base(v.clone()) {}
 
-  Expr::Expr(const double& v) : Expr(new ConstantRT<double>(v)) {}
+  Expr::Expr(const double& v) : Base(std::make_shared<ConstantRT<double> >(v)) {}
   
   template<std::intmax_t Num, std::intmax_t Denom>
-  Expr::Expr(const C<Num, Denom>& c) : Expr(new ConstantRT<double>(double(Num) / Denom)) {}
+  Expr::Expr(const C<Num, Denom>& c) : Base(std::make_shared<ConstantRT<double> >(double(Num) / Denom)) {}
   
   template<class Op, class Arg_t>
-  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Expr(new UnaryOp<Expr, Op>(op._arg)) {}
+  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Expr(std::make_shared<UnaryOp<Expr, Op> >(op._arg)) {}
 
   template<class LHS_t, class Op, class RHS_t>
-  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Expr(new BinaryOp<Expr, Op, Expr>(op._l, op._r)) {}
+  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Expr(std::make_shared<BinaryOp<Expr, Op, Expr> >(op._l, op._r)) {}
   
   template<typename ...Args>
-  Expr::Expr(const Var<Args...> v) : Expr(new VarRT(v)) {}
+  Expr::Expr(const Var<Args...> v) : Base(std::make_shared<VarRT>(v)) {}
 
   template<class T>
   T Expr::as() const {
@@ -487,27 +487,33 @@ namespace sym {
     struct SubstituteRT : VisitorHelper<SubstituteRT> {
       SubstituteRT(VarRT var, Expr replacement): _var(var), _replacement(replacement) {}
       
-      //By default, just copy the item
+      //By default, just return an empty Expr, and let the helper function return the original expression
       template<class T>
-      Expr apply(const T& v) { return Expr(v); }
+      Expr apply(const T& v)
+      { return Expr(); }
 
       //Variable matching
       Expr apply(const VarRT& v) {
 	if (v == _var)
-	  //Need to ensure a copy is performed here
-	  return Expr(_replacement);
-
-	return Expr(v);
+	  return _replacement;
+	return Expr();
       }
       
       template<typename Op>
       Expr apply(const UnaryOp<Expr, Op>& op) {
-	return Op::apply(op.getArg()->visit(*this));
+	Expr arg = op.getArg()->visit(*this);
+	return arg ? Expr(Op::apply(arg)) : op.shared_from_this();
       }
 
       template<typename Op>
       Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
-	return Op::apply(op.getLHS()->visit(*this), op.getRHS()->visit(*this));
+	Expr l = op.getLHS()->visit(*this);
+	Expr r = op.getRHS()->visit(*this);
+
+	if (l || r)
+	  return Expr(Op::apply(l ? l : op._l, r ? r : op._r));
+	else
+	  return Expr();
       }
       
       VarRT _var;
@@ -518,7 +524,8 @@ namespace sym {
   template<class Var, class Arg>
   Expr sub(const Expr& f, const Relation<Var, Arg>& rel) {
     detail::SubstituteRT visitor(rel._var, rel._val);
-    return f->visit(visitor);
+    Expr result = f->visit(visitor);
+    return (result) ?  result : f;
   }
 
   namespace detail {
@@ -550,7 +557,7 @@ namespace sym {
       }
 
       Expr apply(const VarRT& v) {
-	return Expr((v == _var) ? new ConstantRT<double>(1) : new ConstantRT<double>(0));
+	return Expr((v == _var) ? 1 : 0);
       }
 
       template<class Op>
@@ -607,5 +614,4 @@ namespace sym {
     a->visit(visitor);
     return visitor._value;
   }
-
 }

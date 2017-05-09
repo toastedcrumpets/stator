@@ -639,9 +639,61 @@ namespace sym {
       bool _value = false;
     };    
   }
+  
   bool is_constant(const Expr& a) {
     detail::IsConstantVisitor visitor;
     a->visit(visitor);
     return visitor._value;
+  }
+
+  namespace detail {
+    struct FastSubRT : VisitorHelper<FastSubRT> {
+      FastSubRT(VarRT var, double replacement): _var(var), _replacement(replacement) {}
+      
+      //By default, throw an exception!
+      template<class T>
+      Expr apply(const T& v) { stator_throw() << "fast_sub cannot operate on this (" << stator::repr(v) << ") expression"; }
+
+      Expr apply(const double& v) {
+	_intermediate = v;
+	return Expr();
+      }
+      
+      //Variable matching
+      Expr apply(const VarRT& v) {
+	if (v == _var) {
+	  _intermediate = _replacement;
+	  return Expr();
+	}
+	stator_throw() << "Unexpected variable " << stator::repr(v) << " for fast_sub";
+      }
+      
+      template<typename Op>
+      auto apply(const UnaryOp<Expr, Op>& op) -> decltype(double(Op::apply(0.0)), Expr()) {
+	op.getArg()->visit(*this);
+	_intermediate = Op::apply(_intermediate);
+	return Expr();
+      }
+
+      template<typename Op>
+      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
+	op.getLHS()->visit(*this);
+	double lval = _intermediate;
+	op.getRHS()->visit(*this);
+	_intermediate = Op::apply(lval, _intermediate);
+	return Expr();
+      }
+      
+      VarRT _var;
+      double _replacement;
+      double _intermediate;
+    };
+  }
+  
+  template<class Var>
+  double fast_sub(const Expr& f, const Relation<Var, double>& rel) {
+    detail::FastSubRT visitor(rel._var, rel._val);
+    f->visit(visitor);
+    return visitor._intermediate;
   }
 }

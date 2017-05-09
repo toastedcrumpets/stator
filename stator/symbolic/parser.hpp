@@ -88,10 +88,13 @@ namespace sym {
 	//to ensure a^b^c is a^(b^c).
 	_right_operators["^"].reset(new BinaryOpToken<detail::Power>());
 
-	//The unary operators collect anything with a higher precendence than subtraction or addition
+	//The unary operators
+//	_left_operators["+"].reset(new SkipToken<std::numeric_limits<int>::max()>());
+//	_left_operators["-"].reset(new UnaryNegative<std::numeric_limits<int>::max()>());
+
 	_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower+1>());
 	_left_operators["-"].reset(new UnaryNegative<detail::Add::leftBindingPower+1>());
-	
+ 
 	//The parenthesis operator is entirely handled by Parenthesis.
 	_left_operators["("].reset(new ParenthesisToken);
 	//A halt token stops parseExpression processing. The right
@@ -138,51 +141,7 @@ namespace sym {
 	//exponents. Signs at the front of numbers are parsed as unary
 	//operators.
 	if (std::isdigit(_str[_start])) {
-	  bool decimal = false;
-	  bool exponent = false;
-      
-	  while (_end != _str.size()) {
-	    if (_str[_end] == '.') {
-	      if (!decimal && !exponent) {
-		decimal = true;
-		++_end;
-		continue;
-	      } else {
-		stator_throw() << "Unexpected decimal point?\n" << parserLoc();
-	      }
-	    }
-	
-	    if ((_str[_end] == 'e') || (_str[_end] == 'E')) {
-	      if (!exponent) {
-		exponent = true;
-		decimal = true; //Don't allow decimals in the exponent
-		++_end;
-
-		if (_end == _str.size())
-		  stator_throw() << "String ended during parsing of exponent\n" << parserLoc();
-
-		//Eat the exponent sign if present
-		if ((_str[_end] == '+') || (_str[_end] == '-'))
-		  ++_end;
-		
-		if (_end == _str.size())
-		  stator_throw() << "String ended during parsing of exponent\n" << parserLoc();
-		
-		if (!std::isdigit(_str[_end]))
-		  stator_throw() << "Malformed exponent?\n" << parserLoc();
-		
-		continue;
-	      } else {
-		stator_throw() << "Malformed exponent?\n" << parserLoc();
-	      }
-	    }
-	    if (std::isdigit(_str[_end])) {
-	      ++_end;
-	      continue;
-	    }
-	
-	    break;
-	  }
+	  consumeFloat();
 	  return;
 	}
 
@@ -202,6 +161,54 @@ namespace sym {
 	stator_throw() << "Unrecognised token \"" << _str[_start] << "\"\n" << parserLoc();
       }
 
+      void consumeFloat() {
+	bool decimal = false;
+	bool exponent = false;
+      
+	while (_end != _str.size()) {
+	  if (_str[_end] == '.') {
+	    if (!decimal && !exponent) {
+	      decimal = true;
+	      ++_end;
+	      continue;
+	    } else {
+	      stator_throw() << "Unexpected decimal point?\n" << parserLoc();
+	    }
+	  }
+	
+	  if ((_str[_end] == 'e') || (_str[_end] == 'E')) {
+	    if (!exponent) {
+	      exponent = true;
+	      decimal = true; //Don't allow decimals in the exponent
+	      ++_end;
+
+	      if (_end == _str.size())
+		stator_throw() << "String ended during parsing of exponent\n" << parserLoc();
+
+	      //Eat the exponent sign if present
+	      if ((_str[_end] == '+') || (_str[_end] == '-'))
+		++_end;
+		
+	      if (_end == _str.size())
+		stator_throw() << "String ended during parsing of exponent\n" << parserLoc();
+		
+	      if (!std::isdigit(_str[_end]))
+		stator_throw() << "Malformed exponent?\n" << parserLoc();
+		
+	      continue;
+	    } else
+	      stator_throw() << "Double exponent?\n" << parserLoc();
+	  }
+	  
+	  if (std::isdigit(_str[_end])) {
+	    ++_end;
+	    continue;
+	  }
+	  
+	  break;
+	}
+      }
+      
       std::string parserLoc() {
 	return _str + "\n"
 	  + std::string(_start, ' ') + std::string(_end - _start -1, '-') + "^";
@@ -424,7 +431,7 @@ namespace sym {
     };
   }
 
-  Expr::Expr(const std::string& str) : Expr(detail::ExprTokenizer(str).parseExpression()) {}
+  Expr::Expr(const std::string& str) : Expr(simplify(detail::ExprTokenizer(str).parseExpression())) {}
 
   Expr::Expr(const char* str) : Expr(std::string(str)) {}
 }

@@ -21,7 +21,10 @@
 
 namespace sym {
   namespace detail {
-    class NoIdentity {};
+    struct NoIdentity {
+      template<class T>
+      constexpr bool operator==(const T&) const { return false; }
+    };
   };
     
   /*! \brief Symbolic representation of a binary symbolic operation. 

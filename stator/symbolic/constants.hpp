@@ -120,8 +120,6 @@ namespace sym {
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
   constexpr bool operator==(const C<n1, d1>&, const C<n2, d2>&)
   { return std::ratio_equal<std::ratio<n1, d1>, std::ratio<n2, d2> >::value; }
-
-
   
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
   T operator+(const T& l, Null) { return l; }

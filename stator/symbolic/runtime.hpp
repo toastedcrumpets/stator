@@ -424,42 +424,31 @@ namespace sym {
     struct SimplifyRT : VisitorHelper<SimplifyRT> {
       template<class Op>
       struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
-	template<class T> Expr apply(const T& arg) { return Op::apply(arg); }
+	Expr apply(const double& arg) { return Op::apply(arg); }
+	template<class T> Expr apply(const T& arg) { return Expr(); }
       };
       
-      
-      //This uses SFINAE to exclude itself when the operator does not apply to those types.
-      template<class Op, class LHS_t, class RHS_t>
-      auto dd_visit(const LHS_t& l, const RHS_t& r) -> STATOR_AUTORETURN(Expr(store(Op::apply(l, r))))
+      template<class Op>
+      Expr dd_visit(const double& l, const double& r) {
+	if (typename Op::right_zero() == r)
+	  return typename Op::right_zero();
+	
+	if (typename Op::left_zero() == l)
+	  return typename Op::left_zero();
+
+	if (typename Op::right_identity() == r)
+	  return l;
+	
+	if (typename Op::left_identity() == l)
+	  return r;
+
+	return Expr(store(Op::apply(l, r)));
+      }
 
       //As everything is specialised, this requires type conversions
       //to work, thus it should be chosen last
       template<class Op>
       Expr dd_visit(const Expr& l, const Expr& r) {
-	return Op::apply(l, r);
-      }
-
-      //By default, just copy the item
-      template<class T>
-      Expr apply(const T& v) {
-	return Expr(v);
-      }
-
-      template<typename Op>
-      Expr apply(const UnaryOp<Expr, Op>& op) {
-	//Simplify the argument
-	Expr arg = op.getArg()->visit(*this);
-	//Try evaluating the unary expression
-	UnaryEval<Op> visitor;
-	return arg->visit(visitor);
-      }
-
-      //For binary operators, try to collapse them
-      template<typename Op>
-      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
-	Expr l = op.getLHS()->visit(*this);
-	Expr r = op.getRHS()->visit(*this);
-
 	if (r == typename Op::right_zero())
 	  return typename Op::right_zero();
 	
@@ -472,15 +461,56 @@ namespace sym {
 	if (l == typename Op::left_identity())
 	  return r;
 	
+	return Expr();
+      }
+
+      //By default return the blank (use 
+      template<class T>
+      Expr apply(const T& v) {
+	return Expr();
+      }
+
+      template<typename Op>
+      Expr apply(const UnaryOp<Expr, Op>& op) {
+	//Simplify the argument
+	Expr arg = op.getArg()->visit(*this);
+	//Try evaluating the unary expression
+	UnaryEval<Op> visitor;
+	Expr ret = (arg ? arg : op.getArg())->visit(visitor);
+	if (ret)
+	  return ret;	
+	if (arg)
+	  return Expr(std::make_shared<UnaryOp<Expr, Op> >(arg));
+	return Expr();
+      }
+
+      //For binary operators, try to collapse them
+      template<typename Op>
+      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
+	Expr l = op.getLHS()->visit(*this);
+	bool lchanged = !!l;
+	if (!l) l = op._l;
+	Expr r = op.getRHS()->visit(*this);
+	bool rchanged = !!r;
+	if (!r) r = op._r;
+	
 	DoubleDispatch1<SimplifyRT, Op> visitor(r, *this);
-	return l->visit(visitor);
+	Expr ret = l->visit(visitor);
+	if (ret)
+	  return ret;
+
+	if (lchanged || rchanged)
+	  return Expr(std::make_shared<BinaryOp<Expr, Op, Expr> >(l, r));
+
+	return Expr();
       }
     };
   }
 
   Expr simplify(const Expr& f) {
     detail::SimplifyRT visitor;
-    return f->visit(visitor);
+    Expr result = f->visit(visitor);
+    return result ? result : f;
   }
   
   namespace detail {

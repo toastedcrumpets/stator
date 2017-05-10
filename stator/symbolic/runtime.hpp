@@ -562,25 +562,30 @@ namespace sym {
     struct DerivativeRT : VisitorHelper<DerivativeRT> {
       DerivativeRT(VarRT var): _var(var) {}
 
-      /*! \brief Visitor to allow the compile time derivative
-          implementation for unary operators. 
-	  
-	  This visitor is used to determine the type of the argument.
-      */
-      template<class Op>
-      struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
-	UnaryEval(VarRT var): _var(var) {}
-	template<class T> Expr apply(const T& arg) { return derivative(Op::apply(arg), _var); }
-	VarRT _var;
-      };
+      //The commented out code here is a double dispatch
+      //implementation of derivatives; however, it has a huge compile
+      //time cost.
 
-      /*! \brief Handover to compile-time implementation for binary op derivatives. */
-      template<class Op, class LHS_t, class RHS_t>
-      Expr dd_visit(const LHS_t& l, const RHS_t& r) {
-	auto e = Op::apply(l, r);
-	return derivative(e, _var);
-      }
-
+      
+      ///*! \brief Visitor to allow the compile time derivative
+      //    implementation for unary operators. 
+      //	  
+      //	  This visitor is used to determine the type of the argument.
+      //*/
+      //template<class Op>
+      //struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
+      //	UnaryEval(VarRT var): _var(var) {}
+      //	template<class T> Expr apply(const T& arg) { return derivative(Op::apply(arg), _var); }
+      //	VarRT _var;
+      //};
+      //
+      ///*! \brief Handover to compile-time implementation for binary op derivatives. */
+      //template<class Op, class LHS_t, class RHS_t>
+      //Expr dd_visit(const LHS_t& l, const RHS_t& r) {
+      //	auto e = Op::apply(l, r);
+      //	return derivative(e, _var);
+      //}
+      
       template<class T, typename = typename std::enable_if<IsConstant<T>::value>::type>
       Expr apply(const T& v) {
 	return ConstantRT<double>(0);
@@ -592,14 +597,16 @@ namespace sym {
 
       template<class Op>
       Expr apply(const UnaryOp<Expr, Op>& v) {
-	UnaryEval<Op> visitor(_var);
-	return v.getArg()->visit(visitor);
+	return derivative(v, _var);
+	//UnaryEval<Op> visitor(_var);
+	//return v.getArg()->visit(visitor);
       }
 
       template<typename Op>
       Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
-	DoubleDispatch1<DerivativeRT, Op> visitor(op.getRHS(), *this);
-	return op.getLHS()->visit(visitor);
+	//DoubleDispatch1<DerivativeRT, Op> visitor(op.getRHS(), *this);
+	//return op.getLHS()->visit(visitor);
+	return derivative(op,_var);
       }
       
       VarRT _var;

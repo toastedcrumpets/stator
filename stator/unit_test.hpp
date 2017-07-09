@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Marcus Bannerman <m.bannerman@gmail.com>
+  Copyright (C) 2017 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
   This file is part of stator.
 
@@ -90,7 +90,7 @@ public:
       return;
     
     ++_error_counter;
-    std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": difference between " << Lname << "{"<<l<<"} and " << Rname << "{"<<r<<"} exceeds " << tol/100.00 << "%" << std::endl; 
+    std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": difference between " << Lname << "{"<<l<<"} and " << Rname << "{"<<r<<"} exceeds " << tol*100.00 << "%" << std::endl; 
   }
 
   template<class T, class Tol_t>

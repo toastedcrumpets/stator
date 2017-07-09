@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Marcus Bannerman <m.bannerman@gmail.com>
+  Copyright (C) 2017 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
 
   This file is part of stator.
 

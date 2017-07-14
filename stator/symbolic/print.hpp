@@ -22,7 +22,13 @@
 namespace stator {
   template<class Config = DefaultReprConfig, std::intmax_t Num, std::intmax_t Denom>
   inline std::string repr(const sym::C<Num, Denom>)
-  { return "C<" + repr(Num) + ", " + repr (Denom) + ">"; }
+  {
+    if (Config::Debug_output)
+      return "C<" + repr(Num) + ((Denom!=1) ? (std::string(", ") + repr(Denom) + ">") : std::string(">"));
+    else
+      return (Denom!=1) ? ("("+repr(Num)+"/"+repr(Denom)+")") : repr(Num);
+      
+  }
 
   template<class Config = DefaultReprConfig, class ...Args>
   inline std::string repr(const sym::Var<Args...>& v) {

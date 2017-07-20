@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Marcus Bannerman <m.bannerman@gmail.com>
+  Copyright (C) 2017 Marcus Bannerman <m.bannerman@gmail.com>
 
   This file is part of stator.
 
@@ -81,16 +81,16 @@ public:
   template<class L, class R, class Tol_t>
   void check_close(L l, R r,  std::string file, int line, std::string Lname, std::string Rname, Tol_t tol)
   {
-    //Check if the values are close
-    if ((std::abs(l - r) / std::abs(l) <= tol) && (std::abs(l - r) / std::abs(r) <= tol))
-      return;
-
-    //If l is zero, then treat tol as an absolute tolerance
-    if ((l == 0) && (std::abs(r) < tol))
-      return;
+    double difference = std::max(std::abs(l - r) / std::abs(l), std::abs(l - r) / std::abs(r));
     
+    if (l == 0)
+      difference = std::abs(r);
+
+    //Check if the values are close
+    if (difference <= tol) return;
+
     ++_error_counter;
-    std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": difference between " << Lname << "{"<<l<<"} and " << Rname << "{"<<r<<"} exceeds " << tol/100.00 << "%" << std::endl; 
+    std::cerr << file << "(" << line << "): error in \"" << _running_test_name << "\": difference (" << difference*100 << "%) between " << Lname << "{"<<l<<"} and " << Rname << "{"<<r<<"} exceeds " << tol*100.00 << "%" << std::endl; 
   }
 
   template<class T, class Tol_t>

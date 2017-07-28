@@ -32,32 +32,32 @@ namespace sym {
     UnaryOp(Arg a): _arg(a) {}
   };
   
-  float sin(float a) { return std::sin(a); }
-  double sin(double a) { return std::sin(a); }
-  long double sin(long double a) { return std::sin(a); }
+  inline float sin(float a) { return std::sin(a); }
+  inline double sin(double a) { return std::sin(a); }
+  inline long double sin(long double a) { return std::sin(a); }
   template<class T> std::complex<T> sin(std::complex<T> a) { return std::sin(a); }
   
-  float cos(float a) { return std::cos(a); }
-  double cos(double a) { return std::cos(a); }
-  long double cos(long double a) { return std::cos(a); }
+  inline float cos(float a) { return std::cos(a); }
+  inline double cos(double a) { return std::cos(a); }
+  inline long double cos(long double a) { return std::cos(a); }
   template<class T> std::complex<T> cos(std::complex<T> a) { return std::cos(a); }
 
-  float exp(float a) { return std::exp(a); }
-  double exp(double a) { return std::exp(a); }
-  long double exp(long double a) { return std::exp(a); }
+  inline float exp(float a) { return std::exp(a); }
+  inline double exp(double a) { return std::exp(a); }
+  inline long double exp(long double a) { return std::exp(a); }
   template<class T> std::complex<T> exp(std::complex<T> a) { return std::exp(a); }
-
-  float log(float a) { return std::log(a); }
-  double log(double a) { return std::log(a); }
-  long double log(long double a) { return std::log(a); }
+  
+  inline float log(float a) { return std::log(a); }
+  inline double log(double a) { return std::log(a); }
+  inline long double log(long double a) { return std::log(a); }
   template<class T> std::complex<T> log(std::complex<T> a) { return std::log(a); }
   
-  int abs(int a) { return std::abs(a); }
-  long abs(long a) { return std::abs(a); }
-  long long abs(long long a) { return std::abs(a); }
-  float abs(float a) { return std::abs(a); }
-  double abs(double a) { return std::abs(a); }
-  long double abs(long double a) { return std::abs(a); }
+  inline int abs(int a) { return std::abs(a); }
+  inline long abs(long a) { return std::abs(a); }
+  inline long long abs(long long a) { return std::abs(a); }
+  inline float abs(float a) { return std::abs(a); }
+  inline double abs(double a) { return std::abs(a); }
+  inline long double abs(long double a) { return std::abs(a); }
   template<class T> T abs(std::complex<T> a) { return std::abs(a); }
 
   namespace detail {

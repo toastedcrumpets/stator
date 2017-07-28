@@ -30,8 +30,8 @@ namespace stator {
     \in whitespace A string of characters to be treated as whitespace and trimmed from the start and end of the string.
     \returns The final resultant string.
   */
-  std::string strip(const std::string& str,
-		    const std::string& whitespace = " \t")
+  inline std::string strip(const std::string& str,
+			   const std::string& whitespace = " \t")
   {
     const auto strBegin = str.find_first_not_of(whitespace);
     if (strBegin == std::string::npos)

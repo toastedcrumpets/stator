@@ -133,30 +133,30 @@ namespace sym {
      */
     template<typename Derived>
     struct VisitorHelper: public VisitorInterface {
-      virtual Expr visit(const double& x) { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
+      inline virtual Expr visit(const double& x) { return static_cast<Derived*>(this)->apply(x); }
+      inline virtual Expr visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
 
-      virtual Expr visit(const UnaryOp<Expr, detail::Sine>& x)
+      inline virtual Expr visit(const UnaryOp<Expr, detail::Sine>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOp<Expr, detail::Cosine>& x)
+      inline virtual Expr visit(const UnaryOp<Expr, detail::Cosine>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOp<Expr, detail::Log>& x)
+      inline virtual Expr visit(const UnaryOp<Expr, detail::Log>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOp<Expr, detail::Exp>& x)
+      inline virtual Expr visit(const UnaryOp<Expr, detail::Exp>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOp<Expr, detail::Absolute>& x)
+      inline virtual Expr visit(const UnaryOp<Expr, detail::Absolute>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const UnaryOp<Expr, detail::Arbsign>& x)
+      inline virtual Expr visit(const UnaryOp<Expr, detail::Arbsign>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOp<Expr, detail::Add, Expr>& x)
+      inline virtual Expr visit(const BinaryOp<Expr, detail::Add, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOp<Expr, detail::Subtract, Expr>& x)
+      inline virtual Expr visit(const BinaryOp<Expr, detail::Subtract, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOp<Expr, detail::Multiply, Expr>& x)
+      inline virtual Expr visit(const BinaryOp<Expr, detail::Multiply, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOp<Expr, detail::Divide, Expr>& x)
+      inline virtual Expr visit(const BinaryOp<Expr, detail::Divide, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      virtual Expr visit(const BinaryOp<Expr, detail::Power, Expr>& x)
+      inline virtual Expr visit(const BinaryOp<Expr, detail::Power, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
     };
   }
@@ -170,7 +170,7 @@ namespace sym {
   */
   class RTBase : public SymbolicOperator, public std::enable_shared_from_this<RTBase> {
   public:
-    virtual ~RTBase() {}
+    inline virtual ~RTBase() {}
 
     virtual Expr clone() const = 0;
 
@@ -178,7 +178,7 @@ namespace sym {
 
     virtual Expr visit(detail::VisitorInterface& c) const = 0;
 
-    virtual void throw_self() const {
+    inline virtual void throw_self() const {
       stator_throw() << "The expression (" << stator::repr(*this) << ") does not resolve to a constant type.";
     }
   };
@@ -205,26 +205,26 @@ namespace sym {
   template<>
   class Var<Dynamic> : public RTBaseHelper<Var<Dynamic> >, public Dynamic {
   public:
-    Var(const char v) : idx(v) {}
+    inline Var(const char v) : idx(v) {}
     
     template<typename ...Args>
     Var(const Var<Args...> v):
       idx(Var<Args...>::idx)
     {}
 
-    bool operator==(const VarRT& o) const {
+    inline bool operator==(const VarRT& o) const {
       return idx == o.idx;
     }
 
-    Relation<VarRT, Expr> operator=(const Expr& f) const {
+    inline Relation<VarRT, Expr> operator=(const Expr& f) const {
       return Relation<VarRT, Expr>(*this, f);
     }
         
-    char getidx() const { return idx; } 
+    inline char getidx() const { return idx; } 
     
     char idx;
 
-    Expr visit(detail::VisitorInterface& c) const;
+    inline Expr visit(detail::VisitorInterface& c) const;
   };
 
   /*! \brief Determine the derivative of a variable by another variable.
@@ -348,9 +348,9 @@ namespace sym {
     Expr _r;
   };
 
-  Expr::Expr(const RTBase& v) : Base(v.clone()) {}
+  inline Expr::Expr(const RTBase& v) : Base(v.clone()) {}
 
-  Expr::Expr(const double& v) : Base(std::make_shared<ConstantRT<double> >(v)) {}
+  inline Expr::Expr(const double& v) : Base(std::make_shared<ConstantRT<double> >(v)) {}
   
   template<std::intmax_t Num, std::intmax_t Denom>
   Expr::Expr(const C<Num, Denom>& c) : Base(std::make_shared<ConstantRT<double> >(double(Num) / Denom)) {}
@@ -377,7 +377,7 @@ namespace sym {
     stator_throw() << "Uncaught error! Check implementation of throw_self in expression (" << stator::repr(*this) << ")";
   }
 
-  bool Expr::operator==(const Expr& e) const {
+  inline bool Expr::operator==(const Expr& e) const {
     return (*(*this)) == e;
   }
 
@@ -390,7 +390,7 @@ namespace sym {
   template<class T>
   Expr ConstantRT<T>::visit(detail::VisitorInterface& c) const { return c.visit(_val); }
 
-  Expr Var<Dynamic>::visit(detail::VisitorInterface& c) const { return c.visit(*this); }
+  inline Expr Var<Dynamic>::visit(detail::VisitorInterface& c) const { return c.visit(*this); }
 
   namespace detail {
     template<typename Visitor, typename LHS_t, typename Op>
@@ -507,7 +507,7 @@ namespace sym {
     };
   }
 
-  Expr simplify(const Expr& f) {
+  inline Expr simplify(const Expr& f) {
     detail::SimplifyRT visitor;
     Expr result = f->visit(visitor);
     return result ? result : f;

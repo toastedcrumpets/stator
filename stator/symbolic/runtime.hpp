@@ -247,7 +247,7 @@ namespace sym {
     
     bool operator==(const Expr o) const;
     
-	Expr visit(detail::VisitorInterface& c) const;
+    Expr visit(detail::VisitorInterface& c) const;
 
     void throw_self() const {
       throw _val;
@@ -434,6 +434,36 @@ namespace sym {
 	if (IsSymbolic<decltype(store(Op::apply(l, r)))>::value)
 	  return Expr();
 	return Expr(store(Op::apply(l, r)));
+      }
+
+      //Direct evaluation of doubles
+      template<class T2>
+      Expr dd_visit(const double& l, const T2& r, detail::Subtract) {
+	if (l == 0)
+	  return Expr(-r);
+	
+	if (IsSymbolic<decltype(store(detail::Subtract::apply(l, r)))>::value)
+	  return Expr();
+	return Expr(store(detail::Subtract::apply(l, r)));
+      }
+
+      //Direct evaluation of doubles
+      Expr dd_visit(const double& l, const BinaryOp<Expr, detail::Multiply, Expr>& r, detail::Multiply) {
+	if (dynamic_cast<const ConstantRT<double>*>(r.getLHS().get()))
+	  return Expr(BinaryOp<Expr, detail::Multiply, Expr>(l * static_cast<const ConstantRT<double>*>(r.getLHS().get())->get(), r.getRHS()));
+
+	if (dynamic_cast<const ConstantRT<double>*>(r.getRHS().get()))
+	  return Expr(BinaryOp<Expr, detail::Multiply, Expr>(l * static_cast<const ConstantRT<double>*>(r.getRHS().get())->get(), r.getLHS()));
+	return Expr();
+      }
+
+      Expr dd_visit(const BinaryOp<Expr, detail::Multiply, Expr>& r, const double& l, detail::Multiply) {
+	if (dynamic_cast<const ConstantRT<double>*>(r.getLHS().get()))
+	  return Expr(BinaryOp<Expr, detail::Multiply, Expr>(l * static_cast<const ConstantRT<double>*>(r.getLHS().get())->get(), r.getRHS()));
+
+	if (dynamic_cast<const ConstantRT<double>*>(r.getRHS().get()))
+	  return Expr(BinaryOp<Expr, detail::Multiply, Expr>(l * static_cast<const ConstantRT<double>*>(r.getRHS().get())->get(), r.getLHS()));
+	return Expr();
       }
       
       //By default return the blank (use 

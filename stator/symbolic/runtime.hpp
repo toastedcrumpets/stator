@@ -398,7 +398,7 @@ namespace sym {
       DoubleDispatch2(const LHS_t& LHS, Visitor& visitor) : _LHS(LHS), _visitor(visitor) {}
       
       template<class RHS_t>
-      Expr apply(const RHS_t& RHS) { return _visitor.template dd_visit<Op>(_LHS, RHS); }
+      Expr apply(const RHS_t& RHS) { return _visitor.dd_visit(_LHS, RHS, Op()); }
 
     private:
       const LHS_t& _LHS;
@@ -427,43 +427,15 @@ namespace sym {
 	Expr apply(const double& arg) { return Op::apply(arg); }
 	template<class T> Expr apply(const T& arg) { return Expr(); }
       };
-      
-      template<class Op>
-      Expr dd_visit(const double& l, const double& r) {
-	if (typename Op::right_zero() == r)
-	  return typename Op::right_zero();
-	
-	if (typename Op::left_zero() == l)
-	  return typename Op::left_zero();
 
-	if (typename Op::right_identity() == r)
-	  return l;
-	
-	if (typename Op::left_identity() == l)
-	  return r;
-
+      //Direct evaluation of doubles
+      template<class T1, class T2, class Op>
+      Expr dd_visit(const T1& l, const T2& r, Op) {
+	if (IsSymbolic<decltype(store(Op::apply(l, r)))>::value)
+	  return Expr();
 	return Expr(store(Op::apply(l, r)));
       }
-
-      //As everything is specialised, this requires type conversions
-      //to work, thus it should be chosen last
-      template<class Op>
-      Expr dd_visit(const Expr& l, const Expr& r) {
-	if (r == typename Op::right_zero())
-	  return typename Op::right_zero();
-	
-	if (l == typename Op::left_zero())
-	  return typename Op::left_zero();
-
-	if (r == typename Op::right_identity())
-	  return l;
-	
-	if (l == typename Op::left_identity())
-	  return r;
-	
-	return Expr();
-      }
-
+      
       //By default return the blank (use 
       template<class T>
       Expr apply(const T& v) {
@@ -490,10 +462,21 @@ namespace sym {
 	Expr l = op.getLHS()->visit(*this);
 	bool lchanged = !!l;
 	if (!l) l = op._l;
+
 	Expr r = op.getRHS()->visit(*this);
 	bool rchanged = !!r;
 	if (!r) r = op._r;
+
+	if (l == typename Op::left_zero())
+	  return typename Op::left_zero();
+	if (l == typename Op::left_identity())
+	  return r;
+	if (r == typename Op::right_zero())
+	  return typename Op::right_zero();
+	if (r == typename Op::right_identity())
+	  return l;
 	
+	//Try direct simplification via application
 	DoubleDispatch1<SimplifyRT, Op> visitor(r, *this);
 	Expr ret = l->visit(visitor);
 	if (ret)

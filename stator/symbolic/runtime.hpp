@@ -177,10 +177,6 @@ namespace sym {
     virtual bool operator==(const Expr o) const = 0;
 
     virtual Expr visit(detail::VisitorInterface& c) const = 0;
-
-    inline virtual void throw_self() const {
-      stator_throw() << "The expression (" << stator::repr(*this) << ") does not resolve to a constant type.";
-    }
   };
   
   /*! \brief CRTP helper base class which implements some of the
@@ -248,10 +244,6 @@ namespace sym {
     bool operator==(const Expr o) const;
     
     Expr visit(detail::VisitorInterface& c) const;
-
-    void throw_self() const {
-      throw _val;
-    }
 
     const T& get() const { return _val; }
     
@@ -366,15 +358,11 @@ namespace sym {
 
   template<class T>
   T Expr::as() const {
-    try {
-      (*this)->throw_self();
-    } catch(const T& v) {
-      return v;
-    } catch(const stator::Exception& e) {
-      throw e;
-    } catch(...) {}
+    auto* ptr = dynamic_cast<const ConstantRT<T>*>(Base::get());
+    if (!ptr)
+      stator_throw() << "Invalid as<>(), expression is as follows:" << *this;
 
-    stator_throw() << "Uncaught error! Check implementation of throw_self in expression (" << stator::repr(*this) << ")";
+    return ptr->get();
   }
 
   inline bool Expr::operator==(const Expr& e) const {

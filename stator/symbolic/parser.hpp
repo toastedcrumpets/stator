@@ -113,13 +113,17 @@ namespace sym {
       }
 
       std::string next() {
-	return (_start == _str.size()) ? "" : _str.substr(_start, _end-_start);
+	return empty() ? "" : _str.substr(_start, _end - _start);
       }
 
       void expect(std::string token) {
 	if (next() != token)
-	  stator_throw() << "Expected " << ((token.empty()) ? "end of expression": ("\""+token+"\"")) << " but got " << next() << " instead?\n" << parserLoc();
+	  stator_throw() << "Expected " << ((token.empty()) ? "end of expression": ("\""+token+"\"")) << " but found " << (empty() ? "the end of expression" : next()) << "\" instead?\n" << parserLoc();
 	consume();
+      }
+
+      bool empty() const {
+	return _start == _str.size();
       }
       
       void consume() {
@@ -131,8 +135,7 @@ namespace sym {
 	_end = _start;
 
 	//Check for sequence end
-	if (_start == _str.size())
-	  return;
+	if (empty()) return;
 
 	//Not at end of sequence so at least one character in symbol
 	_end = _start + 1;
@@ -211,7 +214,7 @@ namespace sym {
       
       std::string parserLoc() {
 	return _str + "\n"
-	  + std::string(_start, ' ') + std::string(_end - _start -1, '-') + "^";
+	  + std::string(_start, ' ') + std::string((_start < _end) ? _end - _start -1: 0, '-') + "^";
       }
 
       struct RightOperatorBase {
@@ -431,7 +434,15 @@ namespace sym {
     };
   }
 
-  Expr::Expr(const std::string& str) : Expr(simplify(detail::ExprTokenizer(str).parseExpression())) {}
+  Expr::Expr(const std::string& str)
+  {
+    auto tokenizer = detail::ExprTokenizer(str);
+    *this = simplify(tokenizer.parseExpression());
+
+    //Check that the full string was parsed
+    if (!tokenizer.empty())
+      stator_throw() << "Parsing terminated unexpectedly early?\n" << tokenizer.parserLoc();
+  }
 
   Expr::Expr(const char* str) : Expr(std::string(str)) {}
 }

@@ -196,3 +196,21 @@ UNIT_TEST( symbolic_parser_Expr_string_loop ) {
   expr_string_expr_conversion_check(2*x/2*x);
   expr_string_expr_conversion_check(x*(x*x));
 }
+
+UNIT_TEST( Parsing_Errors )
+{
+  try {
+    Expr("");
+  } catch (const stator::Exception& e) {
+  }
+
+  try {
+    Expr("T-2)");
+  } catch (const stator::Exception& e) {
+  }
+
+  try {
+    Expr("((T-2)*2");
+  } catch (const stator::Exception& e) {
+  }
+}

@@ -141,6 +141,9 @@ int main(int argc, char **argv) {
     //Calculate the real roots of this 5th order polynomial
     std::cout << solve_real_roots(poly) << std::endl;
     //Output: StackVector{ -0.67044 0.67044 }
-    
+    Expr f_rt = "sin(x) + 2 * cos(x)";
+    Expr g_rt = sub(f_rt, x=y*y);
+    a = simplify(sub(g_rt, y = 2.3)).as<double>(); // a = g(2.3)
+    Expr dg_dy_rt = derivative(g_rt, y);
   }//End of the example
 }

@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['normal_5f',['normal_',['../classstator_1_1geometry_1_1HalfSpace.html#aaccc4912c541df9dc3ae82a33533ba7e',1,'stator::geometry::HalfSpace::normal_()'],['../classstator_1_1geometry_1_1Plane.html#afa1d3de6449193e807627793074a2377',1,'stator::geometry::Plane::normal_()']]]
+  ['max_5f',['max_',['../classstator_1_1geometry_1_1AABox.html#ae9e80edc15111f5d737224b9b09c24f9',1,'stator::geometry::AABox']]],
+  ['min_5f',['min_',['../classstator_1_1geometry_1_1AABox.html#a29418e4a1695fb7d29f273eddfd395cd',1,'stator::geometry::AABox']]]
 ];

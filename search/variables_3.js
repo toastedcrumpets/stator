@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['derivative',['derivative',['../namespacesym.html#a3a233c6a712dc329484065702b97162e',1,'sym']]]
+  ['debug_5foutput',['Debug_output',['../structstator_1_1ReprConfig.html#af1a1f18213e8dc49443437048d415129',1,'stator::ReprConfig']]]
 ];

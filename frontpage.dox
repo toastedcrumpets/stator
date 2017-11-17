@@ -10,7 +10,7 @@
   compared to hand coded expressions). Its not as fully featured as a
   full CAS (such as Mathematica) though yet.
 
-  Not convinced? Try the simple example below!
+  Not convinced? Take a look at the compile-time example below:
 
   \dontinclude symbolic_example.cpp
   \skip Quick example
@@ -28,22 +28,24 @@
   Most modern compilers will also eliminate the cost of this too,
   leading to zero run-time cost.
 
-  As we have a symbolic representation of the function we can perform
-  some interesting transformations of it. Taking the derivative is
-  also carried out at compile time:
+  As we have a symbolic representation of the function we transform
+  it. Taking the derivative is also carried out at compile time:
 
   \until //Output:
   
   Basic functionality like this also allows more complex operations,
   such as creating a truncated sym::taylor_series:
 
-  \until }//End
+  \until //Output: StackVector{ -
 
   This creates a sym::Polynomial type, which is a std::array of the
   coefficients again at compile time; however, solving for the roots
   for a 5th order polynomial like this one requires iterations thus it
   must be done at run time; however, both are carried out without
   dynamic allocation and thus are very fast on any modern compiler.
+
+  This can all be carried out at runtime too:
+  \until dg_dy_rt
 
   See the \ref symbolic_guide "guide to the symbolic library" for more details on how to use the library.
 
@@ -58,8 +60,6 @@
   The current compiler support on Linux is available at the <a
   href="https://travis-ci.org/toastedcrumpets/stator">Travis CI
   page</a>.
-
-  
 
   Stator is a header-only C++11 library. In many places it builds upon
   the Eigen 3 library (http://eigen.tuxfamily.org/), so to use it you

@@ -431,24 +431,29 @@ namespace stator {
 
 	    //Find the line of the error
 	    size_t line_num = 1;
-	    for (const char* ptr = &_data[0]; ptr < error_loc_ptr; ++ptr)
-	      if (*ptr == '\n') 
+	    for (const char* ptr = _data.data(); ptr < error_loc_ptr; ++ptr)
+	      if (*ptr == '\n')
 		++line_num;
 
 	    //Determine the start of the error line
 	    const char* error_line_start = error_loc_ptr;
-	    while ((*error_line_start != '\n') && (error_line_start != &_data[0]))
+	    while ((*error_line_start != '\n') && (error_line_start != _data.data()))
 	      --error_line_start;
-	    ++error_line_start;
-
+	    //Move past the newline
+	    if (error_line_start != _data.data())
+		++error_line_start;
 	    //Determine the end of the error line
 	    const char* error_line_end = error_loc_ptr;
-	    while ((*error_line_end != '\n') && (*error_line_end != '\0'))
-	      ++error_line_end;	    
+	    while ((*error_line_end != '\n') && (error_line_end != (_data.data()+_data.size())))
+	      ++error_line_end;
 
-	    stator_throw() << "Parser error at line " << line_num << ": " << err.what() << "\n"
-			   << std::string(error_line_start, error_line_end) << "\n"
-			   << std::string(error_loc_ptr - error_line_start, ' ') << "^";
+	    const std::ptrdiff_t pre_post_context(40);
+	    std::ptrdiff_t startsize = std::min(error_loc_ptr-error_line_start, pre_post_context);
+	    std::string error_description = "\n"
+	      + std::string(error_loc_ptr - startsize, error_loc_ptr)
+	      + std::string(error_loc_ptr, error_loc_ptr + std::min(error_line_end-error_loc_ptr, pre_post_context))
+	      + "\n" + std::string(startsize, ' ')+"^";
+	    stator_throw() << "Parser error at line " << line_num << ", char " << int(error_loc_ptr-error_line_start) << ": " << err.what() << error_description;
 	  }
       }
 

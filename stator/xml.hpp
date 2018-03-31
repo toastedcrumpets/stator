@@ -255,6 +255,12 @@ namespace stator {
 	return getValue();
       }
 
+      std::string print() const {
+	std::string s;
+	rapidxml::print(std::back_inserter(s), *_node, 0);
+	return s;
+      }
+      
       /*! \brief Replace this Node with the previous Node in the
         parent Node with the same name.
       */

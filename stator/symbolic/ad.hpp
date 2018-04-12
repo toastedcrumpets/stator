@@ -25,8 +25,6 @@
 #include <stator/symbolic/symbolic.hpp>
 
 namespace sym {
-
-  
   template<size_t Nd, typename T, typename Var, typename Arg,
 	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type>
   Eigen::Matrix<double, Nd+1,1> ad(const T& v, const Relation<Var, Arg>&) {
@@ -65,9 +63,28 @@ namespace sym {
     Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
 
     result[0] = l[0] * r[0];
-    for (size_t k(1); k < Nd; ++k)
+    for (size_t k(1); k < Nd+1; ++k)
       for (size_t i(0); i <= k; ++i)
 	result[k] += l[i] * r[k-i];
+    
     return result;
   }
+
+  template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Divide, RHS_t>& op, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> l = ad<Nd>(op._l, sub);
+    Eigen::Matrix<double, Nd+1,1> r = ad<Nd>(op._r, sub);
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
+
+    result[0] = l[0] / r[0];
+    
+    for (size_t k(1); k < Nd+1; ++k) {
+      result[k] = l[k];
+      for (size_t i(0); i < k; ++i)
+	result[k] -= result[i] * r[k-i];
+      result[k] /= r[0];
+    }
+    return result;
+  }
+
 }

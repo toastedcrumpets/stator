@@ -101,11 +101,25 @@ UNIT_TEST( automatic_differentiation )
   }
 
   //Multiplication
+  //Remember that ad actually returns d^n f/dx^n / (n!)
   {
     auto v = sym::ad<2>(3*x, x=2);
     UNIT_TEST_CHECK_EQUAL(v[0], 6);
     UNIT_TEST_CHECK_EQUAL(v[1], 3);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
+  }
+  {
+    auto v = sym::ad<2>(x*x, x=3);
+    UNIT_TEST_CHECK_EQUAL(v[0], 9);
+    UNIT_TEST_CHECK_EQUAL(v[1], 6);
+    UNIT_TEST_CHECK_EQUAL(v[2], 1);
+  }
+
+  //Division
+  {
+    auto v = sym::ad<1>((x+1)*(x-2)/(x+3), x=3);
+    UNIT_TEST_CHECK_CLOSE(v[0], 2.0/3, 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], 13.0/18, 1e-14);
   }
 }
 

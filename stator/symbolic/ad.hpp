@@ -27,5 +27,34 @@
 namespace sym {
 
   
-  
+  template<size_t Nd, typename T, typename Var, typename Arg,
+	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type>
+  Eigen::Matrix<double, Nd+1,1> ad(const T& v, const Relation<Var, Arg>&) {
+    Eigen::Matrix<double, Nd+1,1> r = Eigen::Matrix<double, Nd+1,1>::Zero();
+    r[0] = v;
+    return r;
+  }
+
+  template<size_t Nd, typename ...Args, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const Var<Args...>& v, const Relation<Var_t, Arg_t>& r) {
+
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();    
+    if ((v.getidx() == r._var.getidx())) {
+      result[0] = r._val;
+      if (Nd > 0) result[1] = 1.0;
+    } else
+      result[0] = std::numeric_limits<double>::quiet_NaN();
+    
+    return result;
+  }
+
+  template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Add, RHS_t>& op, const Relation<Var_t, Arg_t>& r) {
+    return ad<Nd>(op._l, r) + ad<Nd>(op._r, r);
+  }
+
+  template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Subtract, RHS_t>& op, const Relation<Var_t, Arg_t>& r) {
+    return ad<Nd>(op._l, r) - ad<Nd>(op._r, r);
+  }
 }

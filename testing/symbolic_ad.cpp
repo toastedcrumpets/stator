@@ -109,17 +109,20 @@ UNIT_TEST( automatic_differentiation )
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
   }
   {
-    auto v = sym::ad<2>(x*x, x=3);
+    auto v = sym::ad<3>(x*x, x=3);
     UNIT_TEST_CHECK_EQUAL(v[0], 9);
     UNIT_TEST_CHECK_EQUAL(v[1], 6);
     UNIT_TEST_CHECK_EQUAL(v[2], 1);
+    UNIT_TEST_CHECK_EQUAL(v[3], 0);
   }
 
   //Division
   {
-    auto v = sym::ad<1>((x+1)*(x-2)/(x+3), x=3);
+    auto v = sym::ad<3>((x+1)*(x-2)/(x+3), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], 2.0/3, 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], 13.0/18, 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], 5.0/54/2, 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[3], -5.0/108/6, 1e-14);
   }
 }
 

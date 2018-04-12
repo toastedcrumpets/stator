@@ -99,5 +99,13 @@ UNIT_TEST( automatic_differentiation )
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
     UNIT_TEST_CHECK_EQUAL(v[3], 0);
   }
+
+  //Multiplication
+  {
+    auto v = sym::ad<2>(3*x, x=2);
+    UNIT_TEST_CHECK_EQUAL(v[0], 6);
+    UNIT_TEST_CHECK_EQUAL(v[1], 3);
+    UNIT_TEST_CHECK_EQUAL(v[2], 0);
+  }
 }
 

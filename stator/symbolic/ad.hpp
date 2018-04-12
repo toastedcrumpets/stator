@@ -57,4 +57,17 @@ namespace sym {
   Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Subtract, RHS_t>& op, const Relation<Var_t, Arg_t>& r) {
     return ad<Nd>(op._l, r) - ad<Nd>(op._r, r);
   }
+  
+  template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Multiply, RHS_t>& op, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> l = ad<Nd>(op._l, sub);
+    Eigen::Matrix<double, Nd+1,1> r = ad<Nd>(op._r, sub);
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
+
+    result[0] = l[0] * r[0];
+    for (size_t k(1); k < Nd; ++k)
+      for (size_t i(0); i <= k; ++i)
+	result[k] += l[i] * r[k-i];
+    return result;
+  }
 }

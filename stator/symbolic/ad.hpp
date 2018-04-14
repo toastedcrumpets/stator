@@ -81,12 +81,29 @@ namespace sym {
     for (size_t k(1); k < Nd+1; ++k) {
       result[k] = l[k];
       for (size_t i(0); i < k; ++i)
-	result[k] -= result[i] * r[k-i];
+	result[k] -= result[i] * r[k - i];
       result[k] /= r[0];
     }
     return result;
   }
 
+  template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t,
+	   typename = typename std::enable_if<detail::IsConstant<RHS_t>::value>::type>
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Power, RHS_t>& op, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._l, sub);
+    double a = op._r;
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
+
+    result[0] = std::pow(g[0], a);
+    
+    for (size_t k(1); k < Nd+1; ++k) {
+      for (size_t i(1); i <= k; ++i)
+	result[k] += ((a + 1) * i / k - 1) * g[i] * result[k - i];
+      result[k] /= g[0];
+    }
+    return result;
+  }
+  
   template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
   Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Exp>& op, const Relation<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
@@ -98,6 +115,54 @@ namespace sym {
       for (size_t i(1); i <= k; ++i)
 	result[k] += i * g[i] * result[k-i];
       result[k] /= k;
+    }
+    return result;
+  }
+
+  template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Log>& op, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
+
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
+    result[0] = sym::log(g[0]);
+    
+    for (size_t k(1); k < Nd+1; ++k) {
+      for (size_t i(1); i < k; ++i)
+	result[k] += i * result[i] * g[k - i];
+      
+      result[k] = (g[k] - result[k] / k) / g[0];
+    }
+    return result;
+  }
+
+  template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Sine>& op, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
+
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
+    result[0] = sym::sin(g[0]);
+    
+    for (size_t k(1); k < Nd+1; ++k) {
+      for (size_t i(1); i <= k; ++i)
+	result[k] += i * g[i] * result[k - i];
+      
+      result[k] /= k;
+    }
+    return result;
+  }
+
+  template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Cosine>& op, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
+
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
+    result[0] = sym::cos(g[0]);
+    
+    for (size_t k(1); k < Nd+1; ++k) {
+      for (size_t i(1); i <= k; ++i)
+	result[k] += i * g[i] * result[k - i];
+      
+      result[k] /= -k;
     }
     return result;
   }

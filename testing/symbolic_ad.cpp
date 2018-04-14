@@ -125,6 +125,15 @@ UNIT_TEST( automatic_differentiation )
     UNIT_TEST_CHECK_CLOSE(v[3], -5.0/108/6, 1e-14);
   }
 
+  //Power (of constants)
+  {
+    auto v = sym::ad<3>(sym::pow(x, 3.5), x=3);
+    UNIT_TEST_CHECK_CLOSE(v[0], std::pow(3, 3.5), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], 3.5 * std::pow(3, 2.5) * sym::InvFactorial<1>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], 3.5 * 2.5 * std::pow(3, 1.5) * sym::InvFactorial<2>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[3], 3.5 * 2.5 * 1.5 * std::pow(3, 0.5) * sym::InvFactorial<3>::value(), 1e-14);
+  }
+  
   //Exponentiation
   {
     auto v = sym::ad<4>(sym::exp(x), x=3);
@@ -137,12 +146,28 @@ UNIT_TEST( automatic_differentiation )
 
   {
     auto f = sym::exp(x * x);
-    auto df = derivative(f, x);
-    auto ddf = derivative(df, x);
     auto v = sym::ad<2>(f, x=3);
-    UNIT_TEST_CHECK_CLOSE(v[0], sub(f, x=3), 1e-14);
-    UNIT_TEST_CHECK_CLOSE(v[1], sub(df, x=3) * sym::InvFactorial<1>::value(), 1e-14);
-    UNIT_TEST_CHECK_CLOSE(v[2], sub(ddf, x=3) * sym::InvFactorial<2>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[0], std::exp(3*3), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], (2 * 3 * std::exp(3*3)) * sym::InvFactorial<1>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], (2 * 3 * 3 + 1) * (2 * std::exp(3*3)) * sym::InvFactorial<2>::value(), 1e-14);
   }
+
+  //Logarithm
+  {
+    auto v = sym::ad<3>(sym::log(x), x=3);
+    UNIT_TEST_CHECK_CLOSE(v[0], std::log(3), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], (1 / 3.0) * sym::InvFactorial<1>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], (-1 / 3.0 / 3.0) * sym::InvFactorial<2>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[3], (2 / 3.0 / 3.0 / 3.0) * sym::InvFactorial<3>::value(), 1e-14);
+  }
+
+//  //Cosine/Sine
+//  {
+//    auto v = sym::ad<3>(sym::cos(x), x=3);
+//    UNIT_TEST_CHECK_CLOSE(v[0], +std::cos(3), 1e-14);
+//    UNIT_TEST_CHECK_CLOSE(v[1], -std::sin(3) * sym::InvFactorial<1>::value(), 1e-14);
+//    UNIT_TEST_CHECK_CLOSE(v[2], -std::cos(3) * sym::InvFactorial<2>::value(), 1e-14);
+//    UNIT_TEST_CHECK_CLOSE(v[3], +std::sin(3) * sym::InvFactorial<3>::value(), 1e-14);
+//  }
 }
 

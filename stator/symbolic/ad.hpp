@@ -139,31 +139,41 @@ namespace sym {
   Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Sine>& op, const Relation<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
 
-    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
-    result[0] = sym::sin(g[0]);
+    Eigen::Matrix<double, Nd+1,1> cos = Eigen::Matrix<double, Nd+1,1>::Zero();
+    Eigen::Matrix<double, Nd+1,1> sin = Eigen::Matrix<double, Nd+1,1>::Zero();
+    cos[0] = sym::cos(g[0]);
+    sin[0] = sym::sin(g[0]);
     
     for (size_t k(1); k < Nd+1; ++k) {
-      for (size_t i(1); i <= k; ++i)
-	result[k] += i * g[i] * result[k - i];
-      
-      result[k] /= k;
+      for (size_t i(1); i <= k; ++i) {
+	sin[k] += i * g[i] * cos[k - i];
+	cos[k] += i * g[i] * sin[k - i];
+      }
+      sin[k] /= k;
+      cos[k] /= -k;
     }
-    return result;
+    
+    return sin;
   }
 
   template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
   Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Cosine>& op, const Relation<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
 
-    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
-    result[0] = sym::cos(g[0]);
+    Eigen::Matrix<double, Nd+1,1> cos = Eigen::Matrix<double, Nd+1,1>::Zero();
+    Eigen::Matrix<double, Nd+1,1> sin = Eigen::Matrix<double, Nd+1,1>::Zero();
+    cos[0] = sym::cos(g[0]);
+    sin[0] = sym::sin(g[0]);
     
     for (size_t k(1); k < Nd+1; ++k) {
-      for (size_t i(1); i <= k; ++i)
-	result[k] += i * g[i] * result[k - i];
-      
-      result[k] /= -k;
+      for (size_t i(1); i <= k; ++i) {
+	sin[k] += i * g[i] * cos[k - i];
+	cos[k] += i * g[i] * sin[k - i];
+      }
+      sin[k] /= k;
+      cos[k] /= -k;
     }
-    return result;
+    
+    return cos;
   }
 }

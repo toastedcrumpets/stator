@@ -87,4 +87,18 @@ namespace sym {
     return result;
   }
 
+  template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Exp>& op, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
+
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();    
+    result[0] = sym::exp(g[0]);
+    
+    for (size_t k(1); k < Nd+1; ++k) {
+      for (size_t i(1); i <= k; ++i)
+	result[k] += i * g[i] * result[k-i];
+      result[k] /= k;
+    }
+    return result;
+  }
 }

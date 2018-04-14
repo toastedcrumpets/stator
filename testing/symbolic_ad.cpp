@@ -124,5 +124,25 @@ UNIT_TEST( automatic_differentiation )
     UNIT_TEST_CHECK_CLOSE(v[2], 5.0/54/2, 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[3], -5.0/108/6, 1e-14);
   }
+
+  //Exponentiation
+  {
+    auto v = sym::ad<4>(sym::exp(x), x=3);
+    UNIT_TEST_CHECK_CLOSE(v[0], std::exp(3), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], std::exp(3) * sym::InvFactorial<1>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], std::exp(3) * sym::InvFactorial<2>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[3], std::exp(3) * sym::InvFactorial<3>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[4], std::exp(3) * sym::InvFactorial<4>::value(), 1e-14); 
+  }
+
+  {
+    auto f = sym::exp(x * x);
+    auto df = derivative(f, x);
+    auto ddf = derivative(df, x);
+    auto v = sym::ad<2>(f, x=3);
+    UNIT_TEST_CHECK_CLOSE(v[0], sub(f, x=3), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], sub(df, x=3) * sym::InvFactorial<1>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], sub(ddf, x=3) * sym::InvFactorial<2>::value(), 1e-14);
+  }
 }
 

@@ -1,4 +1,4 @@
 [submodule "extern/eigen"]
 	path = extern/eigen
-	url = https://github.com/RLovelett/eigen.git
+	url = https://github.com/eigenteam/eigen-git-mirror.git
 	branch = branches/3.3

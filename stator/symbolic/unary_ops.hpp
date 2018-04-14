@@ -32,34 +32,12 @@ namespace sym {
     UnaryOp(Arg a): _arg(a) {}
   };
   
-  inline float sin(float a) { return std::sin(a); }
-  inline double sin(double a) { return std::sin(a); }
-  inline long double sin(long double a) { return std::sin(a); }
-  template<class T> std::complex<T> sin(std::complex<T> a) { return std::sin(a); }
+  using std::sin;
+  using std::cos;
+  using std::exp;
+  using std::log;
+  using std::abs;
   
-  inline float cos(float a) { return std::cos(a); }
-  inline double cos(double a) { return std::cos(a); }
-  inline long double cos(long double a) { return std::cos(a); }
-  template<class T> std::complex<T> cos(std::complex<T> a) { return std::cos(a); }
-
-  inline float exp(float a) { return std::exp(a); }
-  inline double exp(double a) { return std::exp(a); }
-  inline long double exp(long double a) { return std::exp(a); }
-  template<class T> std::complex<T> exp(std::complex<T> a) { return std::exp(a); }
-  
-  inline float log(float a) { return std::log(a); }
-  inline double log(double a) { return std::log(a); }
-  inline long double log(long double a) { return std::log(a); }
-  template<class T> std::complex<T> log(std::complex<T> a) { return std::log(a); }
-  
-  inline int abs(int a) { return std::abs(a); }
-  inline long abs(long a) { return std::abs(a); }
-  inline long long abs(long long a) { return std::abs(a); }
-  inline float abs(float a) { return std::abs(a); }
-  inline double abs(double a) { return std::abs(a); }
-  inline long double abs(long double a) { return std::abs(a); }
-  template<class T> T abs(std::complex<T> a) { return std::abs(a); }
-
   namespace detail {
     struct Sine {
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sin(a));

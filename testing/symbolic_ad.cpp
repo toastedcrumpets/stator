@@ -161,13 +161,19 @@ UNIT_TEST( automatic_differentiation )
     UNIT_TEST_CHECK_CLOSE(v[3], (2 / 3.0 / 3.0 / 3.0) * sym::InvFactorial<3>::value(), 1e-14);
   }
 
-//  //Cosine/Sine
-//  {
-//    auto v = sym::ad<3>(sym::cos(x), x=3);
-//    UNIT_TEST_CHECK_CLOSE(v[0], +std::cos(3), 1e-14);
-//    UNIT_TEST_CHECK_CLOSE(v[1], -std::sin(3) * sym::InvFactorial<1>::value(), 1e-14);
-//    UNIT_TEST_CHECK_CLOSE(v[2], -std::cos(3) * sym::InvFactorial<2>::value(), 1e-14);
-//    UNIT_TEST_CHECK_CLOSE(v[3], +std::sin(3) * sym::InvFactorial<3>::value(), 1e-14);
-//  }
+  //Cosine/Sine
+  {
+    auto v = sym::ad<3>(sym::cos(x), x=3);
+    UNIT_TEST_CHECK_CLOSE(v[0], +std::cos(3), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], -std::sin(3) * sym::InvFactorial<1>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], -std::cos(3) * sym::InvFactorial<2>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[3], +std::sin(3) * sym::InvFactorial<3>::value(), 1e-14);
+  }
+  {
+    auto v = sym::ad<2>(sym::sin(x*x), x=3);
+    UNIT_TEST_CHECK_CLOSE(v[0], +std::sin(3*3), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], +2 * 3 * std::cos(3*3) * sym::InvFactorial<1>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], 2 * (std::cos(3 * 3)- 2 * 3 * 3 * std::sin(3 * 3)) * sym::InvFactorial<2>::value(), 1e-14);
+  }
 }
 

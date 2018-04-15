@@ -150,7 +150,7 @@ namespace sym {
 	cos[k] += i * g[i] * sin[k - i];
       }
       sin[k] /= k;
-      cos[k] /= -k;
+      cos[k] /= -double(k); //Promotion is needed before the minus sign, otherwise the unsigned int becomes large
     }
     
     return sin;
@@ -167,11 +167,11 @@ namespace sym {
     
     for (size_t k(1); k < Nd+1; ++k) {
       for (size_t i(1); i <= k; ++i) {
-	sin[k] += i * g[i] * cos[k - i];
 	cos[k] += i * g[i] * sin[k - i];
+	sin[k] += i * g[i] * cos[k - i];
       }
       sin[k] /= k;
-      cos[k] /= -k;
+      cos[k] /= -double(k); //Promotion is needed before the minus sign, otherwise the unsigned int becomes large
     }
     
     return cos;

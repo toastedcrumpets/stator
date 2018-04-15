@@ -92,6 +92,11 @@ namespace sym {
   template<typename Expression>
   auto derivative(const Expression&);
 
+  /*! \brief Performs a symbolic derivative on the expression.
+   */
+  template<typename Expression, typename Var, typename Res>
+  auto ad(const Expression&, const VarSub<Var, Res>&);
+
   /*!
     \page symbolic_guide Guide to stator::sym
 

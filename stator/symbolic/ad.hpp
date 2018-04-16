@@ -176,4 +176,24 @@ namespace sym {
     
     return cos;
   }
+
+//  namespace detail {
+//    template<size_t Nd, typename Relation>
+//    struct ADRT : VisitorHelper<ADRT<Nd,Relation>, Eigen::Matrix<double, Nd+1, 1> > {
+//      ADRT(const Relation& rel): _rel(rel) {}
+//      
+//      template<class T>
+//      Eigen::Matrix<double, Nd+1, 1> apply(const T& v) {
+//	return ad<Nd>(v, _rel);
+//      }
+//      
+//      const Relation& _rel;
+//    };
+//  }
+//  
+//  template<size_t Nd, class Var_t, class Arg_t>
+//  Eigen::Matrix<double, Nd+1,1> ad(const Expr& f, const Relation<Var_t, Arg_t>& v) {
+//    detail::ADRT<Nd, Relation<Var_t, Arg_t> > visitor(v);
+//    return f->visit(visitor);
+//  }
 }

@@ -30,14 +30,17 @@
 
 #include <random>
 
-UNIT_TEST( automatic_differentiation )
+template<typename Func>
+void runtests()
 {
+  Func F;
+  
   sym::Var<sym::vidx<'x'>> x;
   sym::Var<sym::vidx<'y'>> y;
 
   //Check derivatives of doubles are zero (apart from the zeroth derivative)
   {
-    auto v = sym::ad<3>(1.23, x=0);
+    auto v = sym::ad<3>(F(1.23), x=0);
     UNIT_TEST_CHECK_EQUAL(v[0], 1.23);
     UNIT_TEST_CHECK_EQUAL(v[1], 0);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
@@ -46,7 +49,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Check integer derivatives
   {
-    auto v = sym::ad<3>(5, x=2.2);
+    auto v = sym::ad<3>(F(5), x=2.2);
     UNIT_TEST_CHECK_EQUAL(v[0], 5);
     UNIT_TEST_CHECK_EQUAL(v[1], 0);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
@@ -55,7 +58,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Check symbolic constant derivatives
   {
-    auto v = sym::ad<5>(sym::C<1,2>(), x=0);
+    auto v = sym::ad<5>(F(sym::C<1,2>()), x=0);
     UNIT_TEST_CHECK_EQUAL(v[0], 0.5);
     UNIT_TEST_CHECK_EQUAL(v[1], 0);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
@@ -66,7 +69,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Check variable derivatives are correct
   {
-    auto v = sym::ad<3>(x, x=3);
+    auto v = sym::ad<3>(F(x), x=3);
     UNIT_TEST_CHECK_EQUAL(v[0], 3);
     UNIT_TEST_CHECK_EQUAL(v[1], 1);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
@@ -75,7 +78,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Check incorrect variable derivatives are zero (with NaN for the evaluation
   {
-    auto v = sym::ad<3>(y, x=3);
+    auto v = sym::ad<3>(F(y), x=3);
     UNIT_TEST_CHECK(std::isnan(v[0]));
     UNIT_TEST_CHECK_EQUAL(v[1], 0);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
@@ -84,7 +87,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Addition
   {
-    auto v = sym::ad<3>(x+3, x=3);
+    auto v = sym::ad<3>(F(x+3), x=3);
     UNIT_TEST_CHECK_EQUAL(v[0], 6);
     UNIT_TEST_CHECK_EQUAL(v[1], 1);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
@@ -93,7 +96,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Subtraction
   {
-    auto v = sym::ad<3>(3-x, x=2);
+    auto v = sym::ad<3>(F(3-x), x=2);
     UNIT_TEST_CHECK_EQUAL(v[0], 1);
     UNIT_TEST_CHECK_EQUAL(v[1], -1);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
@@ -103,13 +106,13 @@ UNIT_TEST( automatic_differentiation )
   //Multiplication
   //Remember that ad actually returns d^n f/dx^n / (n!)
   {
-    auto v = sym::ad<2>(3*x, x=2);
+    auto v = sym::ad<2>(F(3*x), x=2);
     UNIT_TEST_CHECK_EQUAL(v[0], 6);
     UNIT_TEST_CHECK_EQUAL(v[1], 3);
     UNIT_TEST_CHECK_EQUAL(v[2], 0);
   }
   {
-    auto v = sym::ad<3>(x*x, x=3);
+    auto v = sym::ad<3>(F(x*x), x=3);
     UNIT_TEST_CHECK_EQUAL(v[0], 9);
     UNIT_TEST_CHECK_EQUAL(v[1], 6);
     UNIT_TEST_CHECK_EQUAL(v[2], 1);
@@ -118,7 +121,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Division
   {
-    auto v = sym::ad<3>((x+1)*(x-2)/(x+3), x=3);
+    auto v = sym::ad<3>(F((x+1)*(x-2)/(x+3)), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], 2.0/3, 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], 13.0/18, 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[2], 5.0/54/2, 1e-14);
@@ -127,7 +130,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Power (of constants)
   {
-    auto v = sym::ad<3>(sym::pow(x, 3.5), x=3);
+    auto v = sym::ad<3>(F(sym::pow(x, 3.5)), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], std::pow(3, 3.5), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], 3.5 * std::pow(3, 2.5) * sym::InvFactorial<1>::value(), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[2], 3.5 * 2.5 * std::pow(3, 1.5) * sym::InvFactorial<2>::value(), 1e-14);
@@ -136,7 +139,7 @@ UNIT_TEST( automatic_differentiation )
   
   //Exponentiation
   {
-    auto v = sym::ad<4>(sym::exp(x), x=3);
+    auto v = sym::ad<4>(F(sym::exp(x)), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], std::exp(3), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], std::exp(3) * sym::InvFactorial<1>::value(), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[2], std::exp(3) * sym::InvFactorial<2>::value(), 1e-14);
@@ -146,7 +149,7 @@ UNIT_TEST( automatic_differentiation )
 
   {
     auto f = sym::exp(x * x);
-    auto v = sym::ad<2>(f, x=3);
+    auto v = sym::ad<2>(F(f), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], std::exp(3*3), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], (2 * 3 * std::exp(3*3)) * sym::InvFactorial<1>::value(), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[2], (2 * 3 * 3 + 1) * (2 * std::exp(3*3)) * sym::InvFactorial<2>::value(), 1e-14);
@@ -154,7 +157,7 @@ UNIT_TEST( automatic_differentiation )
 
   //Logarithm
   {
-    auto v = sym::ad<3>(sym::log(x), x=3);
+    auto v = sym::ad<3>(F(sym::log(x)), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], std::log(3), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], (1 / 3.0) * sym::InvFactorial<1>::value(), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[2], (-1 / 3.0 / 3.0) * sym::InvFactorial<2>::value(), 1e-14);
@@ -163,17 +166,36 @@ UNIT_TEST( automatic_differentiation )
 
   //Cosine/Sine
   {
-    auto v = sym::ad<3>(sym::cos(x), x=3);
+    auto v = sym::ad<3>(F(sym::cos(x)), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], +std::cos(3), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], -std::sin(3) * sym::InvFactorial<1>::value(), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[2], -std::cos(3) * sym::InvFactorial<2>::value(), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[3], +std::sin(3) * sym::InvFactorial<3>::value(), 1e-14);
   }
   {
-    auto v = sym::ad<2>(sym::sin(x*x), x=3);
+    auto v = sym::ad<2>(F(sym::sin(x*x)), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], +std::sin(3*3), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], +2 * 3 * std::cos(3*3) * sym::InvFactorial<1>::value(), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[2], 2 * (std::cos(3 * 3)- 2 * 3 * 3 * std::sin(3 * 3)) * sym::InvFactorial<2>::value(), 1e-14);
   }
 }
 
+struct Bypass {
+  template<typename T>
+  const T& operator()(const T& v) { return v; }
+};
+
+UNIT_TEST( automatic_differentiation_compiletime )
+{  
+  runtests<Bypass>();
+}
+
+//struct ConvertToExpr {
+//  template<typename T>
+//  sym::Expr operator()(const T& v) { return sym::Expr(v); }
+//};
+//
+//UNIT_TEST( automatic_differentiation_runtime )
+//{  
+//  runtests<ConvertToExpr>();
+//}

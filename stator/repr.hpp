@@ -50,7 +50,7 @@ namespace stator {
   typename std::enable_if<std::is_integral<T>::value, std::string>::type
   repr(T a) { return std::to_string(a); }
   
-  template<class Config, class Float>
+  template<class Config = DefaultReprConfig, class Float>
   inline
   typename std::enable_if<std::is_floating_point<Float>::value, std::string>::type
   repr(Float a) {

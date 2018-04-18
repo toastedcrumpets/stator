@@ -199,3 +199,13 @@ UNIT_TEST( automatic_differentiation_runtime )
 {  
   runtests<ConvertToExpr>();
 }
+
+UNIT_TEST( automatic_differentiation_fails )
+{
+  sym::Var<sym::vidx<'x'>> x;
+  //Check that non-constant powers raise an exception
+  try {
+    auto v = sym::ad<2>(sym::Expr(sym::pow(x, x)), x=3);
+  } catch (const std::exception&){}
+  
+}

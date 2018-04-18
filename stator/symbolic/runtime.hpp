@@ -54,7 +54,7 @@ namespace stator {
 namespace sym {
   template<class Op> struct UnaryOp<Expr, Op>;
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
-
+  template<class T>  class ConstantRT;
   typedef Var<Dynamic> VarRT;
 
   /*! \brief The generic holder/smart pointer for a runtime Abstract
@@ -101,6 +101,25 @@ namespace sym {
   };
   
   namespace detail {
+    template<class T>
+    struct RT_type_index {
+      static_assert(sizeof(T) == -1, "Missing index for runtime type");
+    };
+
+    template<> struct RT_type_index<ConstantRT<double>>               { static const int value = 0; };
+    template<> struct RT_type_index<VarRT>                            { static const int value = 1; };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Sine>>      { static const int value = 2; };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Cosine>>    { static const int value = 3; };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Log>>       { static const int value = 4; };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Exp>>       { static const int value = 5; };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Absolute>>  { static const int value = 6; };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Arbsign>>   { static const int value = 7; };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Add, Expr>>      { static const int value = 8; };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Subtract, Expr>> { static const int value = 9; };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>> { static const int value = 10; };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>   { static const int value = 11; };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Power, Expr>>    { static const int value = 12; };
+    
     /*! \brief Abstract interface class for the visitor programming
       pattern for Expr types.
 
@@ -170,13 +189,17 @@ namespace sym {
   */
   class RTBase : public SymbolicOperator, public std::enable_shared_from_this<RTBase> {
   public:
+    inline RTBase(int idx): _type_idx(idx) {}
+    
     inline virtual ~RTBase() {}
 
     virtual Expr clone() const = 0;
 
     virtual bool operator==(const Expr o) const = 0;
 
-    virtual Expr visit(detail::VisitorInterface& c) const = 0;
+    const int _type_idx;
+
+    Expr visit(detail::VisitorInterface& c) const;
   };
   
   /*! \brief CRTP helper base class which implements some of the
@@ -185,6 +208,8 @@ namespace sym {
   template<class Derived>
   class RTBaseHelper : public RTBase {
   public:
+    RTBaseHelper(): RTBase(detail::RT_type_index<Derived>::value) {}
+    
     Expr clone() const {
       return Expr(std::make_shared<Derived>(static_cast<const Derived&>(*this)));
     }
@@ -219,8 +244,6 @@ namespace sym {
     inline char getidx() const { return idx; } 
     
     char idx;
-
-    inline Expr visit(detail::VisitorInterface& c) const;
   };
 
   /*! \brief Determine the derivative of a variable by another variable.
@@ -243,8 +266,6 @@ namespace sym {
     
     bool operator==(const Expr o) const;
     
-    Expr visit(detail::VisitorInterface& c) const;
-
     const T& get() const { return _val; }
     
   private:
@@ -307,8 +328,6 @@ namespace sym {
       return _arg;
     }
 
-    Expr visit(detail::VisitorInterface& c) const;
-    
     Expr _arg;
   };
 
@@ -334,8 +353,6 @@ namespace sym {
       return _r;
     }
 
-    Expr visit(detail::VisitorInterface& c) const;
-
     Expr _l;
     Expr _r;
   };
@@ -348,10 +365,10 @@ namespace sym {
   Expr::Expr(const C<Num, Denom>& c) : Base(std::make_shared<ConstantRT<double> >(double(Num) / Denom)) {}
   
   template<class Op, class Arg_t>
-  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Expr(std::make_shared<UnaryOp<Expr, Op> >(op._arg)) {}
+  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Base(std::make_shared<UnaryOp<Expr, Op> >(op._arg)) {}
 
   template<class LHS_t, class Op, class RHS_t>
-  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Expr(std::make_shared<BinaryOp<Expr, Op, Expr> >(op._l, op._r)) {}
+  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Base(std::make_shared<BinaryOp<Expr, Op, Expr> >(op._l, op._r)) {}
   
   template<typename ...Args>
   Expr::Expr(const Var<Args...> v) : Base(std::make_shared<VarRT>(v)) {}
@@ -368,17 +385,6 @@ namespace sym {
   inline bool Expr::operator==(const Expr& e) const {
     return (*(*this)) == e;
   }
-
-  template<class Op>
-  Expr BinaryOp<Expr, Op, Expr>::visit(detail::VisitorInterface& c) const { return c.visit(*this); }
-
-  template<class Op>
-  Expr UnaryOp<Expr, Op>::visit(detail::VisitorInterface& c) const { return c.visit(*this); }
-
-  template<class T>
-  Expr ConstantRT<T>::visit(detail::VisitorInterface& c) const { return c.visit(_val); }
-
-  inline Expr Var<Dynamic>::visit(detail::VisitorInterface& c) const { return c.visit(*this); }
 
   namespace detail {
     template<typename Visitor, typename LHS_t, typename Op>
@@ -703,5 +709,25 @@ namespace sym {
     detail::FastSubRT visitor(rel._var, rel._val);
     f->visit(visitor);
     return visitor._intermediate;
+  }
+
+  inline
+  Expr RTBase::visit(detail::VisitorInterface& c) const {
+    switch (_type_idx) {
+    case detail::RT_type_index<ConstantRT<double>>::value:                     return c.visit(static_cast<const ConstantRT<double>&>(*this).get());
+    case detail::RT_type_index<VarRT>::value:                                  return c.visit(static_cast<const VarRT&>(*this));
+    case detail::RT_type_index<UnaryOp<Expr, detail::Sine>>::value:            return c.visit(static_cast<const UnaryOp<Expr, detail::Sine>&>(*this));
+    case detail::RT_type_index<UnaryOp<Expr, detail::Cosine>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Cosine>&>(*this));
+    case detail::RT_type_index<UnaryOp<Expr, detail::Log>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Log>&>(*this));
+    case detail::RT_type_index<UnaryOp<Expr, detail::Exp>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Exp>&>(*this));
+    case detail::RT_type_index<UnaryOp<Expr, detail::Absolute>>::value:        return c.visit(static_cast<const UnaryOp<Expr, detail::Absolute>&>(*this));
+    case detail::RT_type_index<UnaryOp<Expr, detail::Arbsign>>::value:         return c.visit(static_cast<const UnaryOp<Expr, detail::Arbsign>&>(*this));
+    case detail::RT_type_index<BinaryOp<Expr, detail::Add, Expr>>::value:      return c.visit(static_cast<const BinaryOp<Expr, detail::Add, Expr>&>(*this));
+    case detail::RT_type_index<BinaryOp<Expr, detail::Subtract, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Subtract, Expr>&>(*this));
+    case detail::RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Multiply, Expr>&>(*this));
+    case detail::RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>::value:   return c.visit(static_cast<const BinaryOp<Expr, detail::Divide, Expr>&>(*this));
+    case detail::RT_type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
+    default: stator_throw() << "Unhandled type index for the visitor";
+    }
   }
 }

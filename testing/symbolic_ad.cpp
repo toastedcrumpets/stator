@@ -190,12 +190,12 @@ UNIT_TEST( automatic_differentiation_compiletime )
   runtests<Bypass>();
 }
 
-//struct ConvertToExpr {
-//  template<typename T>
-//  sym::Expr operator()(const T& v) { return sym::Expr(v); }
-//};
-//
-//UNIT_TEST( automatic_differentiation_runtime )
-//{  
-//  runtests<ConvertToExpr>();
-//}
+struct ConvertToExpr {
+  template<typename T>
+  sym::Expr operator()(const T& v) { return sym::Expr(v); }
+};
+
+UNIT_TEST( automatic_differentiation_runtime )
+{  
+  runtests<ConvertToExpr>();
+}

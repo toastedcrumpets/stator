@@ -177,22 +177,27 @@ namespace sym {
     return cos;
   }
 
-//  namespace detail {
-//    template<size_t Nd, typename Relation>
-//    struct ADRT : VisitorHelper<ADRT<Nd,Relation>, Eigen::Matrix<double, Nd+1, 1> > {
-//      ADRT(const Relation& rel): _rel(rel) {}
-//      
-//      template<class T>
-//      Eigen::Matrix<double, Nd+1, 1> apply(const T& v) {
-//	return ad<Nd>(v, _rel);
-//      }
-//      
-//      const Relation& _rel;
-//    };
-//  }
-//  
 //  template<size_t Nd, class Var_t, class Arg_t>
 //  Eigen::Matrix<double, Nd+1,1> ad(const Expr& f, const Relation<Var_t, Arg_t>& v) {
+//    Expr RTBase::visit(detail::VisitorInterface& c) const {
+//    switch (_type_idx) {
+//    case detail::RT_type_index<ConstantRT<double>>::value:                     return c.visit(static_cast<const ConstantRT<double>&>(*this).get());
+//    case detail::RT_type_index<VarRT>::value:                                  return c.visit(static_cast<const VarRT&>(*this));
+//    case detail::RT_type_index<UnaryOp<Expr, detail::Sine>>::value:            return c.visit(static_cast<const UnaryOp<Expr, detail::Sine>&>(*this));
+//    case detail::RT_type_index<UnaryOp<Expr, detail::Cosine>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Cosine>&>(*this));
+//    case detail::RT_type_index<UnaryOp<Expr, detail::Log>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Log>&>(*this));
+//    case detail::RT_type_index<UnaryOp<Expr, detail::Exp>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Exp>&>(*this));
+//    case detail::RT_type_index<UnaryOp<Expr, detail::Absolute>>::value:        return c.visit(static_cast<const UnaryOp<Expr, detail::Absolute>&>(*this));
+//    case detail::RT_type_index<UnaryOp<Expr, detail::Arbsign>>::value:         return c.visit(static_cast<const UnaryOp<Expr, detail::Arbsign>&>(*this));
+//    case detail::RT_type_index<BinaryOp<Expr, detail::Add, Expr>>::value:      return c.visit(static_cast<const BinaryOp<Expr, detail::Add, Expr>&>(*this));
+//    case detail::RT_type_index<BinaryOp<Expr, detail::Subtract, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Subtract, Expr>&>(*this));
+//    case detail::RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Multiply, Expr>&>(*this));
+//    case detail::RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>::value:   return c.visit(static_cast<const BinaryOp<Expr, detail::Divide, Expr>&>(*this));
+//    case detail::RT_type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
+//    default: stator_throw() << "Unhandled type index for the visitor";
+//    }
+//  }
+
 //    detail::ADRT<Nd, Relation<Var_t, Arg_t> > visitor(v);
 //    return f->visit(visitor);
 //  }

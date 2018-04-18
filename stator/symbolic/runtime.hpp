@@ -126,20 +126,21 @@ namespace sym {
       This class describes the visitor pattern interface used for all
       transformations (and evaluations) of runtime Expr (AST).
     */
+    template<class RetType>
     struct VisitorInterface {
-      virtual Expr visit(const double&) = 0;
-      virtual Expr visit(const VarRT&) = 0;
-      virtual Expr visit(const UnaryOp<Expr, detail::Sine>& ) = 0;
-      virtual Expr visit(const UnaryOp<Expr, detail::Cosine>& ) = 0;
-      virtual Expr visit(const UnaryOp<Expr, detail::Log>& ) = 0;
-      virtual Expr visit(const UnaryOp<Expr, detail::Exp>& ) = 0;
-      virtual Expr visit(const UnaryOp<Expr, detail::Absolute>& ) = 0;
-      virtual Expr visit(const UnaryOp<Expr, detail::Arbsign>& ) = 0;
-      virtual Expr visit(const BinaryOp<Expr, detail::Add, Expr>& ) = 0;
-      virtual Expr visit(const BinaryOp<Expr, detail::Subtract, Expr>& ) = 0;
-      virtual Expr visit(const BinaryOp<Expr, detail::Multiply, Expr>& ) = 0;
-      virtual Expr visit(const BinaryOp<Expr, detail::Divide, Expr>& ) = 0;
-      virtual Expr visit(const BinaryOp<Expr, detail::Power, Expr>& ) = 0;
+      virtual RetType visit(const double&) = 0;
+      virtual RetType visit(const VarRT&) = 0;
+      virtual RetType visit(const UnaryOp<Expr, detail::Sine>& ) = 0;
+      virtual RetType visit(const UnaryOp<Expr, detail::Cosine>& ) = 0;
+      virtual RetType visit(const UnaryOp<Expr, detail::Log>& ) = 0;
+      virtual RetType visit(const UnaryOp<Expr, detail::Exp>& ) = 0;
+      virtual RetType visit(const UnaryOp<Expr, detail::Absolute>& ) = 0;
+      virtual RetType visit(const UnaryOp<Expr, detail::Arbsign>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::Add, Expr>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::Subtract, Expr>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::Multiply, Expr>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::Divide, Expr>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::Power, Expr>& ) = 0;
     };
 
 
@@ -150,32 +151,32 @@ namespace sym {
 	templated apply function can be used (i.e., all
 	UnaryOp/BinaryOp can be treated with one imlementation each).
      */
-    template<typename Derived>
-    struct VisitorHelper: public VisitorInterface {
-      inline virtual Expr visit(const double& x) { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
+    template<class Derived, class RetType = Expr>
+    struct VisitorHelper: public VisitorInterface<RetType> {
+      inline virtual RetType visit(const double& x) { return static_cast<Derived*>(this)->apply(x); }
+      inline virtual RetType visit(const VarRT& x) { return static_cast<Derived*>(this)->apply(x); }
 
-      inline virtual Expr visit(const UnaryOp<Expr, detail::Sine>& x)
+      inline virtual RetType visit(const UnaryOp<Expr, detail::Sine>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const UnaryOp<Expr, detail::Cosine>& x)
+      inline virtual RetType visit(const UnaryOp<Expr, detail::Cosine>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const UnaryOp<Expr, detail::Log>& x)
+      inline virtual RetType visit(const UnaryOp<Expr, detail::Log>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const UnaryOp<Expr, detail::Exp>& x)
+      inline virtual RetType visit(const UnaryOp<Expr, detail::Exp>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const UnaryOp<Expr, detail::Absolute>& x)
+      inline virtual RetType visit(const UnaryOp<Expr, detail::Absolute>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const UnaryOp<Expr, detail::Arbsign>& x)
+      inline virtual RetType visit(const UnaryOp<Expr, detail::Arbsign>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const BinaryOp<Expr, detail::Add, Expr>& x)
+      inline virtual RetType visit(const BinaryOp<Expr, detail::Add, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const BinaryOp<Expr, detail::Subtract, Expr>& x)
+      inline virtual RetType visit(const BinaryOp<Expr, detail::Subtract, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const BinaryOp<Expr, detail::Multiply, Expr>& x)
+      inline virtual RetType visit(const BinaryOp<Expr, detail::Multiply, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const BinaryOp<Expr, detail::Divide, Expr>& x)
+      inline virtual RetType visit(const BinaryOp<Expr, detail::Divide, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual Expr visit(const BinaryOp<Expr, detail::Power, Expr>& x)
+      inline virtual RetType visit(const BinaryOp<Expr, detail::Power, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
     };
   }
@@ -199,7 +200,8 @@ namespace sym {
 
     const int _type_idx;
 
-    Expr visit(detail::VisitorInterface& c) const;
+    template<class RetType>
+    RetType visit(detail::VisitorInterface<RetType>& c) const;
   };
   
   /*! \brief CRTP helper base class which implements some of the
@@ -711,8 +713,8 @@ namespace sym {
     return visitor._intermediate;
   }
 
-  inline
-  Expr RTBase::visit(detail::VisitorInterface& c) const {
+  template<class RetType>
+  RetType RTBase::visit(detail::VisitorInterface<RetType>& c) const {
     switch (_type_idx) {
     case detail::RT_type_index<ConstantRT<double>>::value:                     return c.visit(static_cast<const ConstantRT<double>&>(*this).get());
     case detail::RT_type_index<VarRT>::value:                                  return c.visit(static_cast<const VarRT&>(*this));

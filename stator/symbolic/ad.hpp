@@ -87,40 +87,6 @@ namespace sym {
     return result;
   }
 
-  namespace detail {
-    template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t,
-	     typename = typename std::enable_if<detail::IsConstant<RHS_t>::value>::type>
-    Eigen::Matrix<double, Nd+1,1> ad_pow_worker(const BinaryOp<LHS_t, detail::Power, RHS_t>& op, const Relation<Var_t, Arg_t>& sub) {
-      Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._l, sub);
-      double a = op._r;
-      Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
-      
-      result[0] = std::pow(g[0], a);
-      
-      for (size_t k(1); k < Nd+1; ++k) {
-	for (size_t i(1); i <= k; ++i)
-	  result[k] += ((a + 1) * i / k - 1) * g[i] * result[k - i];
-	result[k] /= g[0];
-      }
-      return result;
-    }
-  }
-  
-  template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t,
-	   typename = typename std::enable_if<detail::IsConstant<RHS_t>::value>::type>
-  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Power, RHS_t>& op, const Relation<Var_t, Arg_t>& sub)
-  {
-    return detail::ad_pow_worker<Nd>(op, sub);
-  }
-
-  template<size_t Nd, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<Expr, detail::Power, Expr>& op, const Relation<Var_t, Arg_t>& sub) {
-    if (op._r->_type_idx != detail::RT_type_index<ConstantRT<double>>::value)
-      stator_throw() << "Can only automatically differentiate constant powers";
-    
-    return detail::ad_pow_worker<Nd>(BinaryOp<Expr, detail::Power, double>(op._l, static_cast<const ConstantRT<double>&>(*op._r).get()), sub);
-  }
-
   template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
   Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Exp>& op, const Relation<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
@@ -195,6 +161,76 @@ namespace sym {
   }
 
   namespace detail {
+    template<size_t Nd, typename LHS_t, typename Var_t, typename Arg_t>
+    Eigen::Matrix<double, Nd+1,1> ad_pow(const LHS_t& lhs, const double& a, const Relation<Var_t, Arg_t>& sub) {
+      Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(lhs, sub);
+      Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
+    
+      result[0] = std::pow(g[0], a);
+    
+      for (size_t k(1); k < Nd+1; ++k) {
+	for (size_t i(1); i <= k; ++i)
+	  result[k] += ((a + 1) * i / k - 1) * g[i] * result[k - i];
+	result[k] /= g[0];
+      }
+    
+      return result;
+    }
+
+    template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
+    Eigen::Matrix<double, Nd+1,1> ad_pow(const LHS_t& lhs, const RHS_t& rhs, const Relation<Var_t, Arg_t>& sub) {
+      Eigen::Matrix<double, Nd+1,1> f = ad<Nd>(lhs, sub);
+      Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(rhs, sub);
+      Eigen::Matrix<double, Nd+1,1> lnf = ad<Nd>(sym::log(lhs), sub);
+      Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
+    
+      result[0] = std::pow(f[0], g[0]);
+
+      for (size_t m(1); m < Nd+1; ++m) {
+	for (size_t j(1); j <= m; ++j)
+	  for (size_t i(0); i <= (m - j); ++i) {
+	    double flnf = 0;
+	    for (size_t k(0); k <= (m - i - j); ++k)
+	      flnf += f[k] * lnf[m - i - j - k];
+
+	    result[m] += j * result[i] * (f[j] * g[m - i - j] + g[j] * flnf);
+	  }
+
+	for (size_t j(1); j <= (m-1); ++j)
+	  result[m] -= j * f[m - j] * result[j];
+      
+	result[m] /= m * f[0];
+      }
+    
+      return result;
+    }
+  }
+  
+  template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t,
+	   typename = typename std::enable_if<detail::IsConstant<RHS_t>::value>::type>
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Power, RHS_t>& op,
+				   const Relation<Var_t, Arg_t>& sub) {
+      return detail::ad_pow<Nd>(op._l, double(op._r), sub);
+  }
+
+  template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t,
+  	   typename = typename std::enable_if<!detail::IsConstant<RHS_t>::value>::type>
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Power, RHS_t>& op,
+  				   const Relation<Var_t, Arg_t>& sub,
+				   //The next argument deprioritizes this function over the above one
+				   int = 0) {
+      return detail::ad_pow<Nd>(op._l, op._r, sub);
+  }
+  
+  template<size_t Nd, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<Expr, detail::Power, Expr>& op, const Relation<Var_t, Arg_t>& sub) {
+    if (op._r->_type_idx == detail::RT_type_index<ConstantRT<double>>::value)
+      return detail::ad_pow<Nd>(op._l, static_cast<const ConstantRT<double>&>(*op._r).get(), sub);
+    else
+      return detail::ad_pow<Nd>(op._l, op._r, sub);
+  }
+  
+  namespace detail {
     template<size_t Nd, typename Relation>
     struct ADRT_visitor : VisitorHelper<ADRT_visitor<Nd, Relation>, Eigen::Matrix<double, Nd+1,1>> {
       ADRT_visitor(const Relation& rel): _rel(rel) {}
@@ -203,12 +239,11 @@ namespace sym {
       
       template<class T>
       Eigen::Matrix<double, Nd+1,1> apply(const T& v) {
-	return ad<Nd>(v, _rel);
+  	return ad<Nd>(v, _rel);
       }
     };
   }
     
-  
   template<size_t Nd, class Var_t, class Arg_t>
   Eigen::Matrix<double, Nd+1,1> ad(const Expr& f, const Relation<Var_t, Arg_t>& r) {
     detail::ADRT_visitor<Nd, Relation<Var_t, Arg_t> > visitor(r);

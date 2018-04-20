@@ -178,6 +178,14 @@ void runtests()
     UNIT_TEST_CHECK_CLOSE(v[1], +2 * 3 * std::cos(3*3) * sym::InvFactorial<1>::value(), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[2], 2 * (std::cos(3 * 3)- 2 * 3 * 3 * std::sin(3 * 3)) * sym::InvFactorial<2>::value(), 1e-14);
   }
+
+  //Generalized power law
+  {
+    auto v = sym::ad<2>(F(sym::pow(x,x)), x=3);
+    UNIT_TEST_CHECK_CLOSE(v[0], std::pow(3,3), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[1], std::pow(3,3) * (std::log(3) + 1) * sym::InvFactorial<1>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], std::pow(3,3) * (1.0 / 3 +std::pow(std::log(3) + 1, 2)) * sym::InvFactorial<2>::value(), 1e-14);
+  }
 }
 
 struct Bypass {
@@ -198,14 +206,4 @@ struct ConvertToExpr {
 UNIT_TEST( automatic_differentiation_runtime )
 {  
   runtests<ConvertToExpr>();
-}
-
-UNIT_TEST( automatic_differentiation_fails )
-{
-  sym::Var<sym::vidx<'x'>> x;
-  //Check that non-constant powers raise an exception
-  try {
-    auto v = sym::ad<2>(sym::Expr(sym::pow(x, x)), x=3);
-  } catch (const std::exception&){}
-  
 }

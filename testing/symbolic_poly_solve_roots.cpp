@@ -152,7 +152,7 @@ UNIT_TEST(poly_quadratic_roots_simple)
   {//quadratic but linear function with one root
     auto poly =  expand(0 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 1);
     if (roots.size() == 1)
       UNIT_TEST_CHECK_CLOSE(roots[0], 0.75, 1e-10);
   }
@@ -160,7 +160,15 @@ UNIT_TEST(poly_quadratic_roots_simple)
   {//constant function, with no roots
     auto poly =  expand(0 * x * x + 0 * x - 9);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 0);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 0);
+  }
+
+  {//Test a zero constant quadratic
+    auto poly =  expand(3 * x * x + 2 * x - 0);
+    auto roots = solve_real_roots(poly);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 2);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -2.0/3.0, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], 0, 1e-10);
   }
 }
 

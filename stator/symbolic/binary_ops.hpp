@@ -115,7 +115,12 @@ namespace sym {
       typedef Null right_identity;
       typedef NoIdentity left_zero;
       typedef NoIdentity right_zero;
+      static inline std::string l_repr() { return ""; }
       static inline std::string repr() { return "+"; }
+      static inline std::string r_repr() { return ""; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "+"; }
+      static inline std::string r_latex_repr() { return ""; }
       //Apply has to accept by const ref, as returned objs may reference/alias the arguments, so everything needs at least the parent scope
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l + r);
     };
@@ -129,7 +134,12 @@ namespace sym {
       typedef Null right_identity;
       typedef NoIdentity left_zero;
       typedef NoIdentity right_zero;
+      static inline std::string l_repr() { return ""; }
       static inline std::string repr() { return "-"; }
+      static inline std::string r_repr() { return ""; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "-"; }
+      static inline std::string r_latex_repr() { return ""; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l - r);
     };
 
@@ -142,7 +152,12 @@ namespace sym {
       typedef Unity right_identity;
       typedef Null left_zero;
       typedef Null right_zero;
+      static inline std::string l_repr() { return ""; }
       static inline std::string repr() { return "*"; }
+      static inline std::string r_repr() { return ""; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "\\times "; }
+      static inline std::string r_latex_repr() { return ""; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l * r);
     };
 
@@ -155,7 +170,12 @@ namespace sym {
       typedef Unity right_identity;
       typedef Null left_zero;
       typedef NoIdentity right_zero;
+      static inline std::string l_repr() { return ""; }
       static inline std::string repr() { return "/"; }
+      static inline std::string r_repr() { return ""; }
+      static inline std::string l_latex_repr() { return "\\frac{"; }
+      static inline std::string latex_repr() { return "}{"; }
+      static inline std::string r_latex_repr() { return "}"; }
       template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l / r);
     };
 
@@ -164,7 +184,12 @@ namespace sym {
       static constexpr auto associativity = Associativity::RIGHT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
+      static inline std::string l_repr() { return ""; }
       static inline std::string repr() { return "^"; }
+      static inline std::string r_repr() { return ""; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "^{"; }
+      static inline std::string r_latex_repr() { return "}"; }
       typedef NoIdentity left_identity;
       typedef Unity right_identity;
       typedef NoIdentity right_zero;

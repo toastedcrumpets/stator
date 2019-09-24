@@ -92,7 +92,7 @@ namespace stator {
   inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Arbsign>& f)
   {
     return
-      std::string((Config::Latex_output) ? "\\pm\\left|" : "|")
+      std::string((Config::Latex_output) ? "\\pm\\left|" : "±|")
       + repr<Config>(f._arg)
       + std::string((Config::Latex_output) ? "\\right|" : "|")
       ;
@@ -203,6 +203,11 @@ namespace stator {
     }
   }
 
+  template<class Config = DefaultReprConfig>
+  inline std::string repr(const sym::detail::Multiply& op) {
+    return (Config::Latex_output) ? "*" : "\\times ";
+  }
+  
   template<class Config = DefaultReprConfig, class LHS, class RHS, class Op>
   inline std::string repr(const sym::BinaryOp<LHS, Op, RHS>& op) {
     const auto this_BP = detail::BP(op);
@@ -210,71 +215,12 @@ namespace stator {
     const auto RHS_BP = detail::BP(op._r);
 
     std::string LHS_repr = repr<Config>(op._l);
-    if (LHS_BP.second < this_BP.first) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
+    if (LHS_BP.second < this_BP.first || Config::Force_parenthesis) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
 
     std::string RHS_repr = repr<Config>(op._r);
-    if (this_BP.second > RHS_BP.first) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
+    if (this_BP.second > RHS_BP.first || Config::Force_parenthesis) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
 
-    return LHS_repr + Op::repr() + RHS_repr;
-  }
-
-  template<class Config = DefaultReprConfig, class LHS, class RHS>
-  inline std::string repr(const sym::BinaryOp<LHS, sym::detail::Power, RHS>& op) {
-    const auto this_BP = detail::BP(op);
-    const auto LHS_BP = detail::BP(op._l);
-    const auto RHS_BP = detail::BP(op._r);
-
-    std::string LHS_repr = repr<Config>(op._l);
-    if (LHS_BP.second < this_BP.first) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
-    
-    std::string RHS_repr = repr<Config>(op._r);
-    if (!Config::Latex_output) {
-      if (this_BP.second > RHS_BP.first) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
-    } else {
-      RHS_repr = "{" + RHS_repr + "}";
-    }
-
-    return LHS_repr + sym::detail::Power::repr() + RHS_repr;
-  }
-  
-  template<class Config = DefaultReprConfig, class LHS, class RHS>
-  inline std::string repr(const sym::BinaryOp<LHS, sym::detail::Divide, RHS>& op) {
-    const auto this_BP = detail::BP(op);
-    const auto LHS_BP = detail::BP(op._l);
-    const auto RHS_BP = detail::BP(op._r);
-
-    std::string LHS_repr = repr<Config>(op._l);
-    std::string RHS_repr = repr<Config>(op._r);
-
-    if (!Config::Latex_output) {
-      if (LHS_BP.second < this_BP.first) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
-      if (this_BP.second > RHS_BP.first) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
-      return LHS_repr + sym::detail::Divide::repr() + RHS_repr;
-    } else {
-      return "\\frac{" + LHS_repr + "}{" + RHS_repr + "}";
-    }
-  }
-
-  template<class Config = DefaultReprConfig, class LHS, class RHS>
-  inline std::string repr(const sym::BinaryOp<LHS, sym::detail::Multiply, RHS>& op) {
-    const auto this_BP = detail::BP(op);
-    const auto LHS_BP = detail::BP(op._l);
-    const auto RHS_BP = detail::BP(op._r);
-
-    std::string LHS_repr = repr<Config>(op._l);
-    std::string RHS_repr = repr<Config>(op._r);
-
-    if (LHS_BP.second < this_BP.first) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
-    if (this_BP.second > RHS_BP.first) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
-    
-    if (!Config::Latex_output) {
-      return LHS_repr + sym::detail::Multiply::repr() + RHS_repr;
-    } else {
-      if (sym::is_constant(op._l) && sym::is_constant(op._r))
-	return LHS_repr + "\\times " + RHS_repr;
-      else
-	return LHS_repr + "\\," + RHS_repr;
-    }
+    return (Config::Latex_output ? Op::l_latex_repr() : Op::l_repr()) +  LHS_repr + (Config::Latex_output ? Op::latex_repr() : Op::repr()) + RHS_repr + (Config::Latex_output ? Op::r_latex_repr() : Op::r_repr());
   }
 
   namespace detail {

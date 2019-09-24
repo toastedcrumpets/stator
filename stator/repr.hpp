@@ -28,17 +28,20 @@ namespace stator {
   namespace detail {
     struct Latex_output_ID;
     struct Debug_output_ID;
+    struct Force_parens_ID;
     struct Rounding_digits_ID {};
   };
 
   struct Latex_output : stator::orphan::basic_conf_t<detail::Latex_output_ID> {};
   struct Debug_output : stator::orphan::basic_conf_t<detail::Debug_output_ID> {};
+  struct Force_parenthesis : stator::orphan::basic_conf_t<detail::Force_parens_ID> {};
 
   template<int digits>
   struct Rounding_digits : stator::orphan::value_conf_t<detail::Rounding_digits_ID, int, digits> {};
   
   template <typename ...Args>
   struct ReprConfig {
+    static constexpr const auto Force_parenthesis = stator::orphan::is_present<stator::Force_parenthesis, Args...>::value;
     static constexpr const auto Latex_output = stator::orphan::is_present<stator::Latex_output, Args...>::value;
     static constexpr const auto Rounding_digits = stator::orphan::get_value<stator::Rounding_digits<0>, Args...>::value;
     static constexpr const auto Debug_output = stator::orphan::is_present<stator::Debug_output, Args...>::value;

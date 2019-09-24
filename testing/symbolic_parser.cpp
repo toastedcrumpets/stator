@@ -177,20 +177,21 @@ void expr_string_expr_conversion_check(const T in_expr) {
   std::string initial_string = os.str();
   os.str("");
   os.clear();
-
-  Expr f("2*x+sin(x^x)");
   
   Expr e(initial_string);
   os << e;
   std::string final_string = os.str();
-
   UNIT_TEST_CHECK_EQUAL(initial_string, final_string);
 }
 
 UNIT_TEST( symbolic_parser_Expr_string_loop ) {
   //Check for consistency between saving and loading of expressions
   Var<vidx<'x'>> x;
+  Var<vidx<'T'>> T;
 
+  expr_string_expr_conversion_check(simplify(80*T*(1-log(T))+-318862-T*-410.30773724552921));
+  expr_string_expr_conversion_check(x * (-123.2));
+  expr_string_expr_conversion_check(1 - x * (-123.2));
   expr_string_expr_conversion_check(x + sin(x));
   expr_string_expr_conversion_check(x*x*x+x+x*sin(x));
   expr_string_expr_conversion_check(2*x/2*x);
@@ -201,16 +202,19 @@ UNIT_TEST( Parsing_Errors )
 {
   try {
     Expr("");
+    UNIT_TEST_ERROR("Blank expression was parsed without error");
   } catch (const stator::Exception& e) {
   }
 
   try {
     Expr("T-2)");
+    UNIT_TEST_ERROR("Unmatched right parenthesis was parsed without error");
   } catch (const stator::Exception& e) {
   }
 
   try {
     Expr("((T-2)*2");
+    UNIT_TEST_ERROR("Unmatched left parenthesis was parsed without error");
   } catch (const stator::Exception& e) {
   }
 }

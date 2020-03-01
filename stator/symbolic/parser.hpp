@@ -434,6 +434,7 @@ namespace sym {
     };
   }
 
+  inline
   Expr::Expr(const std::string& str)
   {
     auto tokenizer = detail::ExprTokenizer(str);
@@ -444,5 +445,6 @@ namespace sym {
       stator_throw() << "Parsing terminated unexpectedly early?\n" << tokenizer.parserLoc();
   }
 
+  inline
   Expr::Expr(const char* str) : Expr(std::string(str)) {}
 }

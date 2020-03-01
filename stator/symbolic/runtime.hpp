@@ -68,8 +68,9 @@ namespace sym {
   struct Expr : public shared_ptr<const RTBase>, public SymbolicOperator {
     typedef shared_ptr<const RTBase> Base;
 
-    Expr() {}
-    Expr(const std::shared_ptr<const RTBase>& p) : Base(p) {}
+    inline Expr() {}
+    inline Expr(const std::shared_ptr<const RTBase>& p) : Base(p) {}
+
     Expr(const char*);
     Expr(const std::string&);
 
@@ -90,6 +91,7 @@ namespace sym {
     template<class LHS_t, class Op, class RHS_t>
     Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
 
+    inline
     Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
 
     bool operator==(const Expr&) const;
@@ -656,7 +658,7 @@ namespace sym {
     };    
   }
   
-  bool is_constant(const Expr& a) {
+  inline bool is_constant(const Expr& a) {
     detail::IsConstantVisitor visitor;
     a->visit(visitor);
     return visitor._value;

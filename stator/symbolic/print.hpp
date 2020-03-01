@@ -191,7 +191,7 @@ namespace stator {
     /*! \brief Returns the binding powers (precedence) of binary
         operators (specialisation for Expr).
      */
-    std::pair<int, int> BP (const sym::Expr& v) {
+    inline std::pair<int, int> BP (const sym::Expr& v) {
       BPVisitor vis;
       v->visit(vis);
       return std::make_pair(vis.LBP, vis.RBP);

@@ -39,22 +39,22 @@ spec:
 		}
 	    }
 	}
-	parallel {
-	    stage('C++/CMake build and test') {
-		stage('CMake configure') {
-		    steps{
-			container('dind') {
-			    script {
-				dockerBuildImage.inside {
-				    dir('build') {
-					sh "cmake .."
-				    }
-				}
+	stage{'Configure'} {
+	    steps{
+		container('dind') {
+		    script {
+			dockerBuildImage.inside {
+			    dir('build') {
+				sh "cmake .."
 			    }
 			}
 		    }
 		}
-		stage('Make the C++ library') {
+	    }
+	}
+	stage('Build ') {
+	    parallel {
+		stage('CMake build') {
 		    steps{
 			container('dind') {
 			    script {
@@ -67,7 +67,22 @@ spec:
 			}
 		    }
 		}
-		stage('Test the C++ library') {
+		stage('Python build') {
+		    steps{
+			container('dind') {
+			    script {
+				dockerBuildImage.inside {
+				    sh "python3 setup.py build"
+				}
+			    }
+			}
+		    }
+		}
+	    }
+	}
+	stage('Test') {
+	    parallel {
+		stage('C++ tests') {
 		    steps{
 			container('dind') {
 			    script {
@@ -104,20 +119,7 @@ spec:
 			}
 		    }
 		}
-	    }
-	    stage('Python build and test') {
-		stage('setuptools build') {
-		    steps{
-			container('dind') {
-			    script {
-				dockerBuildImage.inside {
-				    sh "python3 setup.py build"
-				}
-			    }
-			}
-		    }
-		}
-		stage('Unit Tests') {
+		stage('Python tests') {
 		    steps {
 			container('dind') {
 			    script {

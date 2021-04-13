@@ -11,7 +11,7 @@ spec:
   containers:
   - name: dind
     image: docker:dind
-    args: ["--registry-mirror=https://registry.bansci.com"]
+    args: ["--registry-mirror","https://registry.bansci.com"]
     tty: true
     securityContext:
       privileged: true
@@ -39,66 +39,99 @@ spec:
 		}
 	    }
 	}
-	stage('CMake configure') {
-	    steps{
-		container('dind') {
-		    script {
-			dockerBuildImage.inside {
-			    dir('build') {
-				sh "cmake .."
+	parallel {
+	    stage('C++/CMake build and test') {
+		stage('CMake configure') {
+		    steps{
+			container('dind') {
+			    script {
+				dockerBuildImage.inside {
+				    dir('build') {
+					sh "cmake .."
+				    }
+				}
 			    }
 			}
 		    }
 		}
-	    }
-	}
-	stage('Make the C++ library') {
-	    steps{
-		container('dind') {
-		    script {
-			dockerBuildImage.inside {
-			    dir('build') {
-				sh "make -j2"
+		stage('Make the C++ library') {
+		    steps{
+			container('dind') {
+			    script {
+				dockerBuildImage.inside {
+				    dir('build') {
+					sh "make -j2"
+				    }
+				}
 			    }
 			}
 		    }
 		}
-	    }
-	}
-	stage('Test the C++ library') {
-	    steps{
-		container('dind') {
-		    script {
-			dockerBuildImage.inside {
-			    dir('build') {
-				sh 'ctest -j2 --no-compress-output -T Test'
+		stage('Test the C++ library') {
+		    steps{
+			container('dind') {
+			    script {
+				dockerBuildImage.inside {
+				    dir('build') {
+					sh 'ctest -j2 --no-compress-output -T Test'
+				    }
+				}
 			    }
+			}
+		    }
+		    post {
+			always {
+			    archiveArtifacts (
+				artifacts: 'build/Testing/**/*.xml',
+				fingerprint: true,
+			    )
+			    // Process the CTest xml output with the xUnit plugin
+			    xunit (
+				testTimeMargin: '3000',
+				thresholdMode: 1,
+				thresholds: [
+				    skipped(failureThreshold: '0'),
+				    failed(failureThreshold: '0')
+				],
+				tools: [CTest(
+				    pattern: 'build/Testing/**/*.xml',
+				    deleteOutputFiles: true,
+				    failIfNotNew: false,
+				    skipNoTestFiles: true,
+				    stopProcessingIfError: true
+				)]
+			    )
 			}
 		    }
 		}
 	    }
-	    post {
-		always {
-		    archiveArtifacts (
-			artifacts: 'build/Testing/**/*.xml',
-			fingerprint: true,
-		    )
-		    // Process the CTest xml output with the xUnit plugin
-		    xunit (
-			testTimeMargin: '3000',
-			thresholdMode: 1,
-			thresholds: [
-			    skipped(failureThreshold: '0'),
-			    failed(failureThreshold: '0')
-			],
-			tools: [CTest(
-			    pattern: 'build/Testing/**/*.xml',
-			    deleteOutputFiles: true,
-			    failIfNotNew: false,
-			    skipNoTestFiles: true,
-			    stopProcessingIfError: true
-			)]
-		    )
+	    stage('Python build and test') {
+		stage('setuptools build') {
+		    steps{
+			container('dind') {
+			    script {
+				dockerBuildImage.inside {
+				    sh "python3 setup.py build"
+				}
+			    }
+			}
+		    }
+		}
+		stage('Unit Tests') {
+		    steps {
+			container('dind') {
+			    script {
+				dockerBuildImage.inside {
+				    sh 'PYTHONUNBUFFERED=1 py.test --junitxml test_results.xml'
+				}
+			    }
+			}
+		    }
+		    post {
+			always {
+			    junit 'test_results.xml'
+			}
+		    }
 		}
 	    }
 	}

@@ -1,17 +1,13 @@
-cmake_minimum_required (VERSION 2.6 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.0)
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "No build type selected, default to Release")
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo" FORCE)
 endif()
 
-project(stator) #Project name
+project(stator VERSION 1.0) #Project name
 
 enable_testing() #Enable build of test executables and 'make test' command
 include(CTest)
-
-
-IF(WIN32)
-ENDIF(WIN32)
 
 ##########   RELEASE MODE
 if(MSVC)
@@ -32,7 +28,7 @@ if(MSVC)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
   SET(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /bigobj")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /bigobj")
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /bigobj")
+  SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /bigobj")
 else()
   add_compile_options(-Wall)
 endif()
@@ -133,12 +129,11 @@ endif(DOXYGEN_FOUND)
 ######### TEST TARGETS
 ######################################################################
 function(stator_test name) #Registers a unit-test
-  add_executable(${name} ${CMAKE_CURRENT_SOURCE_DIR}/testing/${name}.cpp)
+  add_executable(${name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${name}.cpp)
   add_test(${name} ${name})
 endfunction(stator_test)
 
 add_executable(symbolic_example ${CMAKE_CURRENT_SOURCE_DIR}/examples/symbolic_example.cpp)
-
 
 #stator_test(orphan_static_list)
 stator_test(stack_vector)
@@ -155,3 +150,10 @@ if(CXX11_TEMPLATE_TYPEDEFS)
   stator_test(symbolic_ad)
   #stator_test(symbolic_integration)
 endif()
+
+######################################################################
+########## PYTHON INTERFACE
+######################################################################
+add_subdirectory(extern/pybind11)
+pybind11_add_module(core pysrc/stator/core.cpp)
+target_include_directories(core PRIVATE ${PROJECT_SOURCE_DIR})

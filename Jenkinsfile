@@ -124,6 +124,7 @@ spec:
 			container('dind') {
 			    script {
 				dockerBuildImage.inside {
+				    sh "python3 setup.py install"
 				    sh 'PYTHONUNBUFFERED=1 py.test --junitxml test_results.xml'
 				}
 			    }

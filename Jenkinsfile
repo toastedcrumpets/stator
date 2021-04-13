@@ -39,7 +39,7 @@ spec:
 		}
 	    }
 	}
-	stage{'Configure'} {
+	stage('Configure') {
 	    steps{
 		container('dind') {
 		    script {

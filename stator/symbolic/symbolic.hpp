@@ -157,43 +157,7 @@ namespace sym {
 
   template<class T>
   T empty_sum(const std::complex<T>&) { return T(); }
-  
-  /*! \brief Default implementation of substitution of a symbolic
-    expression at a given point.
     
-    This implementation only applies if the term is a constant term.
-
-    We deliberately return by const reference as, if this is an
-    Eigen expression, the Eigen library may take an internal
-    reference to this object to allow delayed evaluation. By
-    returning the original object we can try to ensure its lifetime
-    is at least longer than the current expression.
-  */
-  template<class T, class Var, class Arg,
-	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-  auto sub(const T& f, const Relation<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
-  
-  /*! \brief Evaluates a symbolic Var at a given point.
-    
-    This is only used if the Var is correct 
-    substitution.
-  */
-  template<typename ...Args1, typename ...Args2, class Arg,
-	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
-  auto sub(const Var<Args1...>& f, const Relation<Var<Args2...>, Arg>& x)
-   -> STATOR_AUTORETURN_BYVALUE(x._val);
-
-  /*! \brief Evaluates a symbolic Var at a given point.
-    
-    This is only used if the Var is not the correct letter for the
-    substitution.
-  */
-  template<class ...Args1, class Arg, class Var2,
-	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
-  Var<Args1...> sub(const Var<Args1...>& f, const Relation<Var2, Arg>& x)
-  { return f; }
-  
-  
   /*! \brief Determine the derivative of a symbolic expression.
     
     This default implementation gives all consants
@@ -249,6 +213,43 @@ namespace sym {
   }
 
   template<size_t Order, class Real = double, class PolyVar = Var<>> class Polynomial;
+
+
+  /*! \brief Default implementation of substitution of a symbolic
+    expression at a given point.
+    
+    This implementation only applies if the term is a constant term.
+
+    We deliberately return by const reference as, if this is an
+    Eigen expression, the Eigen library may take an internal
+    reference to this object to allow delayed evaluation. By
+    returning the original object we can try to ensure its lifetime
+    is at least longer than the current expression.
+  */
+  template<class T, class Var, class Arg,
+	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
+  auto sub(const T& f, const Relation<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
+  
+  /*! \brief Evaluates a symbolic Var at a given point.
+    
+    This is only used if the Var is correct 
+    substitution.
+  */
+  template<typename ...Args1, typename ...Args2, class Arg,
+	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
+  auto sub(const Var<Args1...>& f, const Relation<Var<Args2...>, Arg>& x)
+   -> STATOR_AUTORETURN_BYVALUE(x._val);
+
+  /*! \brief Evaluates a symbolic Var at a given point.
+    
+    This is only used if the Var is not the correct letter for the
+    substitution.
+  */
+  template<class ...Args1, class Arg, class Var2,
+	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
+  Var<Args1...> sub(const Var<Args1...>& f, const Relation<Var2, Arg>& x)
+  { return f; }
+  
 }
 
 

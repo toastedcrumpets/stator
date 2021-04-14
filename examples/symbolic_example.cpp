@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
   
   //Or by index:
   Var<vidx<42>> v42;
+  
   //We have to catch symbolic expressions using "auto" as their type is very complex
   auto f1 = x * x + sin(y);
   
@@ -146,4 +147,7 @@ int main(int argc, char **argv) {
     a = simplify(sub(g_rt, y = 2.3)).as<double>(); // a = g(2.3)
     Expr dg_dy_rt = derivative(g_rt, y);
   }//End of the example
+
+  //Lame use of the variable to prevent "unused variable" warnings
+  v42=1;
 }

@@ -138,13 +138,13 @@ UNIT_TEST(poly_quadratic_roots_simple)
   {//Quadratic with no roots
     auto poly = expand(x * x - 3 * x + 4);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 0);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 0u);
   }
   
   {//Quadratic with one root
     auto poly = expand(-4 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
     if (roots.size() == 1)
       UNIT_TEST_CHECK_CLOSE(roots[0], 1.5, 1e-10);
   }
@@ -152,7 +152,7 @@ UNIT_TEST(poly_quadratic_roots_simple)
   {//quadratic but linear function with one root
     auto poly =  expand(0 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK_EQUAL(roots.size(), 1);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
     if (roots.size() == 1)
       UNIT_TEST_CHECK_CLOSE(roots[0], 0.75, 1e-10);
   }
@@ -160,13 +160,13 @@ UNIT_TEST(poly_quadratic_roots_simple)
   {//constant function, with no roots
     auto poly =  expand(0 * x * x + 0 * x - 9);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK_EQUAL(roots.size(), 0);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 0u);
   }
 
   {//Test a zero constant quadratic
     auto poly =  expand(3 * x * x + 2 * x - 0);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK_EQUAL(roots.size(), 2);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -2.0/3.0, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], 0, 1e-10);
   }
@@ -180,7 +180,7 @@ UNIT_TEST( poly_quadratic_special_cases)
   {//Quadratic with catastrophic cancellation of error
     auto poly = expand(x * x + 712345.12 * x + 1.25);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 2);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10);
   }
@@ -190,7 +190,7 @@ UNIT_TEST( poly_quadratic_special_cases)
   {//Large linear coefficient
     auto poly = expand(x * x + largeterm * x + 1.25);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 2);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
     //Mathematica value
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.3407807929942599e156, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], -9.322925914000258e-157, 1e-10);
@@ -199,12 +199,12 @@ UNIT_TEST( poly_quadratic_special_cases)
   {//Large (+ve) constant coefficient
     auto poly = expand(x * x + x + largeterm);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 0);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 0u);
   }
   {//Large (-ve) constant coefficient
     auto poly = expand(x * x + x - largeterm);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 2);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
 
     //Mathematica value
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.157920892373162e78, 1e-10);
@@ -297,7 +297,7 @@ UNIT_TEST( poly_cubic_special_cases )
   {//Zero constant term with three roots
     auto poly = expand((x * x + 712345.12 * x + 1.25) * x);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 3);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 3u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[2], 0, 1e-10);
@@ -306,19 +306,19 @@ UNIT_TEST( poly_cubic_special_cases )
   {//Zero constant term with one root
     auto poly = expand((x * x - 3 * x + 4) * x);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
     UNIT_TEST_CHECK_CLOSE(roots[0], 0, 1e-10);
   }
 
   {//Special case where f(x) = a * x^3 + d
     auto poly = expand(x * x * x + 1e3);
     auto roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -10, 1e-10);
 
     poly = expand(x * x * x - 1e3);
     roots = solve_real_roots(poly);
-    UNIT_TEST_CHECK(roots.size() == 1);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
     UNIT_TEST_CHECK_CLOSE(roots[0], 10, 1e-10);
   }
 
@@ -364,11 +364,11 @@ UNIT_TEST( poly_root_tests)
     auto f1 = expand(4 * (x*x*x) - x * x - 2 * x + 12);
     
     auto roots = solve_real_roots(f1);
-    UNIT_TEST_CHECK(roots.size() == 1u);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.472711896724616002268033950475380144341, 1e-10);
     
     auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
-    UNIT_TEST_CHECK(droots.size() == 2u);
+    UNIT_TEST_CHECK_EQUAL(droots.size(), 2u);
     UNIT_TEST_CHECK_CLOSE(droots[0], -1.0/3, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[1], 0.5, 1e-10);
   }
@@ -393,13 +393,13 @@ UNIT_TEST( poly_root_tests)
 
     auto roots = solve_real_roots(f1);
     //FIX THIS UNIT TEST!
-    UNIT_TEST_CHECK(roots.size() == 2u);
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
     ////NOTE THESE ROOTS ARE DOUBLE ROOTS (roots.size() may equal 2,3, or 4)
     UNIT_TEST_CHECK_CLOSE(roots[0], -0.8924203103613100773375343963347855860436, 1e-7);
     UNIT_TEST_CHECK_CLOSE(roots[1], -0.8924203103613100773375343963347855860436, 1e-7);
 
     auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
-    UNIT_TEST_CHECK(droots.size() == 3u);
+    UNIT_TEST_CHECK_EQUAL(droots.size(), 3u);
     UNIT_TEST_CHECK_CLOSE(droots[0], -0.8924203103613100773375343963347855860436, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[1], -0.01666666666666666666666666666666666666667, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[2], +0.8590869770279767440042010630014522527103, 1e-10);

@@ -38,6 +38,9 @@ setup(
     url="https://github.com/toastedcrumpets/stator",
     description="The python stator interface.",
     long_description="",
+    package_dir={
+        '': 'pysrc',
+    },
     packages=find_packages('pysrc'),
     ext_modules=ext_modules,
     extras_require={"test": "pytest"},

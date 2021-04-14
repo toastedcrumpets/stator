@@ -20,13 +20,6 @@
 #pragma once
 
 namespace sym {
-  namespace detail {
-    struct NoIdentity {
-      template<class T>
-      constexpr bool operator==(const T&) const { return false; }
-    };
-  };
-    
   /*! \brief Symbolic representation of a binary symbolic operation. 
    */
   template<class LHS, typename Op, class RHS>
@@ -36,64 +29,13 @@ namespace sym {
     BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
   };
   
-  template<class LHS, class RHS, class Op, class Var, class Arg> 
-  auto sub(BinaryOp<LHS, Op, RHS> f, Relation<Var, Arg> x)
-    -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
-
-  template<class LHS, class RHS,
-	   typename = typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value)>::type>
-  auto pow(const LHS& l, const RHS& r) -> STATOR_AUTORETURN(std::pow(l, r));
-
-  template<class LHS, std::intmax_t num, std::intmax_t den,
-	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
-  auto pow(const LHS& l, const C<num, den>& r) -> STATOR_AUTORETURN(std::pow(l, double(r)));
-  
-  template<class LHS,
-	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
-  auto pow(const LHS& l, const C<1,3>& r) -> STATOR_AUTORETURN(std::cbrt(l));
-
-  template<class LHS,
-	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
-  auto pow(const LHS& l, const C<1,2>& r) -> STATOR_AUTORETURN(std::sqrt(l));
-
-  template<class LHS,
-	   typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<LHS>, LHS>::value>::type>
-  auto pow(const LHS& l, const C<2,1>& r) -> STATOR_AUTORETURN_BYVALUE(l.squaredNorm());
-  
-  template<class LHS>
-  auto pow(const LHS& l, const C<1,1>& r) -> STATOR_AUTORETURN(l);
-
-  namespace {
-    /*! \brief Generic implementation of the eval routine for PowerOp.
-	
-      As the types of non-arithmetic arguments to PowerOp might
-      change with each round of multiplication, we must be careful
-      to accommodate this using templated looping. This class
-      achieves this.
-    */
-    template<size_t Power>
-    struct PowerOpSub {
-      template<class Arg_t>
-      static auto eval(Arg_t x)
-        -> STATOR_AUTORETURN(PowerOpSub<Power-1>::eval(x) * x)
-	};
-
-    template<>
-    struct PowerOpSub<1> {
-      template<class Arg_t> static Arg_t eval(Arg_t x) { return x; }
-    };
-
-    template<>
-    struct PowerOpSub<0> {
-      template<class Arg_t> static Unity eval(Arg_t x) { return Unity(); }
-    };
-  }
-  
-  template<std::intmax_t num1, std::intmax_t den1, std::intmax_t num2>
-  auto pow(const C<num1, den1>& l, const C<num2,1>& r)
-    -> STATOR_AUTORETURN(PowerOpSub<num2>::eval(sub(l, num2)));
-
   namespace detail {
+    
+    struct NoIdentity {
+      template<class T>
+      constexpr bool operator==(const T&) const { return false; }
+    };
+
     enum class Associativity { LEFT, RIGHT, NONE };
 
     template<class Op>
@@ -200,6 +142,24 @@ namespace sym {
 	       typename = typename std::enable_if<!std::is_base_of<Eigen::EigenBase<R>, R>::value>::type>
       static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(pow(l, r));
     };
+
+    struct Equality {
+      static constexpr int leftBindingPower = 1;
+      static constexpr auto associativity = Associativity::LEFT;
+      static constexpr bool commutative = false;
+      static constexpr bool associative = false;
+      typedef NoIdentity left_identity;
+      typedef NoIdentity right_identity;
+      typedef NoIdentity left_zero;
+      typedef NoIdentity right_zero;
+      static inline std::string l_repr() { return ""; }
+      static inline std::string repr() { return "="; }
+      static inline std::string r_repr() { return ""; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "="; }
+      static inline std::string r_latex_repr() { return ""; }
+      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l);
+    };
   }
 
   template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add, RHS>;
@@ -207,6 +167,7 @@ namespace sym {
   template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, detail::Multiply, RHS>;
   template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, detail::Divide, RHS>;
   template<class LHS, class RHS> using PowerOp   = BinaryOp<LHS, detail::Power, RHS>;
+  template<class LHS, class RHS> using EqualityOp   = BinaryOp<LHS, detail::Equality, RHS>;
 
   template <class Op, class OverOp>
   struct left_distributive : std::false_type {};
@@ -222,7 +183,11 @@ namespace sym {
   template<> struct right_distributive<detail::Divide, detail::Add> : std::true_type {};
 
   template<> struct right_distributive<detail::Power, detail::Multiply> : std::true_type {};
-  
+
+  template<class LHS, class RHS, class Op, class Var, class Arg> 
+  auto sub(BinaryOp<LHS, Op, RHS> f, Relation<Var, Arg> x)
+    -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
+
   /*! \name Symbolic algebra
     \{
   */
@@ -274,6 +239,65 @@ namespace sym {
   auto pow(const LHS& l, const RHS& r) 
     -> STATOR_AUTORETURN((PowerOp<decltype(store(l)), decltype(store(r))>(l, r)));
 
+  template<class LHS, class RHS,
+	   typename = typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value)>::type>
+  auto pow(const LHS& l, const RHS& r) -> STATOR_AUTORETURN(std::pow(l, r));
+
+  template<class LHS, std::intmax_t num, std::intmax_t den,
+	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
+  auto pow(const LHS& l, const C<num, den>& r) -> STATOR_AUTORETURN(std::pow(l, double(r)));
+  
+  template<class LHS,
+	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
+  auto pow(const LHS& l, const C<1,3>& r) -> STATOR_AUTORETURN(std::cbrt(l));
+
+  template<class LHS,
+	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
+  auto pow(const LHS& l, const C<1,2>& r) -> STATOR_AUTORETURN(std::sqrt(l));
+
+  template<class LHS,
+	   typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<LHS>, LHS>::value>::type>
+  auto pow(const LHS& l, const C<2,1>& r) -> STATOR_AUTORETURN_BYVALUE(l.squaredNorm());
+  
+  template<class LHS>
+  auto pow(const LHS& l, const C<1,1>& r) -> STATOR_AUTORETURN(l);
+  
+  namespace {
+    /*! \brief Generic implementation of the eval routine for PowerOp.
+	
+      As the types of non-arithmetic arguments to PowerOp might
+      change with each round of multiplication, we must be careful
+      to accommodate this using templated looping. This class
+      achieves this.
+    */
+    template<size_t Power>
+    struct PowerOpSub {
+      template<class Arg_t>
+      static auto eval(Arg_t x)
+        -> STATOR_AUTORETURN(PowerOpSub<Power-1>::eval(x) * x)
+	};
+
+    template<>
+    struct PowerOpSub<1> {
+      template<class Arg_t> static Arg_t eval(Arg_t x) { return x; }
+    };
+
+    template<>
+    struct PowerOpSub<0> {
+      template<class Arg_t> static Unity eval(Arg_t x) { return Unity(); }
+    };
+  }
+  
+  template<std::intmax_t num1, std::intmax_t den1, std::intmax_t num2>
+  auto pow(const C<num1, den1>& l, const C<num2,1>& r)
+    -> STATOR_AUTORETURN(PowerOpSub<num2>::eval(sub(l, num2)));
+  
+  /*! \brief Symbolic equality operator. */
+  template<class LHS, class RHS,
+	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
+  auto equal(const LHS& l, const RHS& r) 
+    -> STATOR_AUTORETURN((EqualityOp<decltype(store(l)), decltype(store(r))>(l, r)));
+
   /*! \brief Derivatives of AddOp operations.
    */
   template<class Var, class LHS, class RHS>
@@ -311,6 +335,12 @@ namespace sym {
   template<class Var, class Arg, class Power>
     auto derivative(const PowerOp<Arg, Power>& f, Var v)
     -> STATOR_AUTORETURN(f._r * derivative(f._l, v) * pow(f._l, f._r - C<1>()) + derivative(f._r, v) * log(f._l) * f);
+
+  /*! \brief Derivative of a EqualityOp operation.
+   */
+  template<class Var, class LHS, class RHS>
+    auto derivative(const EqualityOp<LHS, RHS>& f, Var v)
+    -> STATOR_AUTORETURN(equal(derivative(f._l, v), derivative(f._r, v)));
   /*! \}*/
 }
 

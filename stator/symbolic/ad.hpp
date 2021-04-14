@@ -27,18 +27,18 @@
 namespace sym {
   template<size_t Nd, typename T, typename Var, typename Arg,
 	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type>
-  Eigen::Matrix<double, Nd+1,1> ad(const T& v, const Relation<Var, Arg>&) {
+  Eigen::Matrix<double, Nd+1,1> ad(const T& v, const EqualityOp<Var, Arg>&) {
     Eigen::Matrix<double, Nd+1,1> r = Eigen::Matrix<double, Nd+1,1>::Zero();
     r[0] = v;
     return r;
   }
 
   template<size_t Nd, typename ...Args, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const Var<Args...>& v, const Relation<Var_t, Arg_t>& r) {
+  Eigen::Matrix<double, Nd+1,1> ad(const Var<Args...>& v, const EqualityOp<Var_t, Arg_t>& r) {
 
     Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();    
-    if ((v.getidx() == r._var.getidx())) {
-      result[0] = r._val;
+    if ((v.getidx() == r._l.getidx())) {
+      result[0] = r._r;
       if (Nd > 0) result[1] = 1.0;
     } else
       result[0] = std::numeric_limits<double>::quiet_NaN();
@@ -47,17 +47,17 @@ namespace sym {
   }
 
   template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Add, RHS_t>& op, const Relation<Var_t, Arg_t>& r) {
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Add, RHS_t>& op, const EqualityOp<Var_t, Arg_t>& r) {
     return ad<Nd>(op._l, r) + ad<Nd>(op._r, r);
   }
 
   template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Subtract, RHS_t>& op, const Relation<Var_t, Arg_t>& r) {
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Subtract, RHS_t>& op, const EqualityOp<Var_t, Arg_t>& r) {
     return ad<Nd>(op._l, r) - ad<Nd>(op._r, r);
   }
   
   template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Multiply, RHS_t>& op, const Relation<Var_t, Arg_t>& sub) {
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Multiply, RHS_t>& op, const EqualityOp<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> l = ad<Nd>(op._l, sub);
     Eigen::Matrix<double, Nd+1,1> r = ad<Nd>(op._r, sub);
     Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
@@ -71,7 +71,7 @@ namespace sym {
   }
 
   template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Divide, RHS_t>& op, const Relation<Var_t, Arg_t>& sub) {
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Divide, RHS_t>& op, const EqualityOp<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> l = ad<Nd>(op._l, sub);
     Eigen::Matrix<double, Nd+1,1> r = ad<Nd>(op._r, sub);
     Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
@@ -88,7 +88,7 @@ namespace sym {
   }
 
   template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Exp>& op, const Relation<Var_t, Arg_t>& sub) {
+  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Exp>& op, const EqualityOp<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
 
     Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();    
@@ -103,7 +103,7 @@ namespace sym {
   }
 
   template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Log>& op, const Relation<Var_t, Arg_t>& sub) {
+  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Log>& op, const EqualityOp<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
 
     Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
@@ -119,7 +119,7 @@ namespace sym {
   }
 
   template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Sine>& op, const Relation<Var_t, Arg_t>& sub) {
+  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Sine>& op, const EqualityOp<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
 
     Eigen::Matrix<double, Nd+1,1> cos = Eigen::Matrix<double, Nd+1,1>::Zero();
@@ -140,7 +140,7 @@ namespace sym {
   }
 
   template<size_t Nd, typename Arg, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Cosine>& op, const Relation<Var_t, Arg_t>& sub) {
+  Eigen::Matrix<double, Nd+1,1> ad(const UnaryOp<Arg, detail::Cosine>& op, const EqualityOp<Var_t, Arg_t>& sub) {
     Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(op._arg, sub);
 
     Eigen::Matrix<double, Nd+1,1> cos = Eigen::Matrix<double, Nd+1,1>::Zero();
@@ -162,7 +162,7 @@ namespace sym {
 
   namespace detail {
     template<size_t Nd, typename LHS_t, typename Var_t, typename Arg_t>
-    Eigen::Matrix<double, Nd+1,1> ad_pow(const LHS_t& lhs, const double& a, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> ad_pow(const LHS_t& lhs, const double& a, const EqualityOp<Var_t, Arg_t>& sub) {
       Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(lhs, sub);
       Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
     
@@ -178,7 +178,7 @@ namespace sym {
     }
 
     template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t>
-    Eigen::Matrix<double, Nd+1,1> ad_pow(const LHS_t& lhs, const RHS_t& rhs, const Relation<Var_t, Arg_t>& sub) {
+    Eigen::Matrix<double, Nd+1,1> ad_pow(const LHS_t& lhs, const RHS_t& rhs, const EqualityOp<Var_t, Arg_t>& sub) {
       Eigen::Matrix<double, Nd+1,1> f = ad<Nd>(lhs, sub);
       Eigen::Matrix<double, Nd+1,1> g = ad<Nd>(rhs, sub);
       Eigen::Matrix<double, Nd+1,1> lnf = ad<Nd>(sym::log(lhs), sub);
@@ -209,21 +209,21 @@ namespace sym {
   template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t,
 	   typename = typename std::enable_if<detail::IsConstant<RHS_t>::value>::type>
   Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Power, RHS_t>& op,
-				   const Relation<Var_t, Arg_t>& sub) {
+				   const EqualityOp<Var_t, Arg_t>& sub) {
       return detail::ad_pow<Nd>(op._l, double(op._r), sub);
   }
 
   template<size_t Nd, typename LHS_t, typename RHS_t, typename Var_t, typename Arg_t,
   	   typename = typename std::enable_if<!detail::IsConstant<RHS_t>::value>::type>
   Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<LHS_t, detail::Power, RHS_t>& op,
-  				   const Relation<Var_t, Arg_t>& sub,
+  				   const EqualityOp<Var_t, Arg_t>& sub,
 				   //The next argument deprioritizes this function over the above one
 				   int = 0) {
       return detail::ad_pow<Nd>(op._l, op._r, sub);
   }
   
   template<size_t Nd, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<Expr, detail::Power, Expr>& op, const Relation<Var_t, Arg_t>& sub) {
+  Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<Expr, detail::Power, Expr>& op, const EqualityOp<Var_t, Arg_t>& sub) {
     if (op._r->_type_idx == detail::RT_type_index<ConstantRT<double>>::value)
       return detail::ad_pow<Nd>(op._l, static_cast<const ConstantRT<double>&>(*op._r).get(), sub);
     else
@@ -245,8 +245,8 @@ namespace sym {
   }
     
   template<size_t Nd, class Var_t, class Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const Expr& f, const Relation<Var_t, Arg_t>& r) {
-    detail::ADRT_visitor<Nd, Relation<Var_t, Arg_t> > visitor(r);
+  Eigen::Matrix<double, Nd+1,1> ad(const Expr& f, const EqualityOp<Var_t, Arg_t>& r) {
+    detail::ADRT_visitor<Nd, EqualityOp<Var_t, Arg_t> > visitor(r);
     return f->visit(visitor);
   }
 }

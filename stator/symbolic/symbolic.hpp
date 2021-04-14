@@ -71,15 +71,6 @@ namespace sym {
     static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
   };
 
-  /*!\brief Symbolic representation of a variable substitution.
-  */
-  template<class Var, class Arg> struct Relation {
-    Relation(const Var var, const Arg& val): _var(var), _val(val) {}
-
-    const Var _var;
-    const Arg& _val;
-  };
-
   namespace detail {
     struct vidx_ID;
   };
@@ -93,11 +84,9 @@ namespace sym {
   */
   template<typename ...Args> struct Var : SymbolicOperator {
     static constexpr const auto idx = stator::orphan::get_value<vidx<'x'>, Args...>::value;
-    
+
     template<class Arg>
-    Relation<Var<Args...>, Arg> operator=(const Arg& a) const {
-      return Relation<Var<Args...>, Arg>(*this, a);
-    }
+    auto operator=(const Arg& a) const -> STATOR_AUTORETURN(equal(*this, a));
 
     char getidx() const { return Var::idx; }
   };
@@ -213,50 +202,13 @@ namespace sym {
   }
 
   template<size_t Order, class Real = double, class PolyVar = Var<>> class Polynomial;
-
-
-  /*! \brief Default implementation of substitution of a symbolic
-    expression at a given point.
-    
-    This implementation only applies if the term is a constant term.
-
-    We deliberately return by const reference as, if this is an
-    Eigen expression, the Eigen library may take an internal
-    reference to this object to allow delayed evaluation. By
-    returning the original object we can try to ensure its lifetime
-    is at least longer than the current expression.
-  */
-  template<class T, class Var, class Arg,
-	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-  auto sub(const T& f, const Relation<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
-  
-  /*! \brief Evaluates a symbolic Var at a given point.
-    
-    This is only used if the Var is correct 
-    substitution.
-  */
-  template<typename ...Args1, typename ...Args2, class Arg,
-	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
-  auto sub(const Var<Args1...>& f, const Relation<Var<Args2...>, Arg>& x)
-   -> STATOR_AUTORETURN_BYVALUE(x._val);
-
-  /*! \brief Evaluates a symbolic Var at a given point.
-    
-    This is only used if the Var is not the correct letter for the
-    substitution.
-  */
-  template<class ...Args1, class Arg, class Var2,
-	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
-  Var<Args1...> sub(const Var<Args1...>& f, const Relation<Var2, Arg>& x)
-  { return f; }
-  
 }
-
 
 #include <stator/symbolic/binary_ops.hpp>
 #include <stator/symbolic/unary_ops.hpp>
-#include <stator/symbolic/simplify.hpp>
+#include <stator/symbolic/sub.hpp>
 #include <stator/symbolic/polynomial.hpp>
+#include <stator/symbolic/simplify.hpp>
 #include <stator/symbolic/integrate.hpp>
 #include <stator/symbolic/taylor.hpp>
 #include <stator/symbolic/runtime.hpp>

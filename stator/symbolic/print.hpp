@@ -35,11 +35,6 @@ namespace stator {
     return std::string(1, v.getidx());
   }
 
-  template<class Config = DefaultReprConfig, class Var, class Arg>
-  inline std::string repr(const sym::Relation<Var, Arg>& sub) {
-    return repr<Config>(sub._var) << "=" << repr<Config>(sub._val);
-  }
-    
   template<class Config = DefaultReprConfig, class Arg>
   inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Sine>& f)
   {

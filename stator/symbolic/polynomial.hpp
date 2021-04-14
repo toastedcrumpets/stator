@@ -178,14 +178,14 @@ namespace sym {
   template<class Coeff_t, size_t Order, class Var1, class Var2, class ...VarArgs,
 	     typename = typename enable_if_var_in<Var2, Var1>::type>
   Polynomial<Order, Coeff_t, Var<VarArgs...> >
-  sub(const Polynomial<Order, Coeff_t, Var1>& f, const Relation<Var2, Var<VarArgs...> >& x_container)
+  sub(const Polynomial<Order, Coeff_t, Var1>& f, const EqualityOp<Var2, Var<VarArgs...> >& x_container)
   { return Polynomial<Order, Coeff_t, Var<VarArgs...> >(f.begin(), f.end()); }
 
   /*! \brief Optimised Polynomial substitution for Null
       insertions. */
   template<size_t Order, class Coeff_t, class PolyVar, class SubVar,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
-  Coeff_t sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const Relation<SubVar, Null>&)
+  Coeff_t sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const EqualityOp<SubVar, Null>&)
   { return f[0]; }
 
   /*! \brief Numerically Evaluates a Polynomial expression at a
@@ -203,7 +203,7 @@ namespace sym {
                                                && !std::is_base_of<Eigen::EigenBase<Coeff_t2>, Coeff_t2>::value)>::type,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
   decltype(store(Coeff_t() * Coeff_t2()))
-  sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const Relation<SubVar, Coeff_t2>& x_container)
+  sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const EqualityOp<SubVar, Coeff_t2>& x_container)
   {
     //Handle the case where this is actually a constant and not a
     //Polynomial. This is free to evaluate now as Order is a
@@ -211,7 +211,7 @@ namespace sym {
     if (Order == 0)
 	return f[0];
 
-    const auto & x = x_container._val;
+    const auto & x = x_container._r;
     //Special cases for infinite values of x
     if (std::numeric_limits<Coeff_t2>::has_infinity
 	&& ((std::numeric_limits<Coeff_t2>::infinity() == x)
@@ -282,7 +282,7 @@ namespace sym {
                                               || (std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value && std::is_arithmetic<Coeff_t2>::value)
                                               >::type,
 	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
-    auto sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const Relation<SubVar, Coeff_t2>& x_container)
+    auto sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const EqualityOp<SubVar, Coeff_t2>& x_container)
    -> STATOR_AUTORETURN(detail::PolySubWorker<Order>::eval(f, x_container._val))
 
   /*! \brief Fast evaluation of multiple derivatives of a

@@ -158,7 +158,7 @@ namespace sym {
       static inline std::string l_latex_repr() { return ""; }
       static inline std::string latex_repr() { return "="; }
       static inline std::string r_latex_repr() { return ""; }
-      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l);
+      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN( equal(l, r));
     };
   }
 
@@ -183,10 +183,6 @@ namespace sym {
   template<> struct right_distributive<detail::Divide, detail::Add> : std::true_type {};
 
   template<> struct right_distributive<detail::Power, detail::Multiply> : std::true_type {};
-
-  template<class LHS, class RHS, class Op, class Var, class Arg> 
-  auto sub(BinaryOp<LHS, Op, RHS> f, Relation<Var, Arg> x)
-    -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
 
   /*! \name Symbolic algebra
     \{

@@ -240,10 +240,6 @@ namespace sym {
     inline bool operator==(const VarRT& o) const {
       return idx == o.idx;
     }
-
-    inline Relation<VarRT, Expr> operator=(const Expr& f) const {
-      return Relation<VarRT, Expr>(*this, f);
-    }
         
     inline char getidx() const { return idx; } 
     
@@ -563,8 +559,8 @@ namespace sym {
   }
   
   template<class Var, class Arg>
-  Expr sub(const Expr& f, const Relation<Var, Arg>& rel) {
-    detail::SubstituteRT visitor(rel._var, rel._val);
+  Expr sub(const Expr& f, const EqualityOp<Var, Arg>& rel) {
+    detail::SubstituteRT visitor(rel._l, rel._r);
     Expr result = f->visit(visitor);
     return (result) ?  result : f;
   }
@@ -709,7 +705,7 @@ namespace sym {
   }
   
   template<class Var>
-  double fast_sub(const Expr& f, const Relation<Var, double>& rel) {
+  double fast_sub(const Expr& f, const EqualityOp<Var, double>& rel) {
     detail::FastSubRT visitor(rel._var, rel._val);
     f->visit(visitor);
     return visitor._intermediate;

@@ -10,7 +10,8 @@ metadata:
 spec:
   containers:
   - name: dind
-    image: toastedcrumpets/dind
+    image: docker:dind
+    args: ["--registry-mirror","https://registry.bansci.com"]
     tty: true
     securityContext:
       privileged: true

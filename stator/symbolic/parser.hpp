@@ -60,38 +60,48 @@ namespace sym {
 	_start(0),
 	_end(0)
       {
-	//Initialise the operators
+	//This is a discussion of parsing precedence and how it works.
 
-	//These are left-associative operators, so we expect their RBP
-	//to be LBP+1, and they can group with themselves
-	//LBP, RBP, NBP
+	//Left operators are variables, numbers, functions, etc. They
+	//are potentially the left operand of a binary operation.
 
-	////////  Right operators appear to the right of one of their operands
+	//Right operators always come after left operators, they can
+	//be binary operators like "+" or they can be other things
+	//like closing parenthesis.
+
+	//Complex operations like the parenthetical grouping operator
+	//"()" start with a left operator "(", then finish with a
+	//right operator ")". On the other hand, array access starts
+	//with a right operator "[" as it needs to bind to something
+	//on the left and right of the "[", and it finishes with a
+	//right operator "]".
+
+	// Binding powers set which operator will bind to a
+	// token. Right operators have two binding powers (left and
+	// right), while left operators only have a right binding
+	// power. The way Pratt parsing works is that it climbs up the
+	// binding power in a loop, while recursing down in binding
+	// power.  Ignoring the implementation details, lets look at an example
+
+	//Token           :  sin  x    +    2    +    3
+	//Binding powers  :  inf    10   11   10   11
+	//Parsed Tree     :  (((sin  x) + 2) + 3)
 	//
-	//LBP: Left binding power is the precedence of the right operator.
-	//
-	//RBP: Right binding power is the precedence that the operator
-	//will collect as its right arguments (prefix operators have
-	//no right arguments, thus RBP is unused). If this is higher
-	//than the binding power, it will not collect itself (thus it
-	//is left-associative). If it is equal or greater, it will
-	//collect itself in its right argument (thus it is right
-	//associative).
-	//
-	//NBP: Next binding power 
+	// Sin has a very high (inf) binding power, as we want it to
+	// grab whatever is to its right. Plus has a stronger right
+	// binding power than left as we want it to be left
+	// associative. To see this, we assigning tokens to the
+	// operators either side of them with the highest binding
+	// power which gives the resulting parse.
 	
+	_right_operators["="].reset(new BinaryOpToken<detail::Equality>());
 	_right_operators["+"].reset(new BinaryOpToken<detail::Add>());
 	_right_operators["-"].reset(new BinaryOpToken<detail::Subtract>());
 	_right_operators["*"].reset(new BinaryOpToken<detail::Multiply>());
 	_right_operators["/"].reset(new BinaryOpToken<detail::Divide>());
-	//Power is right-associative, thus its RBP is equal to its LBP
-	//to ensure a^b^c is a^(b^c).
 	_right_operators["^"].reset(new BinaryOpToken<detail::Power>());
 
-	//The unary operators
-//	_left_operators["+"].reset(new SkipToken<std::numeric_limits<int>::max()>());
-//	_left_operators["-"].reset(new UnaryNegative<std::numeric_limits<int>::max()>());
-
+	//The unary operators, slightly higher binding power than addition/subtraction
 	_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower+1>());
 	_left_operators["-"].reset(new UnaryNegative<detail::Add::leftBindingPower+1>());
  
@@ -101,7 +111,7 @@ namespace sym {
 	//parenthesis should be handled by the previous entry.
 	_right_operators[")"].reset(new HaltToken);
 	
-	//Unary operators have a maximum BP 
+	//Most unary operators have high binding powers to grab the very next argument
 	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine, std::numeric_limits<int>::max()>());
 	_left_operators["cos"].reset(new UnaryOpToken<detail::Cosine, std::numeric_limits<int>::max()>());
 	_left_operators["exp"].reset(new UnaryOpToken<detail::Exp, std::numeric_limits<int>::max()>());
@@ -158,6 +168,7 @@ namespace sym {
 	//Allow non-alpha single character operators (longer operators are usually strings and caught above!)
 	if (_right_operators.find(_str.substr(_start, 1)) != _right_operators.end())
 	  return;
+	
 	if (_left_operators.find(_str.substr(_start, 1)) != _left_operators.end())
 	  return;
 	

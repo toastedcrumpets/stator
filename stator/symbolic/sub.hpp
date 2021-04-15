@@ -1,0 +1,66 @@
+/*
+  Copyright (C) 2021 Marcus N Campbell Bannerman <m.bannerman@gmail.com>
+
+  This file is part of stator.
+
+  stator is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  stator is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with stator. If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#pragma once
+
+
+namespace sym {
+  /*! \brief Default implementation of substitution of a symbolic
+    expression at a given point.
+    
+    This implementation only applies if the expression is a constant term.
+
+    We deliberately return by const reference as, if this is an
+    Eigen expression, the Eigen library may take an internal
+    reference to this object to allow delayed evaluation. By
+    returning the original object we can try to ensure its lifetime
+    is at least longer than the current expression.
+  */
+  template<class T, class Var, class Arg,
+	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
+  auto sub(const T& f, const EqualityOp<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
+  
+  /*! \brief Evaluates a symbolic Var at a given point.
+    
+    This is only used if the Var is correct 
+    substitution.
+  */
+  template<typename ...Args1, typename ...Args2, class Arg,
+	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
+  auto sub(const Var<Args1...>& f, const EqualityOp<Var<Args2...>, Arg>& x)
+   -> STATOR_AUTORETURN_BYVALUE(x._r);
+
+  /*! \brief Evaluates a symbolic Var at a given point.
+    
+    This is only used if the Var is not the correct letter for the
+    substitution.
+  */
+  template<class ...Args1, class Arg, class Var2,
+	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
+  Var<Args1...> sub(const Var<Args1...>& f, const EqualityOp<Var2, Arg>& x)
+  { return f; }
+
+  template<class LHS, class RHS, class Op, class Var, class Arg> 
+  auto sub(BinaryOp<LHS, Op, RHS> f, EqualityOp<Var, Arg> x)
+    -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
+
+  template<class Var, class Arg1, class Arg2, class Op>
+  auto sub(const UnaryOp<Arg1, Op>& f, const EqualityOp<Var, Arg2>& x)
+    -> STATOR_AUTORETURN(Op::apply(sub(f._arg, x)));  
+}

@@ -48,6 +48,24 @@ namespace sym {
       return Op::leftBindingPower - (Op::associativity == Associativity::RIGHT) - (Op::associativity == Associativity::NONE);
     }
 
+    struct Equality {
+      static constexpr int leftBindingPower = 10;
+      static constexpr auto associativity = Associativity::RIGHT;
+      static constexpr bool commutative = false;
+      static constexpr bool associative = false;
+      typedef NoIdentity left_identity;
+      typedef NoIdentity right_identity;
+      typedef NoIdentity left_zero;
+      typedef NoIdentity right_zero;
+      static inline std::string l_repr() { return ""; }
+      static inline std::string repr() { return "="; }
+      static inline std::string r_repr() { return ""; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "="; }
+      static inline std::string r_latex_repr() { return ""; }
+      template<class L, class R> static auto apply(L& l, const R& r) -> STATOR_AUTORETURN((BinaryOp<L, detail::Equality, R>(l, r)));
+    };
+
     struct Add {
       static constexpr int leftBindingPower = 20;
       static constexpr auto associativity = Associativity::LEFT;
@@ -142,32 +160,14 @@ namespace sym {
 	       typename = typename std::enable_if<!std::is_base_of<Eigen::EigenBase<R>, R>::value>::type>
       static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(pow(l, r));
     };
-
-    struct Equality {
-      static constexpr int leftBindingPower = 1;
-      static constexpr auto associativity = Associativity::LEFT;
-      static constexpr bool commutative = false;
-      static constexpr bool associative = false;
-      typedef NoIdentity left_identity;
-      typedef NoIdentity right_identity;
-      typedef NoIdentity left_zero;
-      typedef NoIdentity right_zero;
-      static inline std::string l_repr() { return ""; }
-      static inline std::string repr() { return "="; }
-      static inline std::string r_repr() { return ""; }
-      static inline std::string l_latex_repr() { return ""; }
-      static inline std::string latex_repr() { return "="; }
-      static inline std::string r_latex_repr() { return ""; }
-      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN( equal(l, r));
-    };
   }
 
   template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add, RHS>;
   template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, detail::Subtract, RHS>;    
   template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, detail::Multiply, RHS>;
   template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, detail::Divide, RHS>;
-  template<class LHS, class RHS> using PowerOp   = BinaryOp<LHS, detail::Power, RHS>;
-  template<class LHS, class RHS> using EqualityOp   = BinaryOp<LHS, detail::Equality, RHS>;
+  template<class LHS, class RHS> using PowerOp    = BinaryOp<LHS, detail::Power, RHS>;
+  template<class LHS, class RHS> using EqualityOp = BinaryOp<LHS, detail::Equality, RHS>;
 
   template <class Op, class OverOp>
   struct left_distributive : std::false_type {};
@@ -288,9 +288,13 @@ namespace sym {
   auto pow(const C<num1, den1>& l, const C<num2,1>& r)
     -> STATOR_AUTORETURN(PowerOpSub<num2>::eval(sub(l, num2)));
   
-  /*! \brief Symbolic equality operator. */
-  template<class LHS, class RHS,
-	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
+  /*! \brief Symbolic equality operator. 
+
+    This operator is always symbolic (we don't try to do assignment,
+    it would be a mess of const correctness), so it only has this
+    definition.
+   */
+  template<class LHS, class RHS>
   auto equal(const LHS& l, const RHS& r) 
     -> STATOR_AUTORETURN((EqualityOp<decltype(store(l)), decltype(store(r))>(l, r)));
 

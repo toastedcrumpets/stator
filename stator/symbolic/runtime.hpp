@@ -121,6 +121,7 @@ namespace sym {
     template<> struct RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>> { static const int value = 10; };
     template<> struct RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>   { static const int value = 11; };
     template<> struct RT_type_index<BinaryOp<Expr, detail::Power, Expr>>    { static const int value = 12; };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Equality, Expr>>    { static const int value = 13; };
     
     /*! \brief Abstract interface class for the visitor programming
       pattern for Expr types.
@@ -143,6 +144,7 @@ namespace sym {
       virtual RetType visit(const BinaryOp<Expr, detail::Multiply, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Divide, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Power, Expr>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& ) = 0;
     };
 
 
@@ -179,6 +181,8 @@ namespace sym {
       inline virtual RetType visit(const BinaryOp<Expr, detail::Divide, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const BinaryOp<Expr, detail::Power, Expr>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      inline virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
     };
   }
@@ -697,6 +701,9 @@ namespace sym {
 	_intermediate = Op::apply(lval, _intermediate);
 	return Expr();
       }
+
+      Expr apply(const BinaryOp<Expr, detail::Equality, Expr>& op)
+      { stator_throw() << "fast_sub cannot operate on this (" << stator::repr(op) << ") expression"; }
       
       VarRT _var;
       double _replacement;
@@ -727,6 +734,7 @@ namespace sym {
     case detail::RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Multiply, Expr>&>(*this));
     case detail::RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>::value:   return c.visit(static_cast<const BinaryOp<Expr, detail::Divide, Expr>&>(*this));
     case detail::RT_type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
+    case detail::RT_type_index<BinaryOp<Expr, detail::Equality, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Equality, Expr>&>(*this));
     default: stator_throw() << "Unhandled type index for the visitor";
     }
   }

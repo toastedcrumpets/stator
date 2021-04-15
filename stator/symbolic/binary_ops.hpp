@@ -160,14 +160,36 @@ namespace sym {
 	       typename = typename std::enable_if<!std::is_base_of<Eigen::EigenBase<R>, R>::value>::type>
       static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(pow(l, r));
     };
+
+    struct Array {
+      static constexpr int leftBindingPower = 50;
+      static constexpr auto associativity = Associativity::LEFT;
+      static constexpr bool commutative = false;
+      static constexpr bool associative = false;
+      static inline std::string l_repr() { return ""; }
+      static inline std::string repr() { return "["; }
+      static inline std::string r_repr() { return "]"; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "\\left["; }
+      static inline std::string r_latex_repr() { return "\\right]"; }
+      typedef NoIdentity left_identity;
+      typedef NoIdentity right_identity;
+      typedef NoIdentity right_zero;
+      typedef NoIdentity left_zero;
+      //We have to prevent silly powers (i.e. matrix powers) otherwise
+      //the MSVSC compiler gets confused
+      template<class L, class R>
+      static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN((BinaryOp<L, detail::Array, R>(l, r)));
+    };
   }
 
-  template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add, RHS>;
+  template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add,      RHS>;
   template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, detail::Subtract, RHS>;    
   template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, detail::Multiply, RHS>;
-  template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, detail::Divide, RHS>;
-  template<class LHS, class RHS> using PowerOp    = BinaryOp<LHS, detail::Power, RHS>;
+  template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, detail::Divide,   RHS>;
+  template<class LHS, class RHS> using PowerOp    = BinaryOp<LHS, detail::Power,    RHS>;
   template<class LHS, class RHS> using EqualityOp = BinaryOp<LHS, detail::Equality, RHS>;
+  template<class LHS, class RHS> using ArrayOp    = BinaryOp<LHS, detail::Array,    RHS>;
 
   template <class Op, class OverOp>
   struct left_distributive : std::false_type {};
@@ -298,6 +320,11 @@ namespace sym {
   auto equal(const LHS& l, const RHS& r) 
     -> STATOR_AUTORETURN((EqualityOp<decltype(store(l)), decltype(store(r))>(l, r)));
 
+  /*! \brief Symbolic array access operator. */
+  template<class LHS, class RHS>
+  auto array_access(const LHS& l, const RHS& r) 
+    -> STATOR_AUTORETURN((ArrayOp<decltype(store(l)), decltype(store(r))>(l, r)));
+  
   /*! \brief Derivatives of AddOp operations.
    */
   template<class Var, class LHS, class RHS>
@@ -341,6 +368,15 @@ namespace sym {
   template<class Var, class LHS, class RHS>
     auto derivative(const EqualityOp<LHS, RHS>& f, Var v)
     -> STATOR_AUTORETURN(equal(derivative(f._l, v), derivative(f._r, v)));
+  /*! \}*/
+
+  /*! \brief Derivative of an array operation.
+
+    For now, we just return the variable.
+   */
+  template<class Var, class LHS, class RHS>
+    auto derivative(const ArrayOp<LHS, RHS>& f, Var v)
+    -> STATOR_AUTORETURN(f);
   /*! \}*/
 }
 

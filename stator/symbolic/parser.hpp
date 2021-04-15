@@ -110,6 +110,9 @@ namespace sym {
 	//A halt token stops parseExpression processing. The right
 	//parenthesis should be handled by the previous entry.
 	_right_operators[")"].reset(new HaltToken);
+
+	_right_operators["["].reset(new WrappedBinaryOpToken<detail::Array>("]"));
+	_right_operators["]"].reset(new HaltToken);
 	
 	//Most unary operators have high binding powers to grab the very next argument
 	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine, std::numeric_limits<int>::max()>());
@@ -276,6 +279,26 @@ namespace sym {
 	  return 0;
 	}
       };
+
+      template<class Op>
+      struct WrappedBinaryOpToken : RightOperatorBase {
+	WrappedBinaryOpToken(std::string end):
+	  _end(end)
+	{}
+	
+	Expr apply(Expr l, ExprTokenizer& tk) const {
+	  Expr retval = Op::apply(l, tk.parseExpression(detail::RBP<Op>()));
+	  tk.expect(_end);
+	  return retval;
+	}
+	    
+	int LBP() const { return Op::leftBindingPower; }
+
+	int NBP() const { return detail::NBP<Op>(); }
+
+	std::string _end;
+      };
+
       
       template<class Op, int tBP>
       struct UnaryOpToken : LeftOperatorBase {

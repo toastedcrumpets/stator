@@ -37,7 +37,7 @@ namespace sym {
   Eigen::Matrix<double, Nd+1,1> ad(const Var<Args...>& v, const EqualityOp<Var_t, Arg_t>& r) {
 
     Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();    
-    if ((v.getidx() == r._l.getidx())) {
+    if ((v == r._l)) {
       result[0] = r._r;
       if (Nd > 0) result[1] = 1.0;
     } else

@@ -32,7 +32,7 @@ namespace stator {
 
   template<class Config = DefaultReprConfig, class ...Args>
   inline std::string repr(const sym::Var<Args...>& v) {
-    return std::string(1, v.getidx());
+    return v.getID();
   }
 
   template<class Config = DefaultReprConfig, class Arg>

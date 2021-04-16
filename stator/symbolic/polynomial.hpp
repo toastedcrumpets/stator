@@ -22,6 +22,7 @@
 
 //stator
 #include <stator/symbolic/numeric.hpp>
+#include <stator/symbolic/precision.hpp>
 #include <stator/exception.hpp>
 #include <stator/config.hpp>
 
@@ -421,6 +422,18 @@ namespace sym {
     \name Polynomial transformations
     \{
   */
+
+  /*! \brief Shift a function forward. It returns \f$g(x)=f(x+a)\f$
+
+    For constant terms, these remain the same so this generic
+    implementation does nothing.
+  */
+  template<class F, class Real,
+	   typename = typename std::enable_if<detail::IsConstant<F>::value>::type>
+  inline F shift_function(const F& f, const Real t) {
+    return f;
+  }
+
   /*! \brief Returns a polynomial \f$g(x)=f(x+t)\f$.
     
     Given a polynomial \f$f(x)\f$:
@@ -566,6 +579,13 @@ namespace sym {
     \{
   */
   
+  /*! \brief Estimate the error in evaluating a function at a given time.
+   */
+  template<class F, class Real,
+	     typename = typename std::enable_if<detail::IsConstant<F>::value>::type>
+  inline double precision(const F& f, const Real) {
+    return 0.0;
+  }
 
   /*! \brief Calculate a maximum error estimate for the evaluation
       of the polynomial at \f$x\f$.

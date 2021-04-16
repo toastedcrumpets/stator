@@ -238,20 +238,20 @@ namespace sym {
   template<>
   class Var<Dynamic> : public RTBaseHelper<Var<Dynamic> >, public Dynamic {
   public:
-    inline Var(const char v) : idx(v) {}
+    inline Var(const std::string v) : _id(v) {}
     
     template<typename ...Args>
     Var(const Var<Args...> v):
-      idx(Var<Args...>::idx)
+      _id(v.getID())
     {}
 
     inline bool operator==(const VarRT& o) const {
-      return idx == o.idx;
+      return _id == o._id;
     }
         
-    inline char getidx() const { return idx; } 
+    inline std::string getID() const { return _id; } 
     
-    char idx;
+    std::string _id;
   };
 
   /*! \brief Determine the derivative of a variable by another variable.
@@ -263,7 +263,7 @@ namespace sym {
   template<class ...Args1, class ...Args2,
 	   typename = typename std::enable_if<std::is_base_of<Dynamic, Var<Args1...> >::value || std::is_base_of<Dynamic, Var<Args2...> >::value>::type >
   Expr derivative(Var<Args1...> v1, Var<Args2...> v2) {
-    return Expr(v1.getidx() == v2.getidx());
+    return Expr(v1 == v2);
   }
 
   

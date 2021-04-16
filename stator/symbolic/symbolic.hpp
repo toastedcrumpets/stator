@@ -54,7 +54,6 @@ namespace sym {
 #include <stator/orphan/template_config.hpp>
 
 namespace sym {
-  
   /*! \brief Template argument for dynamic types, as well as their
       base class.
 
@@ -88,7 +87,10 @@ namespace sym {
     template<class Arg>
     auto operator=(const Arg& a) const -> STATOR_AUTORETURN(equal(*this, a));
 
-    char getidx() const { return Var::idx; }
+    template<typename ...Args2>
+    bool operator==(const Var<Args2...>& a) const { return Var::idx == Var<Args2...>::idx; }
+    
+    std::string getID() const { return std::string(1, Var::idx); }
   };
 
   template<typename Var1, typename Var2>
@@ -182,30 +184,13 @@ namespace sym {
     auto derivative(Var<Args1...>, Var<Args2...>) -> typename std::enable_if<Var<Args1...>::idx != Var<Args2...>::idx, Null>::type
   { return Null(); }
 
-  /*! \brief Shift a function forward. It returns \f$g(x)=f(x+a)\f$
-
-    For constant terms, these remain the same so this generic
-    implementation does nothing.
-  */
-  template<class F, class Real,
-	     typename = typename std::enable_if<detail::IsConstant<F>::value>::type>
-  inline F shift_function(const F& f, const Real t) {
-    return f;
-  }
   
-  /*! \brief Estimate the error in evaluating a function at a given time.
-   */
-  template<class F, class Real,
-	     typename = typename std::enable_if<detail::IsConstant<F>::value>::type>
-  inline double precision(const F& f, const Real) {
-    return 0.0;
-  }
-
   template<size_t Order, class Real = double, class PolyVar = Var<>> class Polynomial;
 }
 
 #include <stator/symbolic/binary_ops.hpp>
 #include <stator/symbolic/unary_ops.hpp>
+#include <stator/symbolic/list.hpp>
 #include <stator/symbolic/sub.hpp>
 #include <stator/symbolic/polynomial.hpp>
 #include <stator/symbolic/simplify.hpp>

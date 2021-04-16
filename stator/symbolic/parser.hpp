@@ -370,10 +370,12 @@ namespace sym {
 
 	//Its not a prefix operator or a number, if it is a single
 	//alpha character, then assume its a variable!
-	if ((token.size() == 1) && (std::isalpha(token[0])))
-	  return Expr(VarRT(token[0]));
-
-	stator_throw() << "Could not parse as a valid token?\n" << parserLoc();
+	
+	for (const char& c : token)
+	  if (!std::isalpha(c))
+	    stator_throw() << "Could not parse as a valid token?\n" << parserLoc();
+	    
+	return Expr(VarRT(token));
       }
 
       /*!\brief Main parsing entry function.

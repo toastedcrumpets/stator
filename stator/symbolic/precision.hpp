@@ -18,11 +18,6 @@
 */
 
 #pragma once
-#include <cstddef>
-#include <cstdlib>
-#include <cmath>
-#include <limits>
-#include <type_traits>
 
 namespace sym {
   /*! \name Math functions

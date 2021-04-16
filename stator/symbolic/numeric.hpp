@@ -18,8 +18,9 @@
 */
 
 #pragma once
-#include <stator/symbolic/precision.hpp>
 #include <array>
+#include <cmath>
+#include <limits>
 
 namespace stator {
   namespace numeric {

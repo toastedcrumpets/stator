@@ -190,7 +190,6 @@ namespace sym {
 
 #include <stator/symbolic/binary_ops.hpp>
 #include <stator/symbolic/unary_ops.hpp>
-#include <stator/symbolic/list.hpp>
 #include <stator/symbolic/sub.hpp>
 #include <stator/symbolic/polynomial.hpp>
 #include <stator/symbolic/simplify.hpp>

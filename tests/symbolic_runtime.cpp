@@ -181,3 +181,4 @@ UNIT_TEST( symbolic_runtime_derivative )
   UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("exp(x)"), Var<vidx<'x'>>())), Expr("exp(x)"));
   UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), Var<vidx<'x'>>())), Expr("exp(x)+x*exp(x)"));
 }
+

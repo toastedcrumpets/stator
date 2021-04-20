@@ -24,7 +24,8 @@
 
 #include <memory>
 #include <sstream>
-
+#include <vector>
+#include <functional>
 
 #ifdef STATOR_USE_BOOST_SHARED_PTR
 # include <boost/shared_ptr.hpp>
@@ -56,7 +57,8 @@ namespace sym {
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
   template<class T>  class ConstantRT;
   typedef Var<Dynamic> VarRT;
-
+  struct List;
+  
   /*! \brief The generic holder/smart pointer for a runtime Abstract
     Syntax Tree (AST) (expression).
     
@@ -94,6 +96,8 @@ namespace sym {
     inline
     Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
 
+    Expr(const List&);
+    
     bool operator==(const Expr&) const;
     bool operator!=(const Expr& o) const { return !(*this == o); }
     bool operator==(const detail::NoIdentity&) const { return false; }
@@ -108,21 +112,22 @@ namespace sym {
       static_assert(sizeof(T) == -1, "Missing index for runtime type");
     };
 
-    template<> struct RT_type_index<ConstantRT<double>>               { static const int value = 0; };
-    template<> struct RT_type_index<VarRT>                            { static const int value = 1; };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Sine>>      { static const int value = 2; };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Cosine>>    { static const int value = 3; };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Log>>       { static const int value = 4; };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Exp>>       { static const int value = 5; };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Absolute>>  { static const int value = 6; };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Arbsign>>   { static const int value = 7; };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Add, Expr>>      { static const int value = 8; };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Subtract, Expr>> { static const int value = 9; };
+    template<> struct RT_type_index<ConstantRT<double>>                     { static const int value = 0;  };
+    template<> struct RT_type_index<VarRT>                                  { static const int value = 1;  };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Sine>>            { static const int value = 2;  };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Cosine>>          { static const int value = 3;  };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Log>>             { static const int value = 4;  };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Exp>>             { static const int value = 5;  };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Absolute>>        { static const int value = 6;  };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Arbsign>>         { static const int value = 7;  };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Add, Expr>>      { static const int value = 8;  };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Subtract, Expr>> { static const int value = 9;  };
     template<> struct RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>> { static const int value = 10; };
     template<> struct RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>   { static const int value = 11; };
     template<> struct RT_type_index<BinaryOp<Expr, detail::Power, Expr>>    { static const int value = 12; };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Equality, Expr>>    { static const int value = 13; };
+    template<> struct RT_type_index<BinaryOp<Expr, detail::Equality, Expr>> { static const int value = 13; };
     template<> struct RT_type_index<BinaryOp<Expr, detail::Array, Expr>>    { static const int value = 14; };
+    template<> struct RT_type_index<List>                                   { static const int value = 15; };
     
     /*! \brief Abstract interface class for the visitor programming
       pattern for Expr types.
@@ -147,6 +152,7 @@ namespace sym {
       virtual RetType visit(const BinaryOp<Expr, detail::Power, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Array, Expr>& ) = 0;
+      virtual RetType visit(const List& ) = 0;
     };
 
 
@@ -187,6 +193,8 @@ namespace sym {
       inline virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const BinaryOp<Expr, detail::Array, Expr>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      inline virtual RetType visit(const List& x)
       { return static_cast<Derived*>(this)->apply(x); }
     };
   }
@@ -254,6 +262,9 @@ namespace sym {
     std::string _id;
   };
 
+
+  /*! \brief Specialisation of Var for runtime variables.*/
+  
   /*! \brief Determine the derivative of a variable by another variable.
 
     If the variable is NOT the variable in which a derivative is
@@ -365,6 +376,18 @@ namespace sym {
     Expr _r;
   };
 
+  struct List: public RTBaseHelper<List>, public std::vector<Expr> {
+  };
+
+  template<typename Var>
+  List derivative(const List& in, Var x) {
+    List out;
+    out.reserve(in.size()); //Preallocate new list for speed
+    for (size_t idx(0); idx < in.size(); ++idx)
+      out[idx] = derivative(in[idx], x);
+    return out;
+  }
+   
   inline Expr::Expr(const RTBase& v) : Base(v.clone()) {}
 
   inline Expr::Expr(const double& v) : Base(std::make_shared<ConstantRT<double> >(v)) {}
@@ -381,6 +404,8 @@ namespace sym {
   template<typename ...Args>
   Expr::Expr(const Var<Args...> v) : Base(std::make_shared<VarRT>(v)) {}
 
+  Expr::Expr(const List& v) : Base(std::make_shared<List>(v)) {}
+  
   template<class T>
   T Expr::as() const {
     auto* ptr = dynamic_cast<const ConstantRT<T>*>(Base::get());
@@ -582,48 +607,57 @@ namespace sym {
       //time cost.
 
       
-      ///*! \brief Visitor to allow the compile time derivative
-      //    implementation for unary operators. 
-      //	  
-      //	  This visitor is used to determine the type of the argument.
-      //*/
-      //template<class Op>
-      //struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
-      //	UnaryEval(VarRT var): _var(var) {}
-      //	template<class T> Expr apply(const T& arg) { return derivative(Op::apply(arg), _var); }
-      //	VarRT _var;
-      //};
-      //
-      ///*! \brief Handover to compile-time implementation for binary op derivatives. */
-      //template<class Op, class LHS_t, class RHS_t>
-      //Expr dd_visit(const LHS_t& l, const RHS_t& r) {
-      //	auto e = Op::apply(l, r);
-      //	return derivative(e, _var);
-      //}
+      /*! \brief Visitor to allow the compile time derivative
+          implementation for unary operators. 
+      	  
+      	  This visitor is used to determine the type of the argument.
+      */
+      template<class Op>
+      struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
+      	UnaryEval(VarRT var): _var(var) {}
+      	template<class T> Expr apply(const T& arg) { return derivative(Op::apply(arg), _var); }
+      	VarRT _var;
+      };
+      
+      /*! \brief Handover to compile-time implementation for binary op derivatives. */
+      template<class Op, class LHS_t, class RHS_t>
+      Expr dd_visit(const LHS_t& l, const RHS_t& r) {
+      	auto e = Op::apply(l, r);
+      	return derivative(e, _var);
+      }
       
       template<class T, typename = typename std::enable_if<IsConstant<T>::value>::type>
       Expr apply(const T& v) {
-	return ConstantRT<double>(0);
-      }
-
-      Expr apply(const VarRT& v) {
-	return Expr((v == _var) ? 1 : 0);
-      }
-
-      template<class Op>
-      Expr apply(const UnaryOp<Expr, Op>& v) {
-	return derivative(v, _var);
-	//UnaryEval<Op> visitor(_var);
-	//return v.getArg()->visit(visitor);
-      }
-
-      template<typename Op>
-      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
-	//DoubleDispatch1<DerivativeRT, Op> visitor(op.getRHS(), *this);
-	//return op.getLHS()->visit(visitor);
-	return derivative(op,_var);
+      	return ConstantRT<double>(0);
       }
       
+      Expr apply(const VarRT& v) {
+      	return Expr((v == _var) ? 1 : 0);
+      }
+      
+      Expr apply(const List& v) {
+      	return derivative(v, _var);
+      }
+      
+      template<class Op>
+      Expr apply(const UnaryOp<Expr, Op>& v) {
+      	return derivative(v, _var);
+      	//UnaryEval<Op> visitor(_var);
+      	//return v.getArg()->visit(visitor);
+      }
+      
+      template<typename Op>
+      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
+      	//DoubleDispatch1<DerivativeRT, Op> visitor(op.getRHS(), *this);
+      	//return op.getLHS()->visit(visitor);
+      	return derivative(op,_var);
+      }
+
+      //template<class Op>
+      //Expr apply(const Op& v) {
+      //	return derivative(v, _var);
+      //}
+
       VarRT _var;
     };
   }
@@ -743,7 +777,8 @@ namespace sym {
     case detail::RT_type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
     case detail::RT_type_index<BinaryOp<Expr, detail::Equality, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Equality, Expr>&>(*this));
     case detail::RT_type_index<BinaryOp<Expr, detail::Array, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Array, Expr>&>(*this));
-    default: stator_throw() << "Unhandled type index for the visitor";
+    case detail::RT_type_index<List>::value:                                   return c.visit(static_cast<const List&>(*this));
+    default: stator_throw() << "Unhandled type index (" << _type_idx << ") for the visitor";
     }
   }
 }

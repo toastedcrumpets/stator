@@ -208,7 +208,7 @@ UNIT_TEST( symbolic_parser_Expr_string_loop ) {
   expr_string_expr_conversion_check(x*(x*x));
 }
 
-UNIT_TEST( Parsing_Errors )
+UNIT_TEST( symbolic_parser_parsing_errors )
 {
   try {
     Expr("");
@@ -227,4 +227,11 @@ UNIT_TEST( Parsing_Errors )
     UNIT_TEST_ERROR("Unmatched left parenthesis was parsed without error");
   } catch (const stator::Exception& e) {
   }
+}
+
+UNIT_TEST( symbolic_parser_lists )
+{
+  //Dogfood a expression back into itself
+  auto e = Expr(stator::repr(Expr("[1,2,3]")));
+  std::cout << stator::repr(Expr("[1,2,3]")) << std::endl;
 }

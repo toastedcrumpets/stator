@@ -22,6 +22,7 @@
 #include <stator/symbolic/runtime.hpp>
 #include <stator/exception.hpp>
 #include <algorithm>
+#include <iostream>
 #include <cctype>
 #include <map>
 #include <sstream>
@@ -105,14 +106,18 @@ namespace sym {
 	_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower+1>());
 	_left_operators["-"].reset(new UnaryNegative<detail::Add::leftBindingPower+1>());
  
-	//The parenthesis operator is entirely handled by Parenthesis.
 	_left_operators["("].reset(new ParenthesisToken);
 	//A halt token stops parseExpression processing. The right
 	//parenthesis should be handled by the previous entry.
 	_right_operators[")"].reset(new HaltToken);
 
+	//List construction token
+	_left_operators["["].reset(new ListToken);
+	//List access token
 	_right_operators["["].reset(new WrappedBinaryOpToken<detail::Array>("]"));
+
 	_right_operators["]"].reset(new HaltToken);
+	_right_operators[","].reset(new HaltToken);
 	
 	//Most unary operators have high binding powers to grab the very next argument
 	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine, std::numeric_limits<int>::max()>());
@@ -245,7 +250,7 @@ namespace sym {
       struct LeftOperatorBase {
 	/*! \brief Takes one operand and returns the corresponding Expr.
 	*/
-	virtual Expr apply(Expr, ExprTokenizer&) const = 0;
+	virtual Expr apply(ExprTokenizer&) const = 0;
 	/*! \brief Binding power to the right arguments of the Token*/
 	virtual int BP() const = 0;
       };
@@ -269,9 +274,10 @@ namespace sym {
       };
 
       struct ParenthesisToken : public LeftOperatorBase {
-	Expr apply(Expr l, ExprTokenizer& tk) const {
+	Expr apply(ExprTokenizer& tk) const {
+	  Expr arg = tk.parseExpression(BP());
 	  tk.expect(")");
-	  return l;
+	  return arg;
 	}
 
 	//Parenthesis bind the whole following expression
@@ -280,6 +286,31 @@ namespace sym {
 	}
       };
 
+      struct ListToken : public LeftOperatorBase {
+	Expr apply(ExprTokenizer& tk) const {
+	  List a;
+	  
+	  if (tk.next() == "]") {
+	    tk.consume();
+	    return a;
+	  }
+	  
+	  while (true) {
+	    a.push_back(tk.parseExpression(BP()));
+	    if (tk.next() == "]") break;
+	    tk.expect(",");
+	  }
+	  
+	  tk.expect("]");
+	  return a;
+	}
+
+	//Parenthesis bind the whole following expression
+	int BP() const {
+	  return 0;
+	}
+      };
+      
       template<class Op>
       struct WrappedBinaryOpToken : RightOperatorBase {
 	WrappedBinaryOpToken(std::string end):
@@ -302,8 +333,8 @@ namespace sym {
       
       template<class Op, int tBP>
       struct UnaryOpToken : LeftOperatorBase {
-	Expr apply(Expr l, ExprTokenizer& tk) const {
-	  return Op::apply(l);
+	Expr apply(ExprTokenizer& tk) const {
+	  return Op::apply(tk.parseExpression(BP()));
 	}
 
 	int BP() const {
@@ -313,8 +344,8 @@ namespace sym {
 
       template<int tBP>
       struct SkipToken : public LeftOperatorBase {
-	Expr apply(Expr l, ExprTokenizer& tk) const {
-	  return l;
+	Expr apply(ExprTokenizer& tk) const {
+	  return tk.parseExpression(BP());
 	}
 	
 	int BP() const {
@@ -330,9 +361,9 @@ namespace sym {
 	  }
 	};
 	
-	Expr apply(Expr l, ExprTokenizer& tk) const {
+	Expr apply(ExprTokenizer& tk) const {
 	  Visitor v;
-	  return l->visit(v);
+	  return tk.parseExpression(BP())->visit(v);
 	}
 	
 	int BP() const {
@@ -365,7 +396,7 @@ namespace sym {
 	//Parse left operators
 	auto it = _left_operators.find(token);
 	if (it != _left_operators.end()) {
-	  return it->second->apply(parseExpression(it->second->BP()), *this);
+	  return it->second->apply(*this);
 	}
 
 	//Its not a prefix operator or a number, if it is a single
@@ -373,7 +404,7 @@ namespace sym {
 	
 	for (const char& c : token)
 	  if (!std::isalpha(c))
-	    stator_throw() << "Could not parse as a valid token?\n" << parserLoc();
+	    stator_throw() << "Could not parse \""+token+"\" as a valid token?\n" << parserLoc();
 	    
 	return Expr(VarRT(token));
       }

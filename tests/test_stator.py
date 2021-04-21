@@ -11,6 +11,11 @@ class Testfit(unittest.TestCase):
         self.assertEqual(repr(stator.Expr("[]")),"Expr('[]')")
         self.assertEqual(repr(stator.Expr("[1]")),"Expr('[1]')")
         self.assertEqual(repr(stator.Expr("[1, 2]")),"Expr('[1, 2]')")
+
+
+    def test_dict(self):
+        self.assertEqual(repr(stator.Expr("{}")),"Expr('{}')")
+        self.assertEqual(repr(stator.Expr("{x:1}")),"Expr('{x:1}')")
         
 if __name__ == "__main__":
     unittest.main()

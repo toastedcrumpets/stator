@@ -33,6 +33,8 @@
 #include <tuple>
 
 namespace sym {
+  template<size_t Order, class Real = double, class PolyVar = Var<>> class Polynomial;
+
   template<size_t Order, std::intmax_t num, std::intmax_t denom, class PolyVar>
   class Polynomial<Order, C<num, denom>, PolyVar> {
     static_assert(stator::detail::dependent_false<C<num, denom> >::value,  "Cannot use C types as the coefficients of a polynomial");
@@ -715,9 +717,19 @@ namespace sym {
     std::copy(a.begin()+1, a.end(), b.begin());
     return b;
   }
+
+
+  /*! \brief Determine the roots of the compile-time zero (we return
+    none, as we define roots as zero-crossings, not zero).
+
+    \param f The Polynomial to evaluate.
+  */
+  inline StackVector<double, 0> solve_real_roots(Null f) {
+    return StackVector<double, 0>();
+  }
   
   /*!
-    \brief Specialisation for no roots of a 0th order Polynomial.
+    \brief Determine the roots of a 0th-order Polynomial (obviously none).
 
     \param f The Polynomial to evaluate.
   */

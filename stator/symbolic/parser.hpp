@@ -111,13 +111,22 @@ namespace sym {
 	//parenthesis should be handled by the previous entry.
 	_right_operators[")"].reset(new HaltToken);
 
-	//List construction token
+	//List construction token (i.e. [1,2, x + y])
 	_left_operators["["].reset(new ListToken);
-	//List access token
+
+	//To allow commas to delimit statements/expressions i.e. in a list or dictionary.
+	_right_operators[","].reset(new HaltToken); 
+	
+	//List access token (i.e. x[1])
 	_right_operators["["].reset(new WrappedBinaryOpToken<detail::Array>("]"));
 
+	//Halt token for list access AND list construction
 	_right_operators["]"].reset(new HaltToken);
-	_right_operators[","].reset(new HaltToken);
+
+	//Dictionary construction
+	_left_operators["{"].reset(new DictToken);
+	_right_operators[":"].reset(new HaltToken); 
+	_right_operators["}"].reset(new HaltToken);
 	
 	//Most unary operators have high binding powers to grab the very next argument
 	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine, std::numeric_limits<int>::max()>());
@@ -302,6 +311,37 @@ namespace sym {
 	  }
 	  
 	  tk.expect("]");
+	  return a;
+	}
+
+	//Parenthesis bind the whole following expression
+	int BP() const {
+	  return 0;
+	}
+      };
+
+
+      struct DictToken : public LeftOperatorBase {
+	Expr apply(ExprTokenizer& tk) const {
+	  Dict a;
+	  
+	  if (tk.next() == "}") {
+	    tk.consume();
+	    return a;
+	  }
+	  
+	  while (true) {
+	    Expr key_expr = tk.parseExpression(BP());
+	    const VarRT& key = key_expr.as<VarRT>();
+	    
+	    tk.expect(":");
+	    Expr value = tk.parseExpression(BP());
+	    a[key.getID()] = value;
+	    if (tk.next() == "}") break;
+	    tk.expect(",");
+	  }
+	  
+	  tk.expect("}");
 	  return a;
 	}
 

@@ -187,4 +187,19 @@ namespace sym {
 
   template<std::intmax_t num, std::intmax_t den>
   constexpr C<(1 - 2 * (num < 0)) * num, (1 - 2 * (den < 0)) * den> abs(const C<num, den>& a) { return {}; }
+
+  namespace detail {
+    /*!\brief Type trait to determine if a certain type is a constant.
+
+	This is used to enable the derivative operation to convert
+	these types to Null types. It is also to apply a
+	specialised functions to these types.
+    */
+    template<class T>
+    struct IsConstant : std::conditional<std::is_arithmetic<T>::value || is_C<T>::value || std::is_base_of<Eigen::EigenBase<T>, T>::value, std::true_type, std::false_type>::type {};
+
+    template<class T>
+    struct IsConstant<std::complex<T> > : IsConstant<T> {};
+    
+  }// namespace detail
 }

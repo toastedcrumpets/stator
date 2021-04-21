@@ -81,19 +81,19 @@ UNIT_TEST( symbolic_rt_constants )
 
 
   //Check that the particular type operators are working
-  f = ConstantRT<double>(3.0) + ConstantRT<double>(2);
+  f = double(3.0) + double(2);
   UNIT_TEST_CHECK_EQUAL(5.0, simplify(f).as<double>());
 
-  f = ConstantRT<double>(3.0) - ConstantRT<double>(2);
+  f = double(3.0) - double(2);
   UNIT_TEST_CHECK_EQUAL(1.0, simplify(f).as<double>());
 
-  f = ConstantRT<double>(3.0) * ConstantRT<double>(2);
+  f = double(3.0) * double(2);
   UNIT_TEST_CHECK_EQUAL(6.0, simplify(f).as<double>());
 
-  f = ConstantRT<double>(3.0) / ConstantRT<double>(2);
+  f = double(3.0) / double(2);
   UNIT_TEST_CHECK_EQUAL(3.0/2, simplify(f).as<double>());
 
-  f = pow(ConstantRT<double>(3.0),ConstantRT<double>(2));
+  f = pow(double(3.0),double(2));
   UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
 }
 

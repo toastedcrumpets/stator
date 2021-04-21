@@ -108,6 +108,20 @@ namespace stator {
     return out.substr(0, out.size() - 2) + end;
   }
 
+  template<class Config = DefaultReprConfig>
+  inline std::string repr(const sym::Dict& f)
+  {
+    std::string out = std::string((Config::Latex_output) ? "\\left\\{" : "{");
+    const std::string end = std::string((Config::Latex_output) ? "\\right\\}" : "}");
+    if (f.empty())
+      return out+end;
+    
+    for (const auto& term : f)
+      out += repr<Config>(term.first) + ":" + repr<Config>(term.second) + ", ";
+    
+    return out.substr(0, out.size() - 2) + end;
+  }
+  
   template<class Config = DefaultReprConfig, class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
   std::string repr(const T& val) {
     std::ostringstream os;

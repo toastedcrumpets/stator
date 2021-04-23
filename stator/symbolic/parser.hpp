@@ -246,6 +246,8 @@ namespace sym {
       }
 
       struct RightOperatorBase {
+	virtual ~RightOperatorBase() {}
+	
 	/*! \brief Takes left operand and returns the corresponding
             Expr, fetching the right operands from the tokenizer.
 	 */
@@ -257,6 +259,8 @@ namespace sym {
       };
 
       struct LeftOperatorBase {
+	virtual ~LeftOperatorBase() {}
+	
 	/*! \brief Takes one operand and returns the corresponding Expr.
 	*/
 	virtual Expr apply(ExprTokenizer&) const = 0;

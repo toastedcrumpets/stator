@@ -35,6 +35,35 @@ namespace stator {
     return v.getID();
   }
 
+  /*! \relates Polynomial 
+    \name Polynomial input/output operations
+    \{
+  */
+  /*! \brief Returns a human-readable representation of the Polynomial. */
+  template<class Config = DefaultReprConfig, class Coeff_t, size_t N, class PolyVar>
+  inline std::string repr(const sym::Polynomial<N, Coeff_t, PolyVar>& poly) {
+    std::ostringstream oss;
+    size_t terms = 0;
+    oss << "P(";
+    for (size_t i(N); i != 0; --i) {
+      if (poly[i] == sym::empty_sum(poly[i])) continue;
+	if (terms != 0)
+	  oss << " + ";
+	++terms;
+	oss << repr<Config>(poly[i]) << "*" << PolyVar::idx;
+	if (i > 1)
+	  oss << "^" << i;
+    }
+    if ((poly[0] != sym::empty_sum(poly[0])) || (terms == 0)) {
+	if (terms != 0)
+	  oss << " + ";
+	++terms;
+	oss << repr<Config>(poly[0]);
+    }
+    oss << ")";
+    return oss.str();
+  }
+
   template<class Config = DefaultReprConfig, class Arg>
   inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Sine>& f)
   {
@@ -145,34 +174,6 @@ namespace stator {
     return os.str();
   }
   
-  /*! \relates Polynomial 
-    \name Polynomial input/output operations
-    \{
-  */
-  /*! \brief Returns a human-readable representation of the Polynomial. */
-  template<class Config = DefaultReprConfig, class Coeff_t, size_t N, class PolyVar>
-  inline std::string repr(const sym::Polynomial<N, Coeff_t, PolyVar>& poly) {
-    std::ostringstream oss;
-    size_t terms = 0;
-    oss << "P(";
-    for (size_t i(N); i != 0; --i) {
-      if (poly[i] == sym::empty_sum(poly[i])) continue;
-	if (terms != 0)
-	  oss << " + ";
-	++terms;
-	oss << repr<Config>(poly[i]) << "*" << PolyVar::idx;
-	if (i > 1)
-	  oss << "^" << i;
-    }
-    if ((poly[0] != sym::empty_sum(poly[0])) || (terms == 0)) {
-	if (terms != 0)
-	  oss << " + ";
-	++terms;
-	oss << repr<Config>(poly[0]);
-    }
-    oss << ")";
-    return oss.str();
-  }
   /*! \} */
 
   

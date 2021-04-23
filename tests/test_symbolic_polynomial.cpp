@@ -126,6 +126,16 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
   }
 }
 
+UNIT_TEST( poly_print )
+{
+  using namespace sym;
+  Polynomial<1> x{1, 1};
+  auto e = derivative(cos(Polynomial<0>{1}), Var<vidx<'x'> >());
+  stator::repr(e._r._arg);
+  stator::repr(e._r);
+  stator::repr(e); 
+ //stator::repr22(x);
+}
 
 UNIT_TEST( poly_variables )
 {

@@ -219,12 +219,12 @@ namespace sym {
 
   /*! \brief Symbolic unary positive operator. */
   template<class Arg,
-	   typename = typename std::enable_if<IsSymbolic<SymbolicOperator>::value>::type>
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
   Arg operator+(const Arg& l) { return l; }
 
   /*! \brief Symbolic unary negation operator. */
   template<class Arg,
-	   typename = typename std::enable_if<IsSymbolic<SymbolicOperator>::value>::type>
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
   auto operator-(const Arg& l) -> STATOR_AUTORETURN(C<-1>() * l)
 
   /*! \brief Symbolic addition operator. */

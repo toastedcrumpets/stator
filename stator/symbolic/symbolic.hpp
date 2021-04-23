@@ -47,7 +47,10 @@ namespace sym {
       Inheriting from this will enable symbolic operators (and
       construction of expressions) for that class.
   */
-  struct SymbolicOperator {};
+  struct SymbolicOperator {
+    //template<class T>
+    //auto operator[](const T& key) const -> STATOR_AUTORETURN()
+  };
 
   /*! \brief A test if a class is symbolic. 
     

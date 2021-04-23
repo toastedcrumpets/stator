@@ -58,8 +58,8 @@ namespace sym {
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
   template<class T>  class ConstantRT;
   typedef Var<Dynamic> VarRT;
-  struct List;
-  struct Dict;
+  class List;
+  class Dict;
   
   /*! \brief The generic holder/smart pointer for a runtime Abstract
     Syntax Tree (AST) (expression).

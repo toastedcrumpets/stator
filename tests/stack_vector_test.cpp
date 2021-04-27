@@ -18,6 +18,8 @@
 */
 
 #include <stator/orphan/stack_vector.hpp>
+#define UNIT_TEST_SUITE_NAME Stack_Vector_Test
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 using namespace stator::orphan;

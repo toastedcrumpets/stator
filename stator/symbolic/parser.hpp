@@ -340,7 +340,7 @@ namespace sym {
 	    
 	    tk.expect(":");
 	    Expr value = tk.parseExpression(BP());
-	    a[key.getID()] = value;
+	    a[key] = value;
 	    if (tk.next() == "}") break;
 	    tk.expect(",");
 	  }

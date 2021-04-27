@@ -26,6 +26,8 @@
 
 //stator
 #include <stator/symbolic/ad.hpp>
+#define UNIT_TEST_SUITE_NAME Symbolic_AD
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 #include <random>
@@ -152,7 +154,7 @@ void runtests()
     auto v = sym::ad<2>(F(f), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], std::exp(3*3), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], (2 * 3 * std::exp(3*3)) * sym::InvFactorial<1>::value(), 1e-14);
-    UNIT_TEST_CHECK_CLOSE(v[2], (2 * 3 * 3 + 1) * (2 * std::exp(3*3)) * sym::InvFactorial<2>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], (2 * 3 * 3 + 1) * (2 * std::exp(3*3)) * sym::InvFactorial<2>::value(), 1e-10);
   }
 
   //Logarithm
@@ -184,7 +186,7 @@ void runtests()
     auto v = sym::ad<2>(F(sym::pow(x,x)), x=3);
     UNIT_TEST_CHECK_CLOSE(v[0], std::pow(3,3), 1e-14);
     UNIT_TEST_CHECK_CLOSE(v[1], std::pow(3,3) * (std::log(3) + 1) * sym::InvFactorial<1>::value(), 1e-14);
-    UNIT_TEST_CHECK_CLOSE(v[2], std::pow(3,3) * (1.0 / 3 +std::pow(std::log(3) + 1, 2)) * sym::InvFactorial<2>::value(), 1e-14);
+    UNIT_TEST_CHECK_CLOSE(v[2], std::pow(3,3) * (1.0 / 3 +std::pow(std::log(3) + 1, 2)) * sym::InvFactorial<2>::value(), 1e-13);
   }
 }
 

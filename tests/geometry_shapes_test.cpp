@@ -24,6 +24,8 @@
 #include <stator/geometry/sphere.hpp>
 #include <stator/geometry/box.hpp>
 #include <stator/geometry/indicator.hpp>
+#define UNIT_TEST_SUITE_NAME Geometry_Shapes_Test
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 using namespace stator::geometry;

@@ -55,12 +55,4 @@ namespace sym {
 	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
   Var<Args1...> sub(const Var<Args1...>& f, const EqualityOp<Var2, Arg>& x)
   { return f; }
-
-  template<class LHS, class RHS, class Op, class Var, class Arg> 
-  auto sub(BinaryOp<LHS, Op, RHS> f, EqualityOp<Var, Arg> x)
-    -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
-
-  template<class Var, class Arg1, class Arg2, class Op>
-  auto sub(const UnaryOp<Arg1, Op>& f, const EqualityOp<Var, Arg2>& x)
-    -> STATOR_AUTORETURN(Op::apply(sub(f._arg, x)));  
 }

@@ -25,6 +25,8 @@
 
 //stator
 #include <stator/symbolic/symbolic.hpp>
+#define UNIT_TEST_SUITE_NAME Symbolic_Integration
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 //C++

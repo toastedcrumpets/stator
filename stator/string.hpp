@@ -22,6 +22,11 @@
 #include <memory>
 
 namespace stator {
+  
+  /*! \brief A compile-time (constexpr) conversion from a number to a string.
+  */
+
+  
   /*! \brief A C++ version of python's string trim function
     \in str The string to be trimmed.
     \in whitespace A string of characters to be treated as whitespace and trimmed from the start and end of the string.

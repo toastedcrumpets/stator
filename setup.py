@@ -11,6 +11,9 @@ from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 from glob import glob
 
+# Setup following advice from
+# https://www.benjack.io/2017/06/12/python-cpp-tests.html
+
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -74,10 +77,7 @@ class CatchTestCommand(TestCommand):
         super(CatchTestCommand, self).run()
         print("\nPython tests complete, now running C++ tests...\n")
         # Run catch tests
-        subprocess.call(['./*_test'],
-                        cwd=os.path.join('build',
-                                         self.distutils_dir_name('temp')),
-                        shell=True)
+        subprocess.call(['ctest -j8 --output-on-failure'], cwd=os.path.join('build', self.distutils_dir_name('temp')), shell=True)
 
 
 
@@ -97,9 +97,7 @@ setup(
         CMakeExtension('stator.core')
     ],
     extras_require={"test": "pytest"},
-    # Currently, build_ext only provides an optional "highest supported C++
-    # level" feature, but in the future it may provide more features.
-    cmdclass=dict(build_ext=CMakeBuild),
+    cmdclass=dict(build_ext=CMakeBuild, test=CatchTestCommand),
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     zip_safe=False,

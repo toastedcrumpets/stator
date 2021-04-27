@@ -19,6 +19,8 @@
 
 //stator
 #include <stator/symbolic/symbolic.hpp>
+#define UNIT_TEST_SUITE_NAME Symbolic_Poly
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 //C++
@@ -126,27 +128,16 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
   }
 }
 
-UNIT_TEST( poly_print )
-{
-  using namespace sym;
-  Polynomial<1> x{1, 1};
-  auto e = derivative(cos(Polynomial<0>{1}), Var<vidx<'x'> >());
-  stator::repr(e._r._arg);
-  stator::repr(e._r);
-  stator::repr(e); 
- //stator::repr22(x);
-}
-
 UNIT_TEST( poly_variables )
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
   Polynomial<1,double, Var<vidx<'y'> > > y{0, 1};
-  UNIT_TEST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()=Var<vidx<'x'> >()), "P(1*x)"));
 
+  UNIT_TEST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()=Var<>()), "P(1*x)"));
   UNIT_TEST_CHECK(compare_expression(expand(x * x * x), "P(1*x^3)"));
   UNIT_TEST_CHECK(compare_expression(expand(y * y * y), "P(1*y^3)"));
-  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()=Var<vidx<'x'> >()), "P(1*x^3)"));
+  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()=Var<>()), "P(1*x^3)"));
 }
 
 UNIT_TEST( poly_addition )
@@ -228,20 +219,20 @@ UNIT_TEST( poly_lower_order )
   UNIT_TEST_CHECK_EQUAL(poly4[0], 2);
   UNIT_TEST_CHECK_EQUAL(poly4[1], -1);
   UNIT_TEST_CHECK_EQUAL(poly4[2], 1);
-  UNIT_TEST_CHECK_EQUAL(sub(poly3, Var<vidx<'x'> >()=123), sub(poly4, Var<vidx<'x'> >()=123));
+  UNIT_TEST_CHECK_EQUAL(sub(poly3, Var<>()=123), sub(poly4, Var<>()=123));
 }
 
 UNIT_TEST( poly_simplify )
 {
   using namespace sym;
-  Var<vidx<'x'> > x;
+  Var<> x;
   //Test that simplify creates polynomials from Vars
   auto poly1 = expand(2 * x * x);
   UNIT_TEST_CHECK_EQUAL(poly1[0], 0);
   UNIT_TEST_CHECK_EQUAL(poly1[1], 0);
   UNIT_TEST_CHECK_EQUAL(poly1[2], 2);
 
-  Var<vidx<'y'> > y;
+  Var<vidx<1> > y;
   //Check that Polynomial simplifications exist for these functions
   expand(y+y);
   expand(y+y+y);
@@ -262,28 +253,28 @@ UNIT_TEST( poly_eval_limits )
 
   {//Check even positive polynomials
     auto f = expand(x * x - x + 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=0), 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=+HUGE_VAL), +HUGE_VAL);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=-HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=0), 3);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=+HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=-HUGE_VAL), +HUGE_VAL);
   }
 
   {//Check even negative polynomials
     auto f = expand(-x * x + x + 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=0), 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=+HUGE_VAL), -HUGE_VAL);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=-HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=0), 3);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=+HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd positive polynomials
     auto f = expand(x * x * x + x + 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=+HUGE_VAL), +HUGE_VAL);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=-HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=+HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=-HUGE_VAL), -HUGE_VAL);
   }
 
   {//Check odd negative polynomials
     auto f = expand(-x * x * x + x + 3);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=+HUGE_VAL), -HUGE_VAL);
-    UNIT_TEST_CHECK_EQUAL(sub(f, Var<vidx<'x'> >()=-HUGE_VAL), +HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=+HUGE_VAL), -HUGE_VAL);
+    UNIT_TEST_CHECK_EQUAL(sub(f, Var<>()=-HUGE_VAL), +HUGE_VAL);
   }
 }
 
@@ -309,7 +300,7 @@ UNIT_TEST( poly_derivative )
   UNIT_TEST_CHECK_EQUAL(sub(poly4, Var<>()=1), 3);
 
   C<2>() * derivative(x, Var<>()) * pow(x, C<1>());
-  //derivative(pow(x, C<2>), Var<vidx<'x'> >());
+  //derivative(pow(x, C<2>), Var<>());
   
   UNIT_TEST_CHECK(compare_expression(simplify(derivative(pow(x, C<2>()), Var<>())), C<2>()* Polynomial<1>{0,1}));
 }
@@ -339,26 +330,29 @@ UNIT_TEST( poly_deflation)
 	auto deflated = deflate_polynomial(poly, root1);
 	auto exact = expand((x - root2) * (x-root3));
 	for (size_t i(0); i < 3; ++i)
-	  if (exact[i] != 0)
-	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
-	  else
+	  if (exact[i] != 0) {
+	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], std::abs(exact[i]) * 1e-10);
+	  } else {
 	    UNIT_TEST_CHECK_SMALL(deflated[i], 1e-10);
+	  }
 	
 	deflated = deflate_polynomial(poly, root2);
 	exact = expand((x - root1) * (x-root3));
 	for (size_t i(0); i < 3; ++i)
-	  if (exact[i] != 0)
-	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
-	  else
+	  if (exact[i] != 0) {
+	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], std::abs(exact[i]) * 1e-10);
+	  } else {
 	    UNIT_TEST_CHECK_SMALL(deflated[i], 1e-10);
+	  }
 
 	deflated = deflate_polynomial(poly, root3);
 	exact = expand((x - root1) * (x-root2));
 	for (size_t i(0); i < 3; ++i)
-	  if (exact[i] != 0)
-	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], 1e-10);
-	  else
+	  if (exact[i] != 0) {
+	    UNIT_TEST_CHECK_CLOSE(deflated[i], exact[i], std::abs(exact[i]) * 1e-10);
+	  } else {
 	    UNIT_TEST_CHECK_SMALL(deflated[i], 1e-10);
+	  }
       }
 }
 
@@ -376,8 +370,8 @@ UNIT_TEST( poly_shift)
 	for (double shift : {-1.0, 2.0, 1e3, 3.14159265, -1e5}) {
 	  auto g = shift_function(f, shift);
 	  
-	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() = 0), sub(f, Var<vidx<'x'> >() = shift), 1e-10);
-	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<vidx<'x'> >() = 1e3), sub(f, Var<vidx<'x'> >() = 1e3 + shift), 1e-10);
+	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<>() = 0), sub(f, Var<>() = shift), std::abs(sub(f, Var<>() = shift)) * 1e-10);
+	  UNIT_TEST_CHECK_CLOSE(sub(g, Var<>() = 1e3), sub(f, Var<>() = 1e3 + shift), std::abs(sub(f, Var<>() = 1e3 + shift)) * 1e-10);
 	}
       }
 }
@@ -662,7 +656,7 @@ UNIT_TEST( polynomials_derivative_subtraction )
   using namespace sym;
   const Polynomial<1> x{0, 1};
   //Test Polynomial derivatives on subtraction Operation types
-  auto poly1 = expand(derivative(2*x*x - x, Var<vidx<'x'> >()));
+  auto poly1 = expand(derivative(2*x*x - x, Var<>()));
   //derivative will automatically combine polynomials
   UNIT_TEST_CHECK_EQUAL(poly1[0], -1);
   UNIT_TEST_CHECK_EQUAL(poly1[1], 4);
@@ -685,8 +679,8 @@ UNIT_TEST( function_poly_derivatives_special )
 
   //Check special case derivatives of Functions with constant
   //arguments.
-  UNIT_TEST_CHECK(compare_expression(derivative(sin(Polynomial<0>{1}), Var<vidx<'x'> >()), Null()));
-  UNIT_TEST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Var<vidx<'x'> >()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(sin(Polynomial<0>{1}), Var<>()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(cos(Polynomial<0>{1}), Var<>()), Null()));
 }
 
 UNIT_TEST( Poly_Vector_symbolic )
@@ -695,7 +689,7 @@ UNIT_TEST( Poly_Vector_symbolic )
 
   static_assert(sym::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
   
-  UNIT_TEST_CHECK(compare_expression(derivative(Vector{1,2,3}, Var<vidx<'x'> >()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(Vector{1,2,3}, Var<>()), Null()));
   UNIT_TEST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
   UNIT_TEST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
 
@@ -704,7 +698,7 @@ UNIT_TEST( Poly_Vector_symbolic )
   const size_t testcount = 100;
   const double errlvl = 1e-10;
 
-  Vector test1 = sub(Vector{0,1,2} * Var<vidx<'x'> >(), Var<vidx<'x'> >() = 2);
+  Vector test1 = sub(Vector{0,1,2} * Var<>(), Var<>() = 2);
   UNIT_TEST_CHECK(test1[0] == 0);
   UNIT_TEST_CHECK(test1[1] == 2);
   UNIT_TEST_CHECK(test1[2] == 4);
@@ -720,7 +714,7 @@ UNIT_TEST( Poly_Vector_symbolic )
       
       Vector r = axis * axis.dot(start);
       auto f = (start - r) * cos(x) + axis.cross(start) * sin(x) + r;
-      Vector err = end - sub(f, Var<vidx<'x'> >() = angle);
+      Vector err = end - sub(f, Var<>() = angle);
       
       UNIT_TEST_CHECK(std::abs(err[0]) < errlvl);
       UNIT_TEST_CHECK(std::abs(err[1]) < errlvl);

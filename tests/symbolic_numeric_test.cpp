@@ -19,11 +19,13 @@
 
 //stator
 #include <stator/symbolic/numeric.hpp>
+#define UNIT_TEST_SUITE_NAME Symbolic_Numeric
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 UNIT_TEST( Bisection_of_cubic )
 {
-  double tolerance = std::numeric_limits<double>::epsilon() * 5;
+  double tolerance = std::numeric_limits<double>::epsilon() * 10;
 
   double f_target = 1e-50;
 
@@ -37,14 +39,14 @@ UNIT_TEST( Bisection_of_cubic )
     double x = 0;
     bool result = stator::numeric::bisection(f, x, 0.0, 1e50);
     UNIT_TEST_CHECK(result);
-    UNIT_TEST_CHECK_CLOSE(x, x_target, tolerance);
+    UNIT_TEST_CHECK_CLOSE(x, x_target, x_target * tolerance);
     f_target *= 1.11;
   }
 }
 
 UNIT_TEST( Newton_Raphson_of_cubic )
 {
-  double tolerance = std::numeric_limits<double>::epsilon() * 5;
+  double tolerance = std::numeric_limits<double>::epsilon() * 8;
 
   double f_target = 1e-50;
 
@@ -58,7 +60,7 @@ UNIT_TEST( Newton_Raphson_of_cubic )
     double x = 1;
     bool result = stator::numeric::newton_raphson(f, x, 0.0, 1e50);
     UNIT_TEST_CHECK(result);
-    UNIT_TEST_CHECK_CLOSE(x, x_target, tolerance);
+    UNIT_TEST_CHECK_CLOSE(x, x_target, x_target * tolerance);
     f_target *= 1.11;
   }
 }
@@ -79,7 +81,7 @@ UNIT_TEST( Halleys_method_of_cubic )
     double x = 1;
     bool result = stator::numeric::halleys_method(f, x, 0.0, 1e50);
     UNIT_TEST_CHECK(result);
-    UNIT_TEST_CHECK_CLOSE(x, x_target, tolerance);
+    UNIT_TEST_CHECK_CLOSE(x, x_target, x_target * tolerance);
     f_target *= 1.11;
   }
 }

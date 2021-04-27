@@ -21,6 +21,8 @@
 // stator
 #include "stator/orphan/static_list.hpp"
 #include "stator/exception.hpp"
+#define UNIT_TEST_SUITE_NAME Static_List_Test
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 // C++

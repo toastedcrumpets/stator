@@ -19,6 +19,8 @@
 
 //stator
 #include <stator/symbolic/symbolic.hpp>
+#define UNIT_TEST_SUITE_NAME Symbolic_Poly_Solve_Roots
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 //C++
@@ -145,16 +147,18 @@ UNIT_TEST(poly_quadratic_roots_simple)
     auto poly = expand(-4 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
     UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
-    if (roots.size() == 1)
+    if (roots.size() == 1) {
       UNIT_TEST_CHECK_CLOSE(roots[0], 1.5, 1e-10);
+    }
   }
   
   {//quadratic but linear function with one root
     auto poly =  expand(0 * x * x + 12 * x - 9);
     auto roots = solve_real_roots(poly);
     UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
-    if (roots.size() == 1)
+    if (roots.size() == 1) {
       UNIT_TEST_CHECK_CLOSE(roots[0], 0.75, 1e-10);
+    }
   }
 
   {//constant function, with no roots
@@ -181,8 +185,8 @@ UNIT_TEST( poly_quadratic_special_cases)
     auto poly = expand(x * x + 712345.12 * x + 1.25);
     auto roots = solve_real_roots(poly);
     UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
-    UNIT_TEST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10 * 712345.1199985961);
+    UNIT_TEST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10 * 1.754767408250742e-6);
   }
 
   const double maxsqrt = std::sqrt(std::numeric_limits<double>::max());
@@ -192,8 +196,8 @@ UNIT_TEST( poly_quadratic_special_cases)
     auto roots = solve_real_roots(poly);
     UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
     //Mathematica value
-    UNIT_TEST_CHECK_CLOSE(roots[0], -1.3407807929942599e156, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[1], -9.322925914000258e-157, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.3407807929942599e156, 1e-10 * 1.3407807929942599e156);
+    UNIT_TEST_CHECK_CLOSE(roots[1], -9.322925914000258e-157, 1e-10 * 9.322925914000258e-157);
   }
 
   {//Large (+ve) constant coefficient
@@ -207,8 +211,8 @@ UNIT_TEST( poly_quadratic_special_cases)
     UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
 
     //Mathematica value
-    UNIT_TEST_CHECK_CLOSE(roots[0], -1.157920892373162e78, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[1], 1.157920892373162e78, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.157920892373162e78, 1e-10 * 1.157920892373162e78);
+    UNIT_TEST_CHECK_CLOSE(roots[1], 1.157920892373162e78, 1e-10 * 1.157920892373162e78);
   }
 }
 
@@ -298,8 +302,8 @@ UNIT_TEST( poly_cubic_special_cases )
     auto poly = expand((x * x + 712345.12 * x + 1.25) * x);
     auto roots = solve_real_roots(poly);
     UNIT_TEST_CHECK_EQUAL(roots.size(), 3u);
-    UNIT_TEST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -712345.1199985961, 1e-10 * 712345.1199985961);
+    UNIT_TEST_CHECK_CLOSE(roots[1], -1.754767408250742e-6, 1e-10 * 1.754767408250742e-6);
     UNIT_TEST_CHECK_CLOSE(roots[2], 0, 1e-10);
   }
 
@@ -329,18 +333,18 @@ UNIT_TEST( poly_cubic_special_cases )
     auto poly = expand(x * x * x - largeterm * x * x + 1.25);
     auto roots = solve_real_roots(poly);
     UNIT_TEST_CHECK_EQUAL(roots.size(), 3u);
-    UNIT_TEST_CHECK_CLOSE(roots[0], -9.655529977168658e-79, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[1], +9.655529977168658e-79, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[2], 1.3407807929942599e156, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -9.655529977168658e-79, 1e-10 * 9.655529977168658e-79);
+    UNIT_TEST_CHECK_CLOSE(roots[1], +9.655529977168658e-79, 1e-10 * 9.655529977168658e-79);
+    UNIT_TEST_CHECK_CLOSE(roots[2], 1.3407807929942599e156, 1e-10 * 1.3407807929942599e156);
   }
 
   {//Large x term
     auto poly = expand(x * x * x - x * x - largeterm * x + 1.25);
     auto roots = solve_real_roots(poly);
     UNIT_TEST_CHECK_EQUAL(roots.size(), 3u);
-    UNIT_TEST_CHECK_CLOSE(roots[0], -1.1579208923731622e78, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[1], 9.322925914000258e-157, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[2], 1.1579208923731622e78, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[0], -1.1579208923731622e78, 1e-10 * 1.1579208923731622e78);
+    UNIT_TEST_CHECK_CLOSE(roots[1], 9.322925914000258e-157, 1e-10 * 9.322925914000258e-157);
+    UNIT_TEST_CHECK_CLOSE(roots[2], 1.1579208923731622e78,  1e-10 * 1.1579208923731622e78);
   }
 
   const double smallerterm = maxsqrt * 1e-1;
@@ -350,8 +354,8 @@ UNIT_TEST( poly_cubic_special_cases )
     auto roots = solve_real_roots(poly);
     UNIT_TEST_CHECK_EQUAL(roots.size(), 3u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.0, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[1], 1.491668146240041472864517142264024641421371730393e-153, 1e-10);
-    UNIT_TEST_CHECK_CLOSE(roots[2], 1.340780792994259598314974448015366224371799690462e153, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(roots[1], 1.491668146240041472864517142264024641421371730393e-153, 1e-10 * 1.491668146240041472864517142264024641421371730393e-153);
+    UNIT_TEST_CHECK_CLOSE(roots[2], 1.340780792994259598314974448015366224371799690462e153, 1e-10 * 1.340780792994259598314974448015366224371799690462e153);
   }
 }
 

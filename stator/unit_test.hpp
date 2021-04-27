@@ -19,6 +19,21 @@
 
 #pragma once
 
+#ifdef UNIT_TEST_GOOGLE
+# include <gtest/gtest.h>
+# define UNIT_TEST(A) TEST(UNIT_TEST_SUITE_NAME, A)
+# define UNIT_TEST_CHECK_EQUAL(A, B) ASSERT_EQ(A, B)
+# define UNIT_TEST_CHECK(Expr) ASSERT_TRUE(Expr)
+# define UNIT_TEST_CHECK_CLOSE(A, B, TOL) ASSERT_NEAR(A, B, TOL);
+# define UNIT_TEST_CHECK_SMALL(A, TOL) ASSERT_NEAR(A, 0, TOL);
+# define UNIT_TEST_ERROR(MSG) 
+
+int main(int argc, char **argv) {
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+#else
+
 #include <iostream>
 #include <string>
 #include <functional>
@@ -143,3 +158,5 @@ int main() {
     return 1;
   }
 }
+
+#endif

@@ -62,8 +62,22 @@ namespace sym {
     struct Arbsign {
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Arbsign>(a)));
     };
+
+    struct Negate {
+      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(-a);
+    };
   }
 
+  /*! \brief Symbolic unary positive operator. */
+  template<class Arg,
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
+  Arg operator+(const Arg& l) { return l; }
+
+  /*! \brief Symbolic unary negation operator. */
+  template<class Arg,
+	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
+  auto operator-(const Arg& l)  -> STATOR_AUTORETURN((UnaryOp<decltype(store(l)), detail::Negate>(l)));
+  
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
   auto sin(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Sine>(arg)));
@@ -99,5 +113,68 @@ namespace sym {
     -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::abs(f._arg) / f._arg);
   template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Arbsign>& f, Var x)
     -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::arbsign(Unity()));
-}
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Negate>& f, Var x)
+    -> STATOR_AUTORETURN(-derivative(f._arg, x));
 
+  template<class Var, class Arg1, class Arg2, class Op>
+  auto sub(const UnaryOp<Arg1, Op>& f, const EqualityOp<Var, Arg2>& x)
+    -> STATOR_AUTORETURN(Op::apply(sub(f._arg, x)));  
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Sine>& f)
+  {
+    return std::string((Config::Latex_output) ? "\\sin\\left(" : "sin(")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right)" : ")")
+      ;
+  }
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Cosine>& f)
+  {
+    return std::string((Config::Latex_output) ? "\\cos\\left(" : "cos(")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right)" : ")")
+      ;
+  }
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Exp>& f)
+  {
+    return
+      std::string((Config::Latex_output) ? "\\mathrm{e}^{" : "exp(")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "}" : ")")
+      ;
+  }
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Log>& f)
+  {
+    return
+      std::string((Config::Latex_output) ? "\\ln\\left(" : "ln(")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right)" : ")")
+      ;
+  }
+
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Absolute>& f)
+  {
+    return
+      std::string((Config::Latex_output) ? "\\left|" : "|")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right|" : "|")
+      ;
+  }
+  
+  template<class Config = DefaultReprConfig, class Arg>
+  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Arbsign>& f)
+  {
+    return
+      std::string((Config::Latex_output) ? "\\pm\\left|" : "±|")
+      + repr<Config>(f._arg)
+      + std::string((Config::Latex_output) ? "\\right|" : "|")
+      ;
+  }
+}

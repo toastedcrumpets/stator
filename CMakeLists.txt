@@ -128,32 +128,37 @@ endif(DOXYGEN_FOUND)
 ######################################################################
 ######### TEST TARGETS
 ######################################################################
+find_package(GTest REQUIRED)
+
+
 function(stator_test name) #Registers a unit-test
   add_executable(${name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${name}.cpp)
+  target_include_directories(${name} PUBLIC ${GTEST_INCLUDE_DIRS})
+  target_link_libraries(${name} PUBLIC ${GTEST_LIBRARIES} pthread)
   add_test(${name} ${name})
 endfunction(stator_test)
 
-add_executable(symbolic_example ${CMAKE_CURRENT_SOURCE_DIR}/examples/symbolic_example.cpp)
+#add_executable(symbolic_example ${CMAKE_CURRENT_SOURCE_DIR}/examples/symbolic_example.cpp)
 
 #stator_test(orphan_static_list)
-stator_test(test_stack_vector)
+stator_test(stack_vector_test)
 
 if(CXX11_TEMPLATE_TYPEDEFS)
-  #stator_test(geometry_shapes)
-  stator_test(test_symbolic_generic)
-  stator_test(test_symbolic_polynomial)
-  stator_test(test_symbolic_poly_solve_roots)
-  stator_test(test_symbolic_poly_taylor)
-  stator_test(test_symbolic_runtime)
-  stator_test(test_symbolic_numeric)
-  stator_test(test_symbolic_parser)
-  stator_test(test_symbolic_ad)
-  #stator_test(test_symbolic_integration)
+  #stator_test(geometry_shapes_test)
+  stator_test(symbolic_generic_test)
+  stator_test(symbolic_polynomial_test)
+  stator_test(symbolic_poly_solve_roots_test)
+  stator_test(symbolic_poly_taylor_test)
+  stator_test(symbolic_runtime_test)
+  #stator_test(symbolic_numeric_test)
+  #stator_test(symbolic_parser_test)
+  #stator_test(symbolic_ad_test)
+  #stator_test(symbolic_integration_test)
 endif()
 
 ######################################################################
 ########## PYTHON INTERFACE
 ######################################################################
-add_subdirectory(extern/pybind11)
-pybind11_add_module(core pysrc/stator/core.cpp)
-target_include_directories(core PRIVATE ${PROJECT_SOURCE_DIR})
+#add_subdirectory(extern/pybind11)
+#pybind11_add_module(core pysrc/stator/core.cpp)
+#target_include_directories(core PRIVATE ${PROJECT_SOURCE_DIR})

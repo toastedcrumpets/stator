@@ -33,6 +33,7 @@
 #include <tuple>
 
 namespace sym {
+  //The default polynomial 
   template<size_t Order, class Real = double, class PolyVar = Var<>> class Polynomial;
 
   template<size_t Order, std::intmax_t num, std::intmax_t denom, class PolyVar>
@@ -184,6 +185,16 @@ namespace sym {
   sub(const Polynomial<Order, Coeff_t, Var1>& f, const EqualityOp<Var2, Var<VarArgs...> >& x_container)
   { return Polynomial<Order, Coeff_t, Var<VarArgs...> >(f.begin(), f.end()); }
 
+
+  /*! \brief Substitution when polynomial is not in the correct variable.
+   */
+  template<class Coeff_t, size_t Order, class Var1, class Var2, class SUB,
+	   typename = typename enable_if_var_not_in<Var2, Var1>::type>
+  Polynomial<Order, Coeff_t, Var1>
+  sub(const Polynomial<Order, Coeff_t, Var1>& f, const EqualityOp<Var2, SUB>& x_container)
+  { return f; }
+  
+  
   /*! \brief Optimised Polynomial substitution for Null
       insertions. */
   template<size_t Order, class Coeff_t, class PolyVar, class SubVar,
@@ -1874,4 +1885,35 @@ namespace sym {
 	return os;
     }
   }  
-} // namespace sym
+
+  /*! \relates Polynomial 
+    \name Polynomial input/output operations
+    \{
+  */
+  /*! \brief Returns a human-readable representation of the Polynomial. */
+  template<class Config = DefaultReprConfig, class Coeff_t, size_t N, class PolyVar>
+  inline std::string repr(const sym::Polynomial<N, Coeff_t, PolyVar>& poly) {
+    std::ostringstream oss;
+    size_t terms = 0;
+    oss << "P(";
+    for (size_t i(N); i != 0; --i) {
+      if (poly[i] == sym::empty_sum(poly[i])) continue;
+	if (terms != 0)
+	  oss << " + ";
+	++terms;
+	oss << repr<Config>(poly[i]) << "*" << PolyVar::getName();
+	if (i > 1)
+	  oss << "^" << i;
+    }
+    if ((poly[0] != sym::empty_sum(poly[0])) || (terms == 0)) {
+	if (terms != 0)
+	  oss << " + ";
+	++terms;
+	oss << repr<Config>(poly[0]);
+    }
+    oss << ")";
+    return oss.str();
+  }
+  /*! \} */
+}
+		

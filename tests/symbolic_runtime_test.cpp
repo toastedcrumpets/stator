@@ -19,7 +19,9 @@
 
 #include <iostream>
 //stator
-#include <stator/symbolic/symbolic.hpp>
+#include <stator/symbolic/runtime.hpp>
+#define UNIT_TEST_SUITE_NAME Symbolic_Runtime
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 #include <random>

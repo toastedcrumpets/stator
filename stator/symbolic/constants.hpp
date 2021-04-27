@@ -105,6 +105,12 @@ namespace sym {
     typedef C<1, 1> value;
   };
 
+  template<std::intmax_t n1, std::intmax_t d1>
+  constexpr auto operator-(C<n1, d1>) -> STATOR_AUTORETURN((C<-n1, d1>()));
+
+  template<std::intmax_t n1, std::intmax_t d1>
+  constexpr auto operator+(C<n1, d1>) -> STATOR_AUTORETURN((C<n1, d1>()));
+  
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
   constexpr auto operator+(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_add<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
 
@@ -120,7 +126,7 @@ namespace sym {
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
   constexpr bool operator==(const C<n1, d1>&, const C<n2, d2>&)
   { return std::ratio_equal<std::ratio<n1, d1>, std::ratio<n2, d2> >::value; }
-  
+
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
   T operator+(const T& l, Null) { return l; }
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
@@ -202,4 +208,13 @@ namespace sym {
     struct IsConstant<std::complex<T> > : IsConstant<T> {};
     
   }// namespace detail
+
+  template<class Config = DefaultReprConfig, std::intmax_t Num, std::intmax_t Denom>
+  inline std::string repr(const sym::C<Num, Denom>)
+  {
+    if (Config::Debug_output)
+      return "C<" + repr(Num) + ((Denom!=1) ? (std::string(", ") + repr(Denom) + ">") : std::string(">"));
+    else
+      return (Denom!=1) ? ("("+repr(Num)+"/"+repr(Denom)+")") : repr(Num);
+  }
 }

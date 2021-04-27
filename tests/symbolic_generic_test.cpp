@@ -19,6 +19,8 @@
 
 //stator
 #include <stator/symbolic/symbolic.hpp>
+#define UNIT_TEST_SUITE_NAME Symbolic_Generic
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 #include <random>
@@ -183,7 +185,7 @@ UNIT_TEST( Var_tests )
 {
   Var<> x;
   Var<vidx<'y'>> y;
-
+  
   UNIT_TEST_CHECK(compare_expression(x, "x")); 
   UNIT_TEST_CHECK(compare_expression(y, "y"));
   UNIT_TEST_CHECK(compare_expression(derivative(x, Var<>()), Unity()));

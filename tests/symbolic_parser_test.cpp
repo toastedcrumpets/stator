@@ -20,6 +20,8 @@
 #include <iostream>
 //stator
 #include <stator/symbolic/symbolic.hpp>
+#define UNIT_TEST_SUITE_NAME Symbolic_Parser
+#define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
 
 using namespace sym;
@@ -82,7 +84,7 @@ UNIT_TEST( symbolic_parser_P )
     shared_ptr<const VarRT> v2 = dynamic_pointer_cast<const VarRT>(v);
     
     UNIT_TEST_CHECK(bool(v2));
-    UNIT_TEST_CHECK_EQUAL(v2->getID(), "p");
+    UNIT_TEST_CHECK_EQUAL(v2->getName(), "p");
   }
 
   //Test variable recognition and parsing
@@ -92,7 +94,7 @@ UNIT_TEST( symbolic_parser_P )
     shared_ptr<const VarRT> v2 = dynamic_pointer_cast<const VarRT>(v);
     
     UNIT_TEST_CHECK(bool(v2));
-    UNIT_TEST_CHECK_EQUAL(v2->getID(), "pow");
+    UNIT_TEST_CHECK_EQUAL(v2->getName(), "pow");
   }
 }
 
@@ -134,7 +136,7 @@ UNIT_TEST( symbolic_parser_Exp ) {
   {
     detail::ExprTokenizer tk("2^3^4");
     Expr v = tk.parseExpression();    
-    UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 2.417851639e24, 1e-10);
+    UNIT_TEST_CHECK_CLOSE(simplify(v).as<double>(), 2.417851639e24, 2.417851639e24 * 1e-10);
   } 
 
   //Test of parenthesis having high binding power
@@ -196,7 +198,7 @@ void expr_string_expr_conversion_check(const T in_expr) {
 
 UNIT_TEST( symbolic_parser_Expr_string_loop ) {
   //Check for consistency between saving and loading of expressions
-  Var<vidx<'x'>> x;
+  Var<> x;
   Var<vidx<'T'>> T;
 
   expr_string_expr_conversion_check(simplify(80*T*(1-log(T))+-318862-T*-410.30773724552921));

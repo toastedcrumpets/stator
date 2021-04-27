@@ -24,6 +24,7 @@
 
 #include <stator/config.hpp>
 #include <stator/constants.hpp>
+#include <stator/repr.hpp>
 #include <stator/orphan/stack_vector.hpp>
 #include <Eigen/Dense>
 #include <complex>
@@ -32,15 +33,17 @@
 #include <stator/orphan/template_config.hpp>
 
 namespace sym {
-  using stator::orphan::StackVector;
-  using stator::detail::store;
-
   namespace detail {
     using stator::detail::choice;
     using stator::detail::last_choice;
     using stator::detail::select_overload;
   } // namespace detail
-
+  
+  using stator::orphan::StackVector;
+  using stator::detail::store;
+  using stator::repr;
+  using stator::DefaultReprConfig;
+  
   /*! \brief A type trait to denote symbolic terms (i.e., one that
       is not yet immediately evaluable to a "normal" type).
       
@@ -61,7 +64,7 @@ namespace sym {
   struct IsSymbolic {
     static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
   };
-
+  
   /*! \brief Template argument for dynamic/run-time types, as well as
       their base class.
 
@@ -81,18 +84,25 @@ namespace sym {
   struct IsDynamic {
     static constexpr bool value = std::is_base_of<Dynamic, T>::value;
   };
+
+  template<class T, typename = typename std::enable_if<sym::IsSymbolic<T>::value>::type>
+  std::ostream& operator<<(std::ostream& os, const T& v) {
+    return os << repr(v);
+  }
 }
+
 
 #include <stator/symbolic/constants.hpp>
 #include <stator/symbolic/variable.hpp>
 #include <stator/symbolic/empty_sum.hpp>
 #include <stator/symbolic/binary_ops.hpp>
-#include <stator/symbolic/unary_ops.hpp>
 #include <stator/symbolic/sub.hpp>
+#include <stator/symbolic/unary_ops.hpp>
 #include <stator/symbolic/polynomial.hpp>
 #include <stator/symbolic/simplify.hpp>
 #include <stator/symbolic/integrate.hpp>
 #include <stator/symbolic/taylor.hpp>
-#include <stator/symbolic/runtime.hpp>
-#include <stator/symbolic/parser.hpp>
-#include <stator/symbolic/print.hpp>
+
+// If you need runtime expressions and parsing, please include
+// <stator/symbolic/runtime.hpp> instead of this file.
+

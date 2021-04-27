@@ -20,7 +20,6 @@
 #pragma once
 
 #include <stator/symbolic/symbolic.hpp>
-#include <stator/repr.hpp>
 
 #include <memory>
 #include <sstream>
@@ -46,9 +45,7 @@ namespace sym {
 namespace sym {
   class RTBase;
   struct Expr;
-}
 
-namespace stator {
   template<class Config = DefaultReprConfig> std::string repr(const sym::RTBase&);
   template<class Config = DefaultReprConfig> std::string repr(const sym::Expr&);
 }
@@ -132,6 +129,7 @@ namespace sym {
     template<> struct RT_type_index<BinaryOp<Expr, detail::Array, Expr>>    { static const int value = 14; };
     template<> struct RT_type_index<List>                                   { static const int value = 15; };
     template<> struct RT_type_index<Dict>                                   { static const int value = 16; };
+    template<> struct RT_type_index<UnaryOp<Expr, detail::Negate>>          { static const int value = 17;  };
     
     /*! \brief Abstract interface class for the visitor programming
       pattern for Expr types.
@@ -158,6 +156,7 @@ namespace sym {
       virtual RetType visit(const BinaryOp<Expr, detail::Array, Expr>& ) = 0;
       virtual RetType visit(const List& ) = 0;
       virtual RetType visit(const Dict& ) = 0;
+      virtual RetType visit(const UnaryOp<Expr, detail::Negate>& ) = 0;
     };
 
 
@@ -201,6 +200,8 @@ namespace sym {
       inline virtual RetType visit(const List& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const Dict& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      inline virtual RetType visit(const UnaryOp<Expr, detail::Negate>& x)
       { return static_cast<Derived*>(this)->apply(x); }
     };
   }
@@ -252,10 +253,15 @@ namespace sym {
   template<>
   class Var<Dynamic> : public RTBaseHelper<Var<Dynamic> >, public Dynamic {
   public:
-    inline Var(const std::string v="x") : _id(v) {}
+    inline Var(const std::string name="x", const size_t id = 'x') :
+      _name(name)
+    {
+      _id = std::hash<std::string>{}(_name);
+    }
 
     template<typename ...Args>
     Var(const Var<Args...> v):
+      _name(v.getName()),
       _id(v.getID())
     {}
 
@@ -263,11 +269,12 @@ namespace sym {
       return _id == o._id;
     }
         
-    inline std::string getID() const { return _id; } 
+    inline std::string getName() const { return _name; } 
+    inline size_t getID() const { return _id; } 
     
-    std::string _id;
+    std::string _name;
+    size_t _id;
   };
-
 }
 
 namespace std
@@ -276,7 +283,7 @@ namespace std
   {
     std::size_t operator()(sym::VarRT const& v) const noexcept
     {
-      return std::hash<std::string>{}(v._id);
+      return std::hash<size_t>{}(v.getID());
     }
   };
 }
@@ -436,7 +443,7 @@ namespace sym {
 
   
   class Dict: public RTBaseHelper<Dict> {
-    typedef std::unordered_map<std::string, Expr> Store;
+    typedef std::unordered_map<VarRT, Expr> Store;
 
   public:
     Dict() {}
@@ -455,8 +462,7 @@ namespace sym {
     typedef Store::reference reference;
     typedef Store::const_reference const_reference;
 
-    Expr& operator[](const VarRT& k) { return _store[k.getID()]; }
-    Expr& operator[](const std::string& k) { return _store[k]; }
+    Expr& operator[](const VarRT& k) { return _store[k]; }
 
     Store::size_type size() const noexcept { return _store.size(); } 
     bool empty() const noexcept { return _store.empty(); }
@@ -721,7 +727,7 @@ namespace sym {
       
       //By default, throw an exception!
       template<class T>
-      Expr apply(const T& v) { stator_throw() << "fast_sub cannot operate on this (" << stator::repr(v) << ") expression"; }
+      Expr apply(const T& v) { stator_throw() << "fast_sub cannot operate on this (" << repr(v) << ") expression"; }
 
       Expr apply(const double& v) {
 	_intermediate = v;
@@ -734,7 +740,7 @@ namespace sym {
 	  _intermediate = _replacement;
 	  return Expr();
 	}
-	stator_throw() << "Unexpected variable " << stator::repr(v) << " for fast_sub";
+	stator_throw() << "Unexpected variable " << repr(v) << " for fast_sub";
       }
       
       template<typename Op>
@@ -754,10 +760,10 @@ namespace sym {
       }
 
       Expr apply(const BinaryOp<Expr, detail::Equality, Expr>& op)
-      { stator_throw() << "fast_sub cannot operate on this (" << stator::repr(op) << ") expression"; }
+      { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
 
       Expr apply(const BinaryOp<Expr, detail::Array, Expr>& op)
-      { stator_throw() << "fast_sub cannot operate on this (" << stator::repr(op) << ") expression"; }
+      { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
       
       VarRT _var;
       double _replacement;
@@ -792,7 +798,114 @@ namespace sym {
     case detail::RT_type_index<BinaryOp<Expr, detail::Array, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Array, Expr>&>(*this));
     case detail::RT_type_index<List>::value:                                   return c.visit(static_cast<const List&>(*this));
     case detail::RT_type_index<Dict>::value:                                   return c.visit(static_cast<const Dict&>(*this));
+    case detail::RT_type_index<UnaryOp<Expr, detail::Negate>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Negate>&>(*this));
     default: stator_throw() << "Unhandled type index (" << _type_idx << ") for the visitor";
     }
   }
+
+
+  namespace detail {
+    /*! \brief Binding power visitor for sym::detail::BP(const Expr&). */
+    struct BPVisitor : public sym::detail::VisitorHelper<BPVisitor> {
+      
+      template<class T> sym::Expr apply(const T& rhs) { return sym::Expr(); }
+
+      template<class Op> sym::Expr apply(const sym::BinaryOp<sym::Expr, Op, sym::Expr>& op) {
+	LBP = Op::leftBindingPower;
+	RBP = sym::detail::RBP<Op>();
+	return sym::Expr();
+      }
+      
+      int LBP = std::numeric_limits<int>::max();
+      int RBP = std::numeric_limits<int>::max();
+    };
+
+    /*! \brief Returns the binding powers (precedence) of binary
+        operators (specialisation for Expr).
+     */
+    inline std::pair<int, int> BP (const sym::Expr& v) {
+      BPVisitor vis;
+      v->visit(vis);
+      return std::make_pair(vis.LBP, vis.RBP);
+    }
+  }
+  
+  template<class Config = DefaultReprConfig>
+  inline std::string repr(const sym::List& f)
+  {
+    std::string out = std::string((Config::Latex_output) ? "\\left[" : "[");
+    const std::string end = std::string((Config::Latex_output) ? "\\right]" : "]");
+    if (f.empty())
+      return out+end;
+    
+    for (const auto& term : f)
+      out += repr<Config>(term) + ", ";
+    
+    return out.substr(0, out.size() - 2) + end;
+  }
+
+  template<class Config = DefaultReprConfig>
+  inline std::string repr(const sym::Dict& f)
+  {
+    std::string out = std::string((Config::Latex_output) ? "\\left\\{" : "{");
+    const std::string end = std::string((Config::Latex_output) ? "\\right\\}" : "}");
+    if (f.empty())
+      return out+end;
+    
+    for (const auto& term : f)
+      out += repr<Config>(term.first) + ":" + repr<Config>(term.second) + ", ";
+    
+    return out.substr(0, out.size() - 2) + end;
+  }
+  
+  template<class Config = DefaultReprConfig, class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
+  std::string repr(const T& val) {
+    std::ostringstream os;
+    if ((val.cols() == 1) && (val.rows()==1))
+      os << repr<Config>(val(0,0));
+    else if (val.cols() == 1) {
+      os << "{ ";
+      for (int i(0); i < val.rows(); ++i)
+	os << repr<Config>(val(i, 0)) << " ";
+      os << "}^T";
+    } else {
+      os << "{ ";
+      for (int i(0); i < val.cols(); ++i) {
+	os << "{ ";
+	for (int j(0); j < val.rows(); ++j)
+	  os << repr<Config>(val(i, j)) << " ";
+	os << "} ";
+      }
+      os << "}";
+    }
+    return os.str();
+  }
+  
+  /*! \} */
+
+  namespace detail {
+    template<class Config>
+    struct ReprVisitor : public sym::detail::VisitorHelper<ReprVisitor<Config> > {
+      template<class T> sym::Expr apply(const T& rhs) {
+	_repr = repr<Config>(rhs);
+	return sym::Expr();
+      }
+
+      std::string _repr;
+    };
+  }
+
+  template<class Config>
+  std::string repr(const sym::RTBase& b) {
+    detail::ReprVisitor<Config> visitor;
+    b.visit(visitor);
+    return visitor._repr;
+  }
+
+  template<class Config>
+  std::string repr(const sym::Expr& b) {
+    return repr<Config>(*b);
+  }
 }
+
+#include <stator/symbolic/parser.hpp>

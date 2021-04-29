@@ -5,7 +5,6 @@
 
 namespace sym {
   namespace detail {
-
     namespace varname_detail {
       /*! \brief Converts a series of template argument digits
        (i.e. <1,3,2,4>) into a const char array with the string
@@ -38,6 +37,13 @@ namespace sym {
     template<size_t idx, char nom>
     struct varname : public varname_detail::char_to_string<nom> {};
 
+    constexpr char alphaidx(const char v) {
+      return
+	((v >= '0') && (v <= '9')) * (v - '0')
+	+((v >= 'A') && (v <= 'Z')) * (v - 'A' + ('9'-'0'))
+	+ ((v >= 'a') && (v <= 'z')) * (v - 'a' + ('9'-'0') + ('Z'-'A'));
+    }
+    
     /*! \brief Generates a string that can be used as a variable name. 
       
       If the user doesn't supply a character this specialisation will
@@ -146,6 +152,8 @@ namespace sym {
 
   template<class Config = DefaultReprConfig, class ...Args>
   inline std::string repr(const sym::Var<Args...>& v) {
+    if (Config::Debug_output)
+      return "Var<" + repr<Config>(v.getID()) + ", \"" + v.getName() + "\">()";
     return v.getName();
   }
 }

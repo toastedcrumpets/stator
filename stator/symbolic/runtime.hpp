@@ -253,7 +253,7 @@ namespace sym {
   template<>
   class Var<Dynamic> : public RTBaseHelper<Var<Dynamic> >, public Dynamic {
   public:
-    inline Var(const std::string name="x", const size_t id = 'x') :
+    inline Var(const std::string name="x", const size_t id = std::numeric_limits<size_t>::max()) :
       _name(name)
     {
       _id = std::hash<std::string>{}(_name);
@@ -309,6 +309,10 @@ namespace sym {
   class ConstantRT : public RTBaseHelper<ConstantRT<T> > {
   public:
     ConstantRT(const T& v): _val(v) {}
+
+    bool operator==(const ConstantRT& o) const {
+      return _val == o._val;
+    }
     
     bool operator==(const Expr o) const;
     
@@ -428,6 +432,11 @@ namespace sym {
     void push_back(const Expr& value) { _store.push_back(value); }
     Store::size_type size() const noexcept { return _store.size(); } 
     bool empty() const noexcept { return _store.empty(); }
+
+    bool operator==(const List& o) const {
+      return _store == o._store;
+    }
+    
   private:
     Store _store;
   };
@@ -466,6 +475,10 @@ namespace sym {
 
     Store::size_type size() const noexcept { return _store.size(); } 
     bool empty() const noexcept { return _store.empty(); }
+
+    bool operator==(const Dict& o) const {
+      return _store == o._store;
+    }
     
   private:
     Store _store;

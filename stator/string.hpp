@@ -20,6 +20,8 @@
 #pragma once
 
 #include <memory>
+#include <iostream>
+#include <cstring>
 
 namespace stator {
   
@@ -86,4 +88,29 @@ namespace stator {
     
     return std::make_pair(in, replacements);
   }
+
+
+  template <std::size_t N>
+  struct StringConst
+  {
+    char buf[N + 1] {};
+    
+    constexpr StringConst() = default;
+    
+    constexpr StringConst(char const *s) { std::copy(s, s+N, buf); }
+    
+    constexpr StringConst(StringConst const &other)
+    {
+      std::copy(other.buf, other.buf+N, buf);
+    }
+      
+    auto constexpr operator==(StringConst const &other) const
+    { return std::equal(buf, buf + N, other.buf); }
+
+    std::size_t constexpr size() const { return N; }
+  };
+  
+  template <std::size_t N>
+  StringConst(char const (&)[N]) -> StringConst <N-1>;
+  
 }

@@ -64,7 +64,7 @@ else()
   check_include_file_cxx(Eigen/Dense HAS_LOCAL_EIGEN)
   if (HAS_LOCAL_EIGEN)
     message(STATUS "Using git submodule Eigen library.")
-    include_directories(${CMAKE_SOURCE_DIR}/extern/eigen)
+    include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/extern/eigen)
   else()
     message(SEND_ERROR "Could not find the Eigen library. Either install it to the system, or use the git submodule to download a local copy.")
   endif()
@@ -75,39 +75,8 @@ endif()
 ########## COMPILER C++11/C++0x SUPPORT TESTS
 ######################################################################
 ### First check if the compiler supports C++11 or C++0x and enable the build flag
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORT_CXX11)
-if(COMPILER_SUPPORT_CXX11)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-else()
-  check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORT_CXX0X)
-  if(COMPILER_SUPPORT_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-  else()
-    message(SEND_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 or C++0X support. You must install a more modern C++ compiler.")
-  endif()
-endif()
-
-#Test for different C++11 functionality
-if(NOT MSVC)
-  set(CMAKE_REQUIRED_FLAGS -Wfatal-errors)
-endif()
-
-check_cxx_source_compiles("int main(int, const char**) {int array[5] = {1,2,3,4,5}; for(int& x: array) x *= 2;}" CXX11_RANGE_BASED_FOR)
-check_cxx_source_compiles("template <class T> class A {}; template <class T> using B = A<T>; int main(int, const char**) { B<double> b; }" CXX11_TEMPLATE_TYPEDEFS)
-check_cxx_source_compiles("template <typename T> struct wrapped{ typedef T type;};
-template <typename T> typename T::type unwrap1(T a) { return typename T::type();}
-int unwrap(int a) { return 1; }
-template <typename T> auto unwrap(T t) -> decltype(unwrap(unwrap1(t))) { return unwrap(unwrap1(t)); }
-int main() { unwrap(wrapped<wrapped<int>>()); }" CXX11_TYPE_MANGLING)
-
-#Complain about missing functionality
-if(NOT CXX11_TYPE_MANGLING)
-  message(SEND_ERROR "C++11 decltype seems not to be working properly, please install a more modern C++ compiler.")
-endif()
-
-unset(CMAKE_REQUIRED_FLAGS)
-unset(CMAKE_REQUIRED_INCLUDES)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ######################################################################
 ########## HEADER DIRECTORIES
@@ -142,19 +111,16 @@ endfunction(stator_test)
 
 #stator_test(orphan_static_list)
 stator_test(stack_vector_test)
-
-if(CXX11_TEMPLATE_TYPEDEFS)
-  #stator_test(geometry_shapes_test)
-  stator_test(symbolic_generic_test)
-  stator_test(symbolic_polynomial_test)
-  stator_test(symbolic_poly_solve_roots_test)
-  stator_test(symbolic_poly_taylor_test)
-  stator_test(symbolic_runtime_test)
-  #stator_test(symbolic_numeric_test)
-  #stator_test(symbolic_parser_test)
-  #stator_test(symbolic_ad_test)
-  #stator_test(symbolic_integration_test)
-endif()
+#stator_test(geometry_shapes_test)
+stator_test(symbolic_generic_test)
+stator_test(symbolic_polynomial_test)
+stator_test(symbolic_poly_solve_roots_test)
+stator_test(symbolic_poly_taylor_test)
+stator_test(symbolic_runtime_test)
+#stator_test(symbolic_numeric_test)
+#stator_test(symbolic_parser_test)
+#stator_test(symbolic_ad_test)
+#stator_test(symbolic_integration_test)
 
 ######################################################################
 ########## PYTHON INTERFACE

@@ -37,8 +37,9 @@ void runtests()
 {
   Func F;
   
-  sym::Var<sym::vidx<'x'>> x;
-  sym::Var<sym::vidx<'y'>> y;
+  sym::Var<> x;
+  static constexpr char y_str[] = "y";
+  sym::Var<y_str> y;
 
   //Check derivatives of doubles are zero (apart from the zeroth derivative)
   {

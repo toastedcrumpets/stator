@@ -19,7 +19,7 @@
 
 #include <iostream>
 //stator
-#include <stator/symbolic/symbolic.hpp>
+#include <stator/symbolic/runtime.hpp>
 #define UNIT_TEST_SUITE_NAME Symbolic_Parser
 #define UNIT_TEST_GOOGLE
 #include <stator/unit_test.hpp>
@@ -199,7 +199,8 @@ void expr_string_expr_conversion_check(const T in_expr) {
 UNIT_TEST( symbolic_parser_Expr_string_loop ) {
   //Check for consistency between saving and loading of expressions
   Var<> x;
-  Var<vidx<'T'>> T;
+  static constexpr char T_str[] = "T";
+  Var<T_str> T;
 
   expr_string_expr_conversion_check(simplify(80*T*(1-log(T))+-318862-T*-410.30773724552921));
   expr_string_expr_conversion_check(x * (-123.2));
@@ -234,6 +235,11 @@ UNIT_TEST( symbolic_parser_parsing_errors )
 UNIT_TEST( symbolic_parser_lists )
 {
   //Dogfood a expression back into itself
-  auto e = Expr(stator::repr(Expr("[1,2,3]")));
-  std::cout << stator::repr(Expr("[1,2,3]")) << std::endl;
+  expr_string_expr_conversion_check("[1, 2, 3]");
+}
+
+UNIT_TEST( symbolic_parser_dict )
+{
+  //Dogfood a expression back into itself
+  expr_string_expr_conversion_check("{x:1-2, y:3}");
 }

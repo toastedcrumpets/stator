@@ -62,12 +62,15 @@ bool compare_expression(const T1& f, const T2& g) {
   return f_str == g_str;
 }
 
+static const char y_str[] = "y";
+
+
 UNIT_TEST( poly_taylor )
 { 
   using namespace sym;
-  Var<vidx<'y'> > y;
+  Var<y_str> y;
 
-//  UNIT_TEST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Var<vidx<'x'> >()), simplify(y*y*y)));
+//  UNIT_TEST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Var<>()), simplify(y*y*y)));
 //  
 //  UNIT_TEST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), y), simplify(y*y*y)));
 //
@@ -101,12 +104,12 @@ UNIT_TEST( poly_taylor )
   //3:30
 
   //Partially truncate a Polynomial through expansion
-  //UNIT_TEST_CHECK(compare_expression(expand(taylor_series<2>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<2,int,Var<vidx<'y'> > >{1,2,3}));
+  //UNIT_TEST_CHECK(compare_expression(expand(taylor_series<2>(Polynomial<3,int,Var<y_str> >{1,2,3,4}, Null(), y)), Polynomial<2,int,Var<y_str> >{1,2,3}));
   //
   ////Keep the order the same
-  //UNIT_TEST_CHECK(compare_expression(expand(taylor_series<3>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}));
+  //UNIT_TEST_CHECK(compare_expression(expand(taylor_series<3>(Polynomial<3,int,Var<y_str> >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<y_str> >{1,2,3,4}));
   //
   ////Taylor simplify at a higher order
-  //UNIT_TEST_CHECK(compare_expression(expand(taylor_series<4>(Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<vidx<'y'> > >{1,2,3,4})); 
+  //UNIT_TEST_CHECK(compare_expression(expand(taylor_series<4>(Polynomial<3,int,Var<y_str> >{1,2,3,4}, Null(), y)), Polynomial<3,int,Var<y_str> >{1,2,3,4})); 
 #endif
 }

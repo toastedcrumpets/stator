@@ -147,9 +147,9 @@ namespace sym {
   auto simplify_BinaryOp(const BinaryOp<typename Op::left_identity, Op, RHS>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._r));
 
   //Special case for divide
-  template<class Config, class ...VarArgs1, class ...VarArgs2,
-	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  Unity simplify_BinaryOp(const BinaryOp<Var<VarArgs1...>, detail::Divide, Var<VarArgs2...>>& op, detail::choice<0>)
+  template<class Config, conststr N1, conststr N2, class ...VarArgs1, class ...VarArgs2,
+	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
+  Unity simplify_BinaryOp(const BinaryOp<Var<N1, VarArgs1...>, detail::Divide, Var<N2, VarArgs2...>>& op, detail::choice<0>)
   { return {};}
   
   //Special case for the subtraction binary operator becoming the unary negation operator
@@ -157,20 +157,20 @@ namespace sym {
   RHS simplify_BinaryOp(const SubtractOp<Null, RHS>& r, detail::choice<0>) { return try_simplify<Config>(-r._r); }
   
   //Transformations to power-ops where possible
-  template<class Config, class ...VarArgs1, class ...VarArgs2,
-	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<Var<VarArgs1...>, Var<VarArgs2...> >&, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type(), C<2>()));
+  template<class Config, conststr N1, conststr N2, class ...VarArgs1, class ...VarArgs2,
+	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
+  auto simplify_BinaryOp(const MultiplyOp<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >&, detail::choice<0>)
+    -> STATOR_AUTORETURN(sym::pow(Var<N1, VarArgs1...>(), C<2>()));
   
-  template<class Config, class ...VarArgs1, class ...VarArgs2, class Order,
-	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<PowerOp<Var<VarArgs1...>, Order>, Var<VarArgs2...> >& f, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type {}, f._l._r + C<1>()));
+  template<class Config, conststr N1, conststr N2, class ...VarArgs1, class ...VarArgs2, class Order,
+	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
+  auto simplify_BinaryOp(const MultiplyOp<PowerOp<Var<N1, VarArgs1...>, Order>, Var<N2, VarArgs2...> >& f, detail::choice<0>)
+    -> STATOR_AUTORETURN(sym::pow(Var<N1, VarArgs1...>{}, f._l._r + C<1>()));
   
-  template<class Config, class ...VarArgs1, class ...VarArgs2,  class Order,
-	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto simplify_BinaryOp(const MultiplyOp<Var<VarArgs1...>, PowerOp<Var<VarArgs2...>, Order> >& f, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type {}, f._r._r + C<1>()));
+  template<class Config, conststr N1, conststr N2, class ...VarArgs1, class ...VarArgs2,  class Order,
+	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
+  auto simplify_BinaryOp(const MultiplyOp<Var<N1, VarArgs1...>, PowerOp<Var<N2, VarArgs2...>, Order> >& f, detail::choice<0>)
+    -> STATOR_AUTORETURN(sym::pow(Var<N1,VarArgs1...>{}, f._r._r + C<1>()));
       
   // Simplification of both arguments available
   template<class Config, class LHS, class RHS, class Op>
@@ -198,7 +198,7 @@ namespace sym {
 
   //Disable expansion of PowerOps of variables (otherwise we will recurse to death)
   template<class T> struct PowerOpEnableExpansion { static const bool value = true; };
-  template<class ...VarArgs> struct PowerOpEnableExpansion<Var<VarArgs...> > { static const bool value = false; };
+  template<conststr N, class ...VarArgs> struct PowerOpEnableExpansion<Var<N, VarArgs...> > { static const bool value = false; };
 
   /*! \brief Expansion operator for PowerOp types. 
   
@@ -262,9 +262,9 @@ namespace sym {
 
   /*! \brief Simplification of a Polynomial LHS multiplied by a
     Var. */
-  template<class Config = DefaultSimplifyConfig, class PolyVar, class ...VarArgs, size_t Order, class Real,
-	     typename = typename std::enable_if<Config::expand_to_Polynomial && variable_in<Var<VarArgs...>, PolyVar>::value>::type>
-  Polynomial<Order+1, Real, PolyVar> simplify(MultiplyOp<Var<VarArgs...>, Polynomial<Order, Real, PolyVar> >& f)
+  template<class Config = DefaultSimplifyConfig, class PolyVar, conststr N1, class ...VarArgs, size_t Order, class Real,
+	   typename = typename std::enable_if<Config::expand_to_Polynomial && variable_eq<Var<N1, VarArgs...>, PolyVar>::value>::type>
+  Polynomial<Order+1, Real, PolyVar> simplify(MultiplyOp<Var<N1, VarArgs...>, Polynomial<Order, Real, PolyVar> >& f)
   {
     Polynomial<Order+1, Real, PolyVar> retval;
     retval[0] = empty_sum(retval[0]);
@@ -274,28 +274,28 @@ namespace sym {
   
   /*! \brief Simplification of a Polynomial RHS multiplied by a
     Var. */
-  template<class Config = DefaultSimplifyConfig, class PolyVar, class ...VarArgs, size_t Order, class Real,
-	     typename = typename std::enable_if<(Config::expand_to_Polynomial && variable_in<Var<VarArgs...>, PolyVar>::value)>::type>
-  Polynomial<Order+1, Real, typename variable_combine<PolyVar, Var<VarArgs...> >::type> simplify(const MultiplyOp<Polynomial<Order, Real, PolyVar>, Var<VarArgs...> >& f)
+  template<class Config = DefaultSimplifyConfig, class PolyVar, conststr N1, class ...VarArgs, size_t Order, class Real,
+	   typename = typename std::enable_if<(Config::expand_to_Polynomial && variable_eq<Var<N1, VarArgs...>, PolyVar>::value)>::type>
+  Polynomial<Order+1, Real, PolyVar> simplify(const MultiplyOp<Polynomial<Order, Real, PolyVar>, Var<N1, VarArgs...> >& f)
   {
-    Polynomial<Order+1, Real, typename variable_combine<PolyVar, Var<VarArgs...> >::type> retval;
+    Polynomial<Order+1, Real, PolyVar> retval;
     retval[0] = empty_sum(retval[0]);
     std::copy(f._l.begin(), f._l.end(), retval.begin() + 1);
     return retval;
   }
 
   /*! \brief Conversion of a Var to a polynomial if polynomial expansion is enabled. */
-  template<class Config = DefaultSimplifyConfig, class ...VarArgs,
+  template<class Config = DefaultSimplifyConfig, conststr N1, class ...VarArgs,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
-  auto simplify(Var<VarArgs...>) -> STATOR_AUTORETURN((Polynomial<1, int, Var<VarArgs...> >{0, 1}));
+  auto simplify(Var<N1, VarArgs...>) -> STATOR_AUTORETURN((Polynomial<1, int, Var<N1, VarArgs...> >{0, 1}));
   
   /*! \brief Conversion of a PowerOp to a Polynomial when Polynomial
       expansion is enabled.
    */
-  template<class Config = DefaultSimplifyConfig, class ...VarArgs, std::intmax_t Power,
+  template<class Config = DefaultSimplifyConfig, conststr N1, class ...VarArgs, std::intmax_t Power,
 	     typename = typename std::enable_if<Config::expand_to_Polynomial>::type>
-  Polynomial<Power, int, Var<VarArgs...>> simplify(const PowerOp<Var<VarArgs...>, C<Power,1> >&) {
-    Polynomial<Power, int, Var<VarArgs...> > retval;
+  Polynomial<Power, int, Var<N1, VarArgs...>> simplify(const PowerOp<Var<N1, VarArgs...>, C<Power,1> >&) {
+    Polynomial<Power, int, Var<N1, VarArgs...> > retval;
     retval[Power] = 1;
     return retval;
   }
@@ -345,11 +345,11 @@ namespace sym {
    */
   template<class Config = DefaultSimplifyConfig, class Real1, size_t N, class Real2, size_t M, class PolyVar1, class PolyVar2, class Op,
 	   typename = typename std::enable_if<std::is_same<Op,detail::Add>::value || std::is_same<Op,detail::Subtract>::value>::type,
-	   typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>
+	   typename = typename enable_if_var_eq<PolyVar1, PolyVar2>::type>
     auto simplify(const BinaryOp<Polynomial<N, Real1, PolyVar1>, Op, Polynomial<M, Real2, PolyVar2>> & f)
-    -> Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0],f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type>
+    -> Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0],f._r[0]))), PolyVar1>
   {
-    Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type> retval;
+    Polynomial<detail::max_order(M, N), decltype(store(Op::apply(f._l[0], f._r[0]))), PolyVar1> retval;
   
     for (size_t i(0); i <= std::min(N, M); ++i)
   	retval[i] = Op::apply(f._l[i], f._r[i]);
@@ -369,9 +369,9 @@ namespace sym {
 	   class PolyVar1, class PolyVar2, class Op,
 	   typename = typename std::enable_if<std::is_same<Op,detail::Multiply>::value>::type>
     auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, Op, Polynomial<N, Real2, PolyVar2>>& f)
-    -> Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type>
+    -> Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), PolyVar1>
   {
-    Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), typename variable_combine<PolyVar1, PolyVar2>::type> retval;
+    Polynomial<M + N, decltype(store(Op::apply(f._l[0], f._r[0]))), PolyVar1> retval;
     for (size_t i(0); i <= N+M; ++i)
   	for (size_t j(i>N?i-N:0); (j <= i) && (j <=M); ++j)
   	  retval[i] += Op::apply(f._l[j], f._r[i-j]);
@@ -382,9 +382,9 @@ namespace sym {
    */
   template<class Config = DefaultSimplifyConfig, class Real1, class Real2, size_t M, class PolyVar1, class PolyVar2>
   auto simplify(const BinaryOp<Polynomial<M, Real1, PolyVar1>, detail::Divide, Polynomial<0, Real2, PolyVar2>>& f)
-    -> Polynomial<M, decltype(store(f._l[0] / f._r[0])), typename variable_combine<PolyVar1, PolyVar2>::type>
+    -> Polynomial<M, decltype(store(f._l[0] / f._r[0])), PolyVar1>
   {
-    Polynomial<M, decltype(store(f._l[0] / f._r[0])), typename variable_combine<PolyVar1, PolyVar2>::type> retval;
+    Polynomial<M, decltype(store(f._l[0] / f._r[0])), PolyVar1> retval;
     for (size_t i(0); i <= M; ++i)
   	  retval[i] += f._l[i] / f._r[0];
     return retval;

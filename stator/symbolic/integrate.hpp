@@ -41,37 +41,37 @@ namespace sym {
   { return a * Var(); }
 
   /*! \brief Distributive integration over addition. */
-  template<class ...VarArgs, class LHS, class RHS>
-  auto integrate(const AddOp<LHS, RHS>& a, Var<VarArgs...> x)
+  template<conststr N1, class ...VarArgs, class LHS, class RHS>
+  auto integrate(const AddOp<LHS, RHS>& a, Var<N1, VarArgs...> x)
     -> STATOR_AUTORETURN(integrate(a._l, x) + integrate(a._r, x));
 
   /*! \brief Distributive integration over subtraction. */
-  template<class ...VarArgs, class LHS, class RHS>
-  auto integrate(const SubtractOp<LHS, RHS>& a, Var<VarArgs...> x)
+  template<conststr N1, class ...VarArgs, class LHS, class RHS>
+  auto integrate(const SubtractOp<LHS, RHS>& a, Var<N1, VarArgs...> x)
     -> STATOR_AUTORETURN(integrate(a._l, x) - integrate(a._r, x));
 
-  /*! \brief distribute integration through LHS constant multiplication. */
-  template<class ...VarArgs, class LHS, class RHS>
-  auto integrate(const MultiplyOp<LHS, RHS>& a, Var<VarArgs...> x)
-    -> typename std::enable_if<IS_CONSTANT(a._l, Var<VarArgs...>), decltype(store(a._l * integrate(a._r, x)))>::type
-  { return a._l * integrate(a._r, x); }
-
-  /*! \brief distribute integration through RHS constant multiplication. */
-  template<class ...VarArgs, class LHS, class RHS>
-  auto integrate(const MultiplyOp<LHS, RHS>& a, Var<VarArgs...> x)
-    -> typename std::enable_if<IS_CONSTANT(a._r, Var<VarArgs...>), decltype(store(integrate(a._l, x) * a._r))>::type
-  { return integrate(a._l, x) * a._r; }
+  ///*! \brief distribute integration through LHS constant multiplication. */
+  //template<conststr N1, class ...VarArgs, class LHS, class RHS>
+  //auto integrate(const MultiplyOp<LHS, RHS>& a, Var<N1, VarArgs...> x)
+  //  -> typename std::enable_if<IS_CONSTANT(a._l, (Var<N1, VarArgs...>)), decltype(store(a._l * integrate(a._r, x)))>::type
+  //{ return a._l * integrate(a._r, x); }
+  //
+  ///*! \brief distribute integration through RHS constant multiplication. */
+  //template<conststr N1, class ...VarArgs, class LHS, class RHS>
+  //auto integrate(const MultiplyOp<LHS, RHS>& a, Var<N1, VarArgs...> x)
+  //  -> typename std::enable_if<IS_CONSTANT(a._r, (Var<N1, VarArgs...>)), decltype(store(integrate(a._l, x) * a._r))>::type
+  //{ return integrate(a._l, x) * a._r; }
   
   /*! \brief Integration of \$x\$ by \$x\$.*/
-  template<class ...VarArgs1, class ...VarArgs2,
-	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto integrate(Var<VarArgs1...>, Var<VarArgs2...>)
-    -> STATOR_AUTORETURN((C<1,2>() * pow<2>(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type())));
+  template<conststr N1, class ...VarArgs1, conststr N2, class ...VarArgs2,
+	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
+  auto integrate(Var<N1, VarArgs1...>, Var<N2, VarArgs2...>)
+    -> STATOR_AUTORETURN((C<1,2>() * pow<2>(Var<N1, VarArgs1...>())));
   
   /*! \brief Integration of \$x^n\$ by \$x\$.*/
-  template<class ...VarArgs1, class ...VarArgs2, std::intmax_t Power,
-	     typename = typename enable_if_var_in<Var<VarArgs1...>, Var<VarArgs2...> >::type>
-  auto integrate(const PowerOp<Var<VarArgs1...>, C<Power> >& a, Var<VarArgs2...>)
-    -> STATOR_AUTORETURN((C<1, Power+1>() * pow(typename variable_combine<Var<VarArgs1...>, Var<VarArgs2...> >::type(), C<Power+1>())));
+  template<conststr N1, class ...VarArgs1, conststr N2, class ...VarArgs2, std::intmax_t Power,
+	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
+  auto integrate(const PowerOp<Var<N1, VarArgs1...>, C<Power> >& a, Var<N2, VarArgs2...>)
+    -> STATOR_AUTORETURN((C<1, Power+1>() * pow(Var<N1, VarArgs1...>(), C<Power+1>())));
   
 } // namespace symbolic

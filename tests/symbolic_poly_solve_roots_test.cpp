@@ -371,7 +371,7 @@ UNIT_TEST( poly_root_tests)
     UNIT_TEST_CHECK_EQUAL(roots.size(), 1u);
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.472711896724616002268033950475380144341, 1e-10);
     
-    auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
+    auto droots = solve_real_roots(derivative(f1, Var<>()));
     UNIT_TEST_CHECK_EQUAL(droots.size(), 2u);
     UNIT_TEST_CHECK_CLOSE(droots[0], -1.0/3, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[1], 0.5, 1e-10);
@@ -385,7 +385,7 @@ UNIT_TEST( poly_root_tests)
     UNIT_TEST_CHECK_CLOSE(roots[0], -1.949403904489790210996459054473124835057, 1e-10);
     UNIT_TEST_CHECK_CLOSE(roots[1], +1.864235880634589025006445510389799368569, 1e-10);
 
-    auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
+    auto droots = solve_real_roots(derivative(f1, Var< >()));
     UNIT_TEST_CHECK_EQUAL(droots.size(),3u);
     UNIT_TEST_CHECK_CLOSE(droots[0], -1.262818836058599076329128653113014315066, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[1], 0, 1e-10);
@@ -402,7 +402,7 @@ UNIT_TEST( poly_root_tests)
     UNIT_TEST_CHECK_CLOSE(roots[0], -0.8924203103613100773375343963347855860436, 1e-7);
     UNIT_TEST_CHECK_CLOSE(roots[1], -0.8924203103613100773375343963347855860436, 1e-7);
 
-    auto droots = solve_real_roots(derivative(f1, Var<vidx<'x'> >()));
+    auto droots = solve_real_roots(derivative(f1, Var< >()));
     UNIT_TEST_CHECK_EQUAL(droots.size(), 3u);
     UNIT_TEST_CHECK_CLOSE(droots[0], -0.8924203103613100773375343963347855860436, 1e-10);
     UNIT_TEST_CHECK_CLOSE(droots[1], -0.01666666666666666666666666666666666666667, 1e-10);

@@ -64,6 +64,9 @@ namespace sym {
   struct IsSymbolic {
     static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
   };
+
+  template<class T>
+  constexpr bool is_symbolic(const T&) { return std::is_base_of<SymbolicOperator, T>::value; }
   
   /*! \brief Template argument for dynamic/run-time types, as well as
       their base class.
@@ -84,6 +87,9 @@ namespace sym {
   struct IsDynamic {
     static constexpr bool value = std::is_base_of<Dynamic, T>::value;
   };
+
+  template<class T>
+  constexpr bool is_dynamic(const T&) { return std::is_base_of<Dynamic, T>::value; }
 
   template<class T, typename = typename std::enable_if<sym::IsSymbolic<T>::value>::type>
   std::ostream& operator<<(std::ostream& os, const T& v) {

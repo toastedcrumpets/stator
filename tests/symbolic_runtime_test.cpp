@@ -99,10 +99,12 @@ UNIT_TEST( symbolic_rt_constants )
   UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
 }
 
+static constexpr char y_str[] = "y";
+
 UNIT_TEST( symbolic_rt_variables )
 {
-  Var<vidx<'x'> > x;
-  Var<vidx<'y'> > y;
+  Var<> x;
+  Var<y_str> y;
   Expr f;
 
   f = x;  
@@ -120,7 +122,7 @@ UNIT_TEST( symbolic_rt_variables )
 
 UNIT_TEST( symbolic_comparison_operator )
 {
-  Var<vidx<'x'> > x;
+  Var< > x;
   UNIT_TEST_CHECK_EQUAL(Expr(2.0), Expr(2.0));
   UNIT_TEST_CHECK_EQUAL(Expr(2), Expr(2.0));
   UNIT_TEST_CHECK_EQUAL(Expr(2.0), Expr(2));
@@ -134,7 +136,7 @@ UNIT_TEST( symbolic_comparison_operator )
 
 UNIT_TEST( symbolic_rt_unary_ops )
 {
-  Var<vidx<'x'> > x;
+  Var< > x;
 
   Expr f = sin(x);
   compare_expression(Expr(f), sin(x));
@@ -165,7 +167,7 @@ UNIT_TEST( symbolic_rt_unary_ops )
 
 UNIT_TEST( symbolic_mixed_expr )
 {
-  Var<vidx<'x'> > x;
+  Var< > x;
   
   auto f = x + x * Expr(x);
   auto g = sub(f, x=2);
@@ -175,12 +177,12 @@ UNIT_TEST( symbolic_mixed_expr )
 UNIT_TEST( symbolic_runtime_derivative )
 {
   UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), VarRT("x")), Expr("0"));
-  UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), Var<vidx<'x'>>()), Expr("0"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("2*x"), Var<vidx<'x'>>())), Expr("2"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*x"), Var<vidx<'x'>>())), Expr("x+x"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x+x"), Var<vidx<'x'>>())), Expr("2"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("ln(x)"), Var<vidx<'x'>>())), Expr("1/x"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("exp(x)"), Var<vidx<'x'>>())), Expr("exp(x)"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), Var<vidx<'x'>>())), Expr("exp(x)+x*exp(x)"));
+  UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), Var<>()), Expr("0"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("2*x"), Var<>())), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*x"), Var<>())), Expr("x+x"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x+x"), Var<>())), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("ln(x)"), Var<>())), Expr("1/x"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("exp(x)"), Var<>())), Expr("exp(x)"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), Var<>())), Expr("exp(x)+x*exp(x)"));
 }
 

@@ -75,7 +75,7 @@ endif()
 ########## COMPILER C++11/C++0x SUPPORT TESTS
 ######################################################################
 ### First check if the compiler supports C++11 or C++0x and enable the build flag
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ######################################################################
@@ -117,9 +117,9 @@ stator_test(symbolic_polynomial_test)
 stator_test(symbolic_poly_solve_roots_test)
 stator_test(symbolic_poly_taylor_test)
 stator_test(symbolic_runtime_test)
-#stator_test(symbolic_numeric_test)
-#stator_test(symbolic_parser_test)
-#stator_test(symbolic_ad_test)
+stator_test(symbolic_numeric_test)
+stator_test(symbolic_parser_test)
+stator_test(symbolic_ad_test)
 #stator_test(symbolic_integration_test)
 
 ######################################################################

@@ -206,6 +206,9 @@ namespace sym {
 
     template<class T>
     struct IsConstant<std::complex<T> > : IsConstant<T> {};
+
+    template<class T>
+    constexpr bool is_constant(const T&) { return IsConstant<T>::value; } 
     
   }// namespace detail
 

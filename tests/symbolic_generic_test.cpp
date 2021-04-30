@@ -58,10 +58,12 @@ bool compare_expression(const T1& f, const T2& g, bool output_error=true) {
   return f_str == g_str;
 }
 
+static constexpr char x_str[] = "x";
+static constexpr char y_str[] = "y";
 
 UNIT_TEST( symbolic_C )
 {
-  Var<> x;
+  Var<x_str> x;
   Check_Type<decltype(Unity() * Unity()), Unity>();
   Check_Type<decltype(Unity() + Unity()), C<2>>();
   Check_Type<decltype(Unity() + Null()), Unity>();
@@ -87,7 +89,7 @@ UNIT_TEST( symbolic_C )
   Check_Type<decltype(cos(C<8>()*pi())), Unity>();
   Check_Type<decltype(cos(C<5,2>()*pi())), Null>();
 
-  Var<vidx<'y'>> y;
+  Var<y_str> y;
   Check_Type<std::decay<decltype(sub(Null(), y=100))>::type, Null>();
   Check_Type<decltype(derivative(Null(), x)), Null>();
   Check_Type<decltype(derivative(Unity(),x)), Null>();
@@ -109,9 +111,9 @@ UNIT_TEST( Unity_tests )
 
 
   //Check derivatives of Unity
-  UNIT_TEST_CHECK(compare_expression(derivative(Unity(), Var<>()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(Unity(), Var<x_str>()), Null()));
 
-  Var<> x;
+  Var<x_str> x;
   //Check simplification of multiplication with Unity
   UNIT_TEST_CHECK(compare_expression(Unity() * Unity(), Unity()));
   UNIT_TEST_CHECK(compare_expression(Unity() * 2, 2));
@@ -123,15 +125,15 @@ UNIT_TEST( Unity_tests )
 
 UNIT_TEST( Sub_of_variables )
 {
-  Var<> x;
-  Var<vidx<'y'>> y;
+  Var<x_str> x;
+  Var<y_str> y;
 
-  Check_Type<std::decay<decltype(sub(x, x=y))>::type, Var<vidx<'y'>>>();
+  Check_Type<std::decay<decltype(sub(x, x=y))>::type, Var<y_str>>();
 }
 
 UNIT_TEST( function_basic )
 {
-  Var<> x;
+  Var<x_str> x;
   //Check basic Function operation
   UNIT_TEST_CHECK_CLOSE(sub(2 * x, x=0.5), 1.0, 1e-10);
     
@@ -145,7 +147,7 @@ UNIT_TEST( function_basic )
 
 UNIT_TEST( function_multiplication )
 {
-  Var<> x;
+  Var<x_str> x;
   //Check function and Polynomial multiplication
   auto poly1 = sin(x + x) * x;
   UNIT_TEST_CHECK_CLOSE(sub(poly1, x=0.5), std::sin(2 * 0.5) * 0.5, 1e-10);
@@ -155,7 +157,7 @@ UNIT_TEST( function_multiplication )
 
 UNIT_TEST( function_derivatives )
 {
-  Var<> x;
+  Var<x_str> x;
   //Check function and Polynomial derivatives
   auto f1 = derivative(x * sin(x), x);
   UNIT_TEST_CHECK_CLOSE(sub(f1, x=0.5), std::sin(0.5) + 0.5 * std::cos(0.5), 1e-10);
@@ -165,7 +167,7 @@ UNIT_TEST( function_derivatives )
 
 UNIT_TEST( power_basic )
 {
-  Var<> x;
+  Var<x_str> x;
   UNIT_TEST_CHECK(sym::pow(3, C<3>()) == 27);
   UNIT_TEST_CHECK(sym::pow(Vector{0,1,2}, C<2>()) == 5);
 
@@ -178,19 +180,19 @@ UNIT_TEST( power_basic )
   UNIT_TEST_CHECK_CLOSE(sub(pow(x, C<3>()) * x, x=0.75), std::pow(0.75, 3) * 0.75, 1e-10);
 
   //Check special case derivatives
-  Check_Type<decltype(derivative(pow(x, C<1>()), Var<>())), Unity>();
+  Check_Type<decltype(derivative(pow(x, C<1>()), Var<x_str>())), Unity>();
 }
 
 UNIT_TEST( Var_tests )
 {
-  Var<> x;
-  Var<vidx<'y'>> y;
+  Var<x_str> x;
+  Var<y_str> y;
   
   UNIT_TEST_CHECK(compare_expression(x, "x")); 
   UNIT_TEST_CHECK(compare_expression(y, "y"));
-  UNIT_TEST_CHECK(compare_expression(derivative(x, Var<>()), Unity()));
-  UNIT_TEST_CHECK(compare_expression(derivative(y, Var<>()), Null()));
-  UNIT_TEST_CHECK(compare_expression(derivative(y, Var<vidx<'y'>>()), Unity()));
+  UNIT_TEST_CHECK(compare_expression(derivative(x, Var<x_str>()), Unity()));
+  UNIT_TEST_CHECK(compare_expression(derivative(y, Var<x_str>()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(y, Var<y_str>()), Unity()));
   UNIT_TEST_CHECK(compare_expression(sub(x, x = 3.14159265), 3.14159265));
 
   //Check that subs in the wrong variable do nothing
@@ -200,17 +202,17 @@ UNIT_TEST( Var_tests )
   UNIT_TEST_CHECK(compare_expression(sub(y, x = 3.14159265), "y"));
 
   //Check that Var derivatives are correct
-  UNIT_TEST_CHECK(compare_expression(derivative(sin(x), Var<>()), cos(x)));
+  UNIT_TEST_CHECK(compare_expression(derivative(sin(x), Var<x_str>()), cos(x)));
 
   //Check derivatives of Unity
-  UNIT_TEST_CHECK(compare_expression(derivative(Unity(), Var<>()), Null()));
-  UNIT_TEST_CHECK(compare_expression(derivative(x, Var<>()), Unity()));
-  UNIT_TEST_CHECK(compare_expression(derivative(x * sin(x), Var<>()), sin(x) + x * cos(x)));
+  UNIT_TEST_CHECK(compare_expression(derivative(Unity(), Var<x_str>()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(x, Var<x_str>()), Unity()));
+  UNIT_TEST_CHECK(compare_expression(derivative(x * sin(x), Var<x_str>()), sin(x) + x * cos(x)));
 }
 
 UNIT_TEST( reorder_operations )
 {
-  Var<> x;
+  Var<x_str> x;
   //Check the specialised multiply operators are consistently
   //simplifying statements.
 
@@ -227,8 +229,8 @@ UNIT_TEST( reorder_operations )
   //Here we check that constants (such as 2) will become Null
   //types when the derivative is taken, causing their terms to be
   //eliminated.
-  UNIT_TEST_CHECK(compare_expression(simplify(derivative(C<2>() * cos(x), Var<>())), C<-2>() * sin(x)));
-  UNIT_TEST_CHECK(compare_expression(derivative(2 * sin(x), Var<>()), 2 * cos(x)));
+  UNIT_TEST_CHECK(compare_expression(simplify(derivative(C<2>() * cos(x), Var<x_str>())), C<-2>() * sin(x)));
+  UNIT_TEST_CHECK(compare_expression(derivative(2 * sin(x), Var<x_str>()), 2 * cos(x)));
 }
 
 UNIT_TEST( Factorial_test )
@@ -249,11 +251,11 @@ UNIT_TEST( vector_symbolic )
 {
   static_assert(sym::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
   
-  UNIT_TEST_CHECK(compare_expression(derivative(Vector{1,2,3}, Var<>()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(Vector{1,2,3}, Var<x_str>()), Null()));
   UNIT_TEST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
   UNIT_TEST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
 
-  Var<> x;
+  Var<x_str> x;
 
   const size_t testcount = 100;
   const double errlvl = 1e-10;
@@ -287,7 +289,7 @@ UNIT_TEST( vector_symbolic )
 
 UNIT_TEST( symbolic_abs_arbsign )
 {
-  Var<> x;
+  Var<x_str> x;
 
   UNIT_TEST_CHECK(compare_expression(abs(x), "|x|"));
   UNIT_TEST_CHECK_EQUAL(sub(abs(x*x - 5*x), x=2), 6);
@@ -297,7 +299,7 @@ UNIT_TEST( symbolic_abs_arbsign )
   UNIT_TEST_CHECK(compare_expression(abs(Null()), Null()));
   UNIT_TEST_CHECK(compare_expression(abs(Null()), Null()));
   UNIT_TEST_CHECK(compare_expression(derivative(arbsign(x), x), arbsign(Unity())));
-  UNIT_TEST_CHECK(compare_expression(derivative(arbsign(x), Var<vidx<'y'>>()), Null()));
+  UNIT_TEST_CHECK(compare_expression(derivative(arbsign(x), Var<y_str>()), Null()));
 
   UNIT_TEST_CHECK(compare_expression(simplify(x * arbsign(x)), arbsign(pow(x, C<2>()))));
   UNIT_TEST_CHECK(compare_expression(simplify(arbsign(x) * x), arbsign(pow(x, C<2>()))));
@@ -316,7 +318,7 @@ UNIT_TEST( derivative_addition )
   using namespace sym;
 
   //Test Polynomial derivatives on addition Operation types
-  Var<> x;
+  Var<x_str> x;
 
   UNIT_TEST_CHECK(compare_expression(simplify(derivative(simplify(C<2>() * x * x + x), x)), C<4>() * x + C<1>()));
 }

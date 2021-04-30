@@ -54,7 +54,7 @@ namespace sym {
   template<class Op> struct UnaryOp<Expr, Op>;
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
   template<class T>  class ConstantRT;
-  typedef Var<Dynamic> VarRT;
+  typedef Var<nullptr> VarRT;
   class List;
   class Dict;
   
@@ -83,8 +83,8 @@ namespace sym {
     template<std::intmax_t Num, std::intmax_t Denom>
     Expr(const C<Num, Denom>& c);
 
-    template<typename ...Args>
-    Expr(const Var<Args...> v);
+    template<conststr N>
+    Expr(const Var<N> v);
     
     template<class Op, class Arg_t>
     Expr(const UnaryOp<Arg_t, Op>&);
@@ -251,29 +251,24 @@ namespace sym {
 
   /*! \brief Specialisation of Var for runtime variables.*/
   template<>
-  class Var<Dynamic> : public RTBaseHelper<Var<Dynamic> >, public Dynamic {
+  class Var<nullptr>: public RTBaseHelper<Var<nullptr> >, public Dynamic {
   public:
-    inline Var(const std::string name="x", const size_t id = std::numeric_limits<size_t>::max()) :
+    inline Var(const std::string name="x") :
       _name(name)
-    {
-      _id = std::hash<std::string>{}(_name);
-    }
+    {}
 
-    template<typename ...Args>
-    Var(const Var<Args...> v):
-      _name(v.getName()),
-      _id(v.getID())
+    template<conststr N>
+    Var(const Var<N> v):
+      _name(v.getName())
     {}
 
     inline bool operator==(const VarRT& o) const {
-      return _id == o._id;
+      return _name == o._name;
     }
         
-    inline std::string getName() const { return _name; } 
-    inline size_t getID() const { return _id; } 
+    inline std::string getName() const { return _name; }
     
     std::string _name;
-    size_t _id;
   };
 }
 
@@ -283,7 +278,7 @@ namespace std
   {
     std::size_t operator()(sym::VarRT const& v) const noexcept
     {
-      return std::hash<size_t>{}(v.getID());
+      return std::hash<std::string>{}(v.getName());
     }
   };
 }
@@ -298,9 +293,7 @@ namespace sym {
     being taken, then this overload should be selected to return
     Null.
   */
-  template<class ...Args1, class ...Args2,
-	   typename = typename std::enable_if<std::is_base_of<Dynamic, Var<Args1...> >::value || std::is_base_of<Dynamic, Var<Args2...> >::value>::type >
-  Expr derivative(Var<Args1...> v1, Var<Args2...> v2) {
+  Expr derivative(VarRT v1, VarRT v2) {
     return Expr(v1 == v2);
   }
 
@@ -503,8 +496,8 @@ namespace sym {
   template<class LHS_t, class Op, class RHS_t>
   Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Base(std::make_shared<BinaryOp<Expr, Op, Expr> >(op._l, op._r)) {}
   
-  template<typename ...Args>
-  Expr::Expr(const Var<Args...> v) : Base(std::make_shared<VarRT>(v)) {}
+  template<conststr N1>
+  Expr::Expr(const Var<N1> v) : Base(std::make_shared<VarRT>(v)) {}
 
   Expr::Expr(const List& v) : Base(std::make_shared<List>(v)) {}
 

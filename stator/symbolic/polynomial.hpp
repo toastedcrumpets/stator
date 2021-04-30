@@ -33,7 +33,7 @@
 #include <tuple>
 
 namespace sym {
-  //The default polynomial 
+  //The default polynomial
   template<size_t Order, class Real = double, class PolyVar = Var<>> class Polynomial;
 
   template<size_t Order, std::intmax_t num, std::intmax_t denom, class PolyVar>
@@ -117,8 +117,8 @@ namespace sym {
         types from lower order Polynomial types. 
     */
     template<size_t N, class Coeff_t2, class PolyVar2,
-	       typename = typename std::enable_if<(N <= Order) && variable_in<PolyVar, PolyVar2>::value >::type>
-	       Polynomial(const Polynomial<N, Coeff_t2, PolyVar2>& poly) {
+	       typename = typename std::enable_if<(N <= Order) && variable_eq<PolyVar, PolyVar2>::value >::type>
+    Polynomial(const Polynomial<N, Coeff_t2, PolyVar2>& poly) {
 	size_t i(0);
 	for (; i <= N; ++i)
 	  Base::operator[](i) = poly[i];
@@ -179,17 +179,16 @@ namespace sym {
   /*! \brief Optimised Polynomial substitution which performs an
       exchange of the Polynomial Var.
    */
-  template<class Coeff_t, size_t Order, class Var1, class Var2, class ...VarArgs,
-	     typename = typename enable_if_var_in<Var2, Var1>::type>
-  Polynomial<Order, Coeff_t, Var<VarArgs...> >
-  sub(const Polynomial<Order, Coeff_t, Var1>& f, const EqualityOp<Var2, Var<VarArgs...> >& x_container)
-  { return Polynomial<Order, Coeff_t, Var<VarArgs...> >(f.begin(), f.end()); }
+  template<class Coeff_t, size_t Order, class Var1, class Var2, conststr N, class ...VarArgs,
+	     typename = typename enable_if_var_eq<Var2, Var1>::type>
+  auto sub(const Polynomial<Order, Coeff_t, Var1>& f, const EqualityOp<Var2, Var<N, VarArgs...> >& x_container)
+  { return Polynomial<Order, Coeff_t, Var<N, VarArgs...> >(f.begin(), f.end()); }
 
 
   /*! \brief Substitution when polynomial is not in the correct variable.
    */
   template<class Coeff_t, size_t Order, class Var1, class Var2, class SUB,
-	   typename = typename enable_if_var_not_in<Var2, Var1>::type>
+	   typename = typename enable_if_var_not_eq<Var2, Var1>::type>
   Polynomial<Order, Coeff_t, Var1>
   sub(const Polynomial<Order, Coeff_t, Var1>& f, const EqualityOp<Var2, SUB>& x_container)
   { return f; }
@@ -198,7 +197,7 @@ namespace sym {
   /*! \brief Optimised Polynomial substitution for Null
       insertions. */
   template<size_t Order, class Coeff_t, class PolyVar, class SubVar,
-	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
+	     typename = typename enable_if_var_eq<PolyVar, SubVar>::type>
   Coeff_t sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const EqualityOp<SubVar, Null>&)
   { return f[0]; }
 
@@ -215,7 +214,7 @@ namespace sym {
 	   typename = typename std::enable_if<(std::is_arithmetic<Coeff_t2>::value
                                                && !std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value
                                                && !std::is_base_of<Eigen::EigenBase<Coeff_t2>, Coeff_t2>::value)>::type,
-	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
+	     typename = typename enable_if_var_eq<PolyVar, SubVar>::type>
   decltype(store(Coeff_t() * Coeff_t2()))
   sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const EqualityOp<SubVar, Coeff_t2>& x_container)
   {
@@ -295,7 +294,7 @@ namespace sym {
                                               || (std::is_base_of<Eigen::EigenBase<Coeff_t2>, Coeff_t2>::value && std::is_arithmetic<Coeff_t2>::value)
                                               || (std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value && std::is_arithmetic<Coeff_t2>::value)
                                               >::type,
-	     typename = typename enable_if_var_in<PolyVar, SubVar>::type>
+	     typename = typename enable_if_var_eq<PolyVar, SubVar>::type>
     auto sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const EqualityOp<SubVar, Coeff_t2>& x_container)
    -> STATOR_AUTORETURN(detail::PolySubWorker<Order>::eval(f, x_container._val))
 
@@ -349,13 +348,13 @@ namespace sym {
     we cannot lower the order of the quotient polynomial returned.
   */
   template<size_t Order1, class Coeff_t, class PolyVar1, class PolyVar2, size_t Order2,
-	     typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>
-  std::tuple<Polynomial<Order1, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type>, Polynomial<Order2 - 1, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type> >
+	     typename = typename enable_if_var_eq<PolyVar1, PolyVar2>::type>
+  auto
   gcd(const Polynomial<Order1, Coeff_t, PolyVar1>& f, const Polynomial<Order2, Coeff_t, PolyVar2>& g)
   {
     static_assert(Order2 < Order1, "Cannot perform division when the order of the denominator is larger than the numerator using this routine");
     static_assert(Order2 > 0, "Constant division fails with these loops");
-    typedef std::tuple<Polynomial<Order1, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type>, Polynomial<Order2 - 1, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type> > RetType;
+    typedef std::tuple<Polynomial<Order1, Coeff_t, PolyVar1>, Polynomial<Order2 - 1, Coeff_t, PolyVar1> > RetType;
     //If the leading term of g is zero, drop to a lower order
     //euclidean division.
     if (g[Order2] == 0) {
@@ -364,8 +363,8 @@ namespace sym {
     }
 
     //The quotient and remainder.
-    Polynomial<Order1, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type> r(f);
-    Polynomial<Order1, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type> q;
+    Polynomial<Order1, Coeff_t, PolyVar1> r(f);
+    Polynomial<Order1, Coeff_t, PolyVar1> q;
 
     //Loop from the highest order coefficient of f, down to where we
     //have a polynomial one order lower than g.
@@ -384,12 +383,12 @@ namespace sym {
     \brief Specialisation for division by a constant.
    */
   template<size_t Order1, class Coeff_t, class PolyVar1, class PolyVar2,
-	     typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>	     
-  std::tuple<Polynomial<Order1, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type>, Polynomial<0, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type> >
+	     typename = typename enable_if_var_eq<PolyVar1, PolyVar2>::type>	     
+  auto
   gcd(const Polynomial<Order1, Coeff_t, PolyVar1>& f, const Polynomial<0, Coeff_t, PolyVar2>& g)
   {
-    typedef Polynomial<Order1, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type> FType;
-    typedef Polynomial<0, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type> RType;
+    typedef Polynomial<Order1, Coeff_t, PolyVar1> FType;
+    typedef Polynomial<0, Coeff_t, PolyVar1> RType;
     typedef std::tuple<FType, RType> RetType;
     if (g[0] == 0)
 	return RetType(FType{std::numeric_limits<Coeff_t>::infinity()}, RType{empty_sum(Coeff_t())});
@@ -410,11 +409,12 @@ namespace sym {
     the correct variable AND the Order of the Polynomial is greater
     than zero.
    */
-  template<class PolyVar, class ...VarArgs, class Coeff_t, size_t N,
-	     typename = typename std::enable_if<(N > 0) && (variable_in<PolyVar, Var<VarArgs...> >::value)>::type,
-	     typename = typename enable_if_var_in<PolyVar, Var<VarArgs...> >::type>
-    inline Polynomial<N-1, Coeff_t, typename variable_combine<PolyVar, Var<VarArgs...>>::type> derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Var<VarArgs...>) {
-    Polynomial<N-1, Coeff_t, typename variable_combine<PolyVar, Var<VarArgs...> >::type> retval;
+  template<class PolyVar, conststr N1, class ...VarArgs, class Coeff_t, size_t N,
+	   typename = typename std::enable_if<(N > 0) && (variable_eq<PolyVar, Var<N1,VarArgs...> >::value)>::type,
+    typename = typename enable_if_var_eq<PolyVar, Var<N1, VarArgs...> >::type>
+  inline Polynomial<N-1, Coeff_t, PolyVar> derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Var<N1, VarArgs...>)
+  {
+   Polynomial<N-1, Coeff_t, PolyVar> retval;
     for (size_t i(0); i < N; ++i) {
 	retval[i] = f[i+1] * (i+1);
     }
@@ -426,9 +426,9 @@ namespace sym {
     This specialisation is only activated if this is a derivative in
     the incorrect variable OR its a low order poly.
    */
-  template<class PolyVar, class ...VarArgs, class Coeff_t, size_t N,
-	     typename = typename std::enable_if<(N==0) || (!variable_in<PolyVar, Var<VarArgs...> >::value)>::type>
-  Null derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Var<VarArgs...>) 
+  template<class PolyVar, conststr N1, class ...VarArgs, class Coeff_t, size_t N,
+	   typename = typename std::enable_if<(N==0) || (!variable_eq<PolyVar, Var<N1, VarArgs...> >::value)>::type>
+  Null derivative(const Polynomial<N, Coeff_t, PolyVar>& f, Var<N1, VarArgs...>) 
   { return Null(); }
 
   /*! \relates Polynomial 
@@ -1652,10 +1652,9 @@ namespace sym {
    */
   template<size_t Order, class Coeff_t, class PolyVar1, class PolyVar2 = PolyVar1,
 	     typename = typename std::enable_if<(Order > 2)>::type,
-           typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>
-  Polynomial<2, Coeff_t, typename variable_combine<PolyVar1, PolyVar2>::type>
+           typename = typename enable_if_var_eq<PolyVar1, PolyVar2>::type>
+  Polynomial<2, Coeff_t, PolyVar1>
   LinBairstowSolve(Polynomial<Order, Coeff_t, PolyVar1> f, Coeff_t tolerance, Polynomial<2, Coeff_t, PolyVar2> guess = {0,0,1}) {
-    typedef typename variable_combine<PolyVar1, PolyVar2>::type NewPolyVar;
     
     if (f[Order] == Coeff_t()) 
 	return LinBairstowSolve(change_order<Order-1>(f), tolerance);
@@ -1663,8 +1662,8 @@ namespace sym {
     Eigen::Matrix<Coeff_t, 2, 1> dGuess{0, 0};
     //Now loop solving for the quadratic guess
     for (size_t it(0); it < 20; ++it) {
-	Polynomial<2, Coeff_t, NewPolyVar> rem1, rem2;
-	Polynomial<Order, Coeff_t, NewPolyVar> p1;
+	Polynomial<2, Coeff_t, PolyVar1> rem1, rem2;
+	Polynomial<Order, Coeff_t, PolyVar1> p1;
 	//Determine the error (the actual remainder)
 	std::tie(p1, rem1) = gcd(f, guess);
 
@@ -1699,7 +1698,7 @@ namespace sym {
   */
   template<class Coeff_t, class PolyVar1, class PolyVar2 = PolyVar1, size_t Order,
 	     typename = typename std::enable_if<(Order <= 2)>::type,
-	     typename = typename enable_if_var_in<PolyVar1, PolyVar2>::type>
+	     typename = typename enable_if_var_eq<PolyVar1, PolyVar2>::type>
   Polynomial<2, Coeff_t, PolyVar1>
   LinBairstowSolve(Polynomial<Order, Coeff_t, PolyVar1> f, Coeff_t tolerance, Polynomial<2, Coeff_t, PolyVar2> guess = {0,0,1}) {
     return f;

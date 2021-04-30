@@ -41,9 +41,9 @@ namespace sym {
     This is only used if the Var is correct 
     substitution.
   */
-  template<typename ...Args1, typename ...Args2, class Arg,
-	     typename = typename enable_if_var_in<Var<Args1...>, Var<Args2...> >::type>
-  auto sub(const Var<Args1...>& f, const EqualityOp<Var<Args2...>, Arg>& x)
+  template<conststr N1, conststr N2, typename ...Args1, typename ...Args2, class Arg,
+	   typename = typename enable_if_var_eq<Var<N1, Args1...>, Var<N2, Args2...> >::type>
+  auto sub(const Var<N1, Args1...>& f, const EqualityOp<Var<N2, Args2...>, Arg>& x)
    -> STATOR_AUTORETURN_BYVALUE(x._r);
 
   /*! \brief Evaluates a symbolic Var at a given point.
@@ -51,8 +51,8 @@ namespace sym {
     This is only used if the Var is not the correct letter for the
     substitution.
   */
-  template<class ...Args1, class Arg, class Var2,
-	     typename = typename enable_if_var_not_in<Var<Args1...>, Var2>::type>
-  Var<Args1...> sub(const Var<Args1...>& f, const EqualityOp<Var2, Arg>& x)
+  template<conststr N1, class ...Args1, class Arg, class Var2,
+	   typename = typename enable_if_var_not_eq<Var<N1, Args1...>, Var2>::type>
+  Var<N1, Args1...> sub(const Var<N1, Args1...>& f, const EqualityOp<Var2, Arg>& x)
   { return f; }
 }

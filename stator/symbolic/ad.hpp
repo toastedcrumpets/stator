@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <stator/symbolic/symbolic.hpp>
+#include <stator/symbolic/runtime.hpp>
 
 namespace sym {
   template<size_t Nd, typename T, typename Var, typename Arg,
@@ -33,10 +33,9 @@ namespace sym {
     return r;
   }
 
-  template<size_t Nd, typename ...Args, typename Var_t, typename Arg_t>
-  Eigen::Matrix<double, Nd+1,1> ad(const Var<Args...>& v, const EqualityOp<Var_t, Arg_t>& r) {
-
-    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();    
+  template<size_t Nd, conststr N1, typename Var_t, typename Arg_t>
+  Eigen::Matrix<double, Nd+1,1> ad(const Var<N1>& v, const EqualityOp<Var_t, Arg_t>& r) {
+    Eigen::Matrix<double, Nd+1,1> result = Eigen::Matrix<double, Nd+1,1>::Zero();
     if ((v == r._l)) {
       result[0] = r._r;
       if (Nd > 0) result[1] = 1.0;

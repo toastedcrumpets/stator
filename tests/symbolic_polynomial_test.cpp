@@ -128,16 +128,19 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
   }
 }
 
+static constexpr char x_str[] = "x";
+static constexpr char y_str[] = "y";
+
 UNIT_TEST( poly_variables )
 {
   using namespace sym;
   Polynomial<1> x{0, 1};
-  Polynomial<1,double, Var<vidx<'y'> > > y{0, 1};
+  Polynomial<1,double, Var<y_str > > y{0, 1};
 
-  UNIT_TEST_CHECK(compare_expression(sub(y, Var<vidx<'y'> >()=Var<>()), "P(1*x)"));
+  UNIT_TEST_CHECK(compare_expression(sub(y, Var<y_str >()=Var<>()), "P(1*x)"));
   UNIT_TEST_CHECK(compare_expression(expand(x * x * x), "P(1*x^3)"));
   UNIT_TEST_CHECK(compare_expression(expand(y * y * y), "P(1*y^3)"));
-  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<vidx<'y'> >()=Var<>()), "P(1*x^3)"));
+  UNIT_TEST_CHECK(compare_expression(sub(expand(y * y * y), Var<y_str >()=Var<>()), "P(1*x^3)"));
 }
 
 UNIT_TEST( poly_addition )
@@ -232,7 +235,7 @@ UNIT_TEST( poly_simplify )
   UNIT_TEST_CHECK_EQUAL(poly1[1], 0);
   UNIT_TEST_CHECK_EQUAL(poly1[2], 2);
 
-  Var<vidx<1> > y;
+  Var<y_str> y;
   //Check that Polynomial simplifications exist for these functions
   expand(y+y);
   expand(y+y+y);

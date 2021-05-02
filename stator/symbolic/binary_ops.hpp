@@ -374,49 +374,44 @@ namespace sym {
     -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
 
   namespace detail {
-    /*! \brief Returns the binding powers (precedence) of binary operators.
-      
-      As unary operators/tokens have no arguments which can be bound
-      by other operators, we return a large binding power (which
-      should exclude them from any binding power calculations).
+    /*! \brief Wrap the passed string in parenthesis.
      */
-    template<class T>
-    std::pair<int, int> BP (const T& v)
-    { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
-
-    /*! \brief Returns the binding powers (precedence) of binary
-        operators (specialisation for binary ops).
-     */
-    template<class LHS, class Op, class RHS>
-    std::pair<int, int> BP (const sym::BinaryOp<LHS, Op, RHS>& v) {
-      const int L = Op::leftBindingPower;
-      const int R = sym::detail::RBP<Op>();
-      return std::make_pair(L, R);
-    }
-
     template<class Config>
     std::string paren_wrap(std::string arg) {
       return ((Config::Latex_output) ? "\\left(" : "(") + arg + ((Config::Latex_output) ? "\\right)" : ")");
     }
   }
 
-  template<class Config = DefaultReprConfig>
-  inline std::string repr(const sym::detail::Multiply& op) {
-    return (Config::Latex_output) ? "*" : "\\times ";
+  /*! \brief Returns the binding powers (precedence) of binary
+    operators (specialisation for binary ops).
+  */
+  template<class LHS, class Op, class RHS>
+  std::pair<int, int> BP(const sym::BinaryOp<LHS, Op, RHS>& v) {
+    const int L = Op::leftBindingPower;
+    const int R = sym::detail::RBP<Op>();
+    return std::make_pair(L, R);
   }
-  
+
+  /*! \brief String representation of binary operations.
+   */
   template<class Config = DefaultReprConfig, class LHS, class RHS, class Op>
   inline std::string repr(const sym::BinaryOp<LHS, Op, RHS>& op) {
-    const auto this_BP = detail::BP(op);
-    const auto LHS_BP = detail::BP(op._l);
-    const auto RHS_BP = detail::BP(op._r);
+    const auto this_BP = BP(op);
+    const auto LHS_BP  = BP(op._l);
+    const auto RHS_BP  = BP(op._r);
 
     std::string LHS_repr = repr<Config>(op._l);
-    if (LHS_BP.second < this_BP.first || Config::Force_parenthesis) LHS_repr = detail::paren_wrap<Config>(LHS_repr);
+    if (LHS_BP.second < this_BP.first || Config::Force_parenthesis)
+      LHS_repr = detail::paren_wrap<Config>(LHS_repr);
 
     std::string RHS_repr = repr<Config>(op._r);
-    if (this_BP.second > RHS_BP.first || Config::Force_parenthesis) RHS_repr = detail::paren_wrap<Config>(RHS_repr);
+    if (this_BP.second > RHS_BP.first || Config::Force_parenthesis)
+      RHS_repr = detail::paren_wrap<Config>(RHS_repr);
 
-    return (Config::Latex_output ? Op::l_latex_repr() : Op::l_repr()) +  LHS_repr + (Config::Latex_output ? Op::latex_repr() : Op::repr()) + RHS_repr + (Config::Latex_output ? Op::r_latex_repr() : Op::r_repr());
+    return (Config::Latex_output ? Op::l_latex_repr() : Op::l_repr())
+      +  LHS_repr
+      + (Config::Latex_output ? Op::latex_repr() : Op::repr())
+      + RHS_repr
+      + (Config::Latex_output ? Op::r_latex_repr() : Op::r_repr());
   }
 }

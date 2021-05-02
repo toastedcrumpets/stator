@@ -202,6 +202,10 @@ UNIT_TEST( symbolic_parser_Expr_string_loop ) {
   static constexpr char T_str[] = "T";
   Var<T_str> T;
 
+  std::cerr << repr<stator::ReprConfig<stator::Force_parenthesis> >(T*(1-log(T))) << std::endl;
+  std::cerr << repr(T*(1-log(T))) << std::endl;
+  std::cerr << repr(Expr(T*(1-log(T)))) << std::endl;
+  
   expr_string_expr_conversion_check(simplify(80*T*(1-log(T))+-318862-T*-410.30773724552921));
   expr_string_expr_conversion_check(x * (-123.2));
   expr_string_expr_conversion_check(1 - x * (-123.2));

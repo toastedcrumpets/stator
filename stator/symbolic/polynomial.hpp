@@ -41,6 +41,14 @@ namespace sym {
     static_assert(stator::detail::dependent_false<C<num, denom> >::value,  "Cannot use C types as the coefficients of a polynomial");
   };
 
+  /*! \brief Returns the binding powers for Polynomials.
+
+    Polynomials are wrapped, so give infinite binding powers.
+  */
+  template<size_t Order, typename ...Args>
+  std::pair<int, int> BP(const Polynomial<Order, Args...>& v)
+  { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
+  
   /*! \brief Array representation of Polynomial.
 
     This class allows basic computer algebra to be performed with

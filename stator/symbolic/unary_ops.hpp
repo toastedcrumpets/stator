@@ -40,31 +40,69 @@ namespace sym {
   
   namespace detail {
     struct Sine {
+      static constexpr int BP = std::numeric_limits<int>::max();
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sin(a));
+      static inline std::string l_repr()       { return "sin "; }
+      static inline std::string r_repr()       { return ""; }
+      static inline std::string l_latex_repr() { return "\\sin "; }
+      static inline std::string r_latex_repr() { return ""; }
     };
 
     struct Cosine {
+      static constexpr int BP = std::numeric_limits<int>::max();
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(cos(a));
+      static inline std::string l_repr()       { return "cos "; }
+      static inline std::string r_repr()       { return ""; }
+      static inline std::string l_latex_repr() { return "\\cos "; }
+      static inline std::string r_latex_repr() { return ""; }
     };
 
     struct Exp {
+      static constexpr int BP = std::numeric_limits<int>::max();
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(exp(a));
+      static inline std::string l_repr()       { return "exp "; }
+      static inline std::string r_repr()       { return ""; }
+      static inline std::string l_latex_repr() { return "\\mathrm{e}^{"; }
+      static inline std::string r_latex_repr() { return "}"; }
     };
 
     struct Log {
+      static constexpr int BP = std::numeric_limits<int>::max();
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(log(a));
+      static inline std::string l_repr()       { return "ln "; }
+      static inline std::string r_repr()       { return ""; }
+      static inline std::string l_latex_repr() { return "\\ln "; }
+      static inline std::string r_latex_repr() { return "}"; }
     };
 
     struct Absolute {
+      static constexpr int BP = 0; //Binding power is zero, as it wraps its arguments, no need to fight for them.
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(abs(a));
+      static inline std::string l_repr()       { return "|"; }
+      static inline std::string r_repr()       { return "|"; }
+      static inline std::string l_latex_repr() { return "\\left|"; }
+      static inline std::string r_latex_repr() { return "\\right|"; }
     };
 
     struct Arbsign {
+      static constexpr int BP = 0; //Binding power is zero, as it wraps its arguments, no need to fight for them.
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Arbsign>(a)));
+      static inline std::string l_repr()       { return "±|"; }
+      static inline std::string r_repr()       { return "|"; }
+      static inline std::string l_latex_repr() { return "\\pm\\left|"; }
+      static inline std::string r_latex_repr() { return "\\right|"; }
     };
 
     struct Negate {
+      //The binding power of negation is equal to binary addition's
+      //RBP as its equivalent. for example, exponents and
+      //multiplication should be more powerful.
+      static constexpr int BP = 21;
       template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(-a);
+      static inline std::string l_repr()       { return "-"; }
+      static inline std::string r_repr()       { return ""; }
+      static inline std::string l_latex_repr() { return "-"; }
+      static inline std::string r_latex_repr() { return ""; }
     };
   }
 
@@ -120,61 +158,28 @@ namespace sym {
   auto sub(const UnaryOp<Arg1, Op>& f, const EqualityOp<Var, Arg2>& x)
     -> STATOR_AUTORETURN(Op::apply(sub(f._arg, x)));  
 
-  template<class Config = DefaultReprConfig, class Arg>
-  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Sine>& f)
-  {
-    return std::string((Config::Latex_output) ? "\\sin\\left(" : "sin(")
-      + repr<Config>(f._arg)
-      + std::string((Config::Latex_output) ? "\\right)" : ")")
-      ;
-  }
 
-  template<class Config = DefaultReprConfig, class Arg>
-  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Cosine>& f)
-  {
-    return std::string((Config::Latex_output) ? "\\cos\\left(" : "cos(")
-      + repr<Config>(f._arg)
-      + std::string((Config::Latex_output) ? "\\right)" : ")")
-      ;
-  }
-
-  template<class Config = DefaultReprConfig, class Arg>
-  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Exp>& f)
-  {
-    return
-      std::string((Config::Latex_output) ? "\\mathrm{e}^{" : "exp(")
-      + repr<Config>(f._arg)
-      + std::string((Config::Latex_output) ? "}" : ")")
-      ;
-  }
-
-  template<class Config = DefaultReprConfig, class Arg>
-  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Log>& f)
-  {
-    return
-      std::string((Config::Latex_output) ? "\\ln\\left(" : "ln(")
-      + repr<Config>(f._arg)
-      + std::string((Config::Latex_output) ? "\\right)" : ")")
-      ;
-  }
-
-  template<class Config = DefaultReprConfig, class Arg>
-  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Absolute>& f)
-  {
-    return
-      std::string((Config::Latex_output) ? "\\left|" : "|")
-      + repr<Config>(f._arg)
-      + std::string((Config::Latex_output) ? "\\right|" : "|")
-      ;
-  }
+  /*! \brief A function allowing you to see the binding power of any
+    unary operation.
+  */
+  template<class Op, class Arg>
+  std::pair<int, int> BP(const sym::UnaryOp<Arg, Op>& v)
+  { return std::make_pair(0, Op::BP); }
   
-  template<class Config = DefaultReprConfig, class Arg>
-  inline std::string repr(const sym::UnaryOp<Arg, sym::detail::Arbsign>& f)
+  template<class Config = DefaultReprConfig, class Arg, class Op>
+  inline std::string repr(const sym::UnaryOp<Arg, Op>& f)
   {
-    return
-      std::string((Config::Latex_output) ? "\\pm\\left|" : "±|")
-      + repr<Config>(f._arg)
-      + std::string((Config::Latex_output) ? "\\right|" : "|")
+    std::string arg_repr = repr<Config>(f._arg);
+
+    const auto this_BP = BP(f);
+    const auto arg_BP = BP(f._arg);
+    
+    if ((arg_BP.first < this_BP.second) || Config::Force_parenthesis)
+      arg_repr = detail::paren_wrap<Config>(arg_repr);
+    
+    return std::string((Config::Latex_output) ? Op::l_latex_repr() : Op::l_repr())
+      + arg_repr
+      + std::string((Config::Latex_output) ? Op::r_latex_repr() : Op::r_repr())
       ;
   }
 }

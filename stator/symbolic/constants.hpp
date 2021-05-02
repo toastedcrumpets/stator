@@ -220,4 +220,13 @@ namespace sym {
     else
       return (Denom!=1) ? ("("+repr(Num)+"/"+repr(Denom)+")") : repr(Num);
   }
+
+  /*! \brief Returns the binding powers for constants.
+      
+    Arguments that cannot be split, like constants have very high
+    binding powers internally as they cannot be split.
+  */
+  template<class T, typename = typename std::enable_if<detail::IsConstant<T>::value>::type>
+  std::pair<int, int> BP(const T& v)
+  { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
 }

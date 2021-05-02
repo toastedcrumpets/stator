@@ -48,16 +48,13 @@ namespace sym {
 
   template<class Config = DefaultReprConfig> std::string repr(const sym::RTBase&);
   template<class Config = DefaultReprConfig> std::string repr(const sym::Expr&);
-}
-
-namespace sym {
   template<class Op> struct UnaryOp<Expr, Op>;
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
   template<class T>  class ConstantRT;
   typedef Var<nullptr> VarRT;
   class List;
   class Dict;
-  
+
   /*! \brief The generic holder/smart pointer for a runtime Abstract
     Syntax Tree (AST) (expression).
     
@@ -249,6 +246,28 @@ namespace sym {
     }
   };  
 
+  namespace detail {
+    /*! \brief Binding power visitor for sym::detail::BP(const Expr&). */
+    struct BPVisitor : public sym::detail::VisitorHelper<BPVisitor> {
+      template<class T> sym::Expr apply(const T& rhs) {
+	_BP = BP(rhs);
+	return Expr();
+      }
+      
+      std::pair<int, int> _BP;
+    };
+  }
+  
+  /*! \brief Returns the binding powers (precedence) of operators
+    (specialisation for Expr).
+  */
+  inline std::pair<int, int> BP(const Expr& v) {
+    detail::BPVisitor vis;
+    v->visit(vis);
+    return vis._BP;
+  }
+
+  
   /*! \brief Specialisation of Var for runtime variables.*/
   template<>
   class Var<nullptr>: public RTBaseHelper<Var<nullptr> >, public Dynamic {
@@ -465,6 +484,8 @@ namespace sym {
     typedef Store::const_reference const_reference;
 
     Expr& operator[](const VarRT& k) { return _store[k]; }
+    Expr& at(const VarRT& k) { return _store.at(k); }
+    const Expr& at(const VarRT& k) const { return _store.at(k); }
 
     Store::size_type size() const noexcept { return _store.size(); } 
     bool empty() const noexcept { return _store.empty(); }
@@ -476,7 +497,6 @@ namespace sym {
   private:
     Store _store;
   };
-  
 
   template<typename Var>
   Dict derivative(const Dict& in, Var x) {
@@ -808,33 +828,6 @@ namespace sym {
     default: stator_throw() << "Unhandled type index (" << _type_idx << ") for the visitor";
     }
   }
-
-
-  namespace detail {
-    /*! \brief Binding power visitor for sym::detail::BP(const Expr&). */
-    struct BPVisitor : public sym::detail::VisitorHelper<BPVisitor> {
-      
-      template<class T> sym::Expr apply(const T& rhs) { return sym::Expr(); }
-
-      template<class Op> sym::Expr apply(const sym::BinaryOp<sym::Expr, Op, sym::Expr>& op) {
-	LBP = Op::leftBindingPower;
-	RBP = sym::detail::RBP<Op>();
-	return sym::Expr();
-      }
-      
-      int LBP = std::numeric_limits<int>::max();
-      int RBP = std::numeric_limits<int>::max();
-    };
-
-    /*! \brief Returns the binding powers (precedence) of binary
-        operators (specialisation for Expr).
-     */
-    inline std::pair<int, int> BP (const sym::Expr& v) {
-      BPVisitor vis;
-      v->visit(vis);
-      return std::make_pair(vis.LBP, vis.RBP);
-    }
-  }
   
   template<class Config = DefaultReprConfig>
   inline std::string repr(const sym::List& f)
@@ -857,9 +850,15 @@ namespace sym {
     const std::string end = std::string((Config::Latex_output) ? "\\right\\}" : "}");
     if (f.empty())
       return out+end;
-    
+
+    std::vector<std::pair<std::string, const Dict::key_type*> > keys;
     for (const auto& term : f)
-      out += repr<Config>(term.first) + ":" + repr<Config>(term.second) + ", ";
+      keys.emplace_back(repr<Config>(term.first), &term.first);
+
+    sort(keys.begin(), keys.end(), [](const auto& l, const auto& r){ return l.first < r.first; });
+
+    for (const auto& k : keys)
+      out += k.first + ":" + repr<Config>(f.at(*k.second)) + ", ";
     
     return out.substr(0, out.size() - 2) + end;
   }
@@ -908,6 +907,10 @@ namespace sym {
     return visitor._repr;
   }
 
+  /*! \brief Give a representation of an Expr. 
+    
+    The visitor pattern is used to call the specialised repr implementations for each runtime type supported. 
+   */
   template<class Config>
   std::string repr(const sym::Expr& b) {
     return repr<Config>(*b);

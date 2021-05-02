@@ -67,7 +67,6 @@ namespace sym {
   template<typename Var1, typename Var2>
   struct enable_if_var_not_eq : std::enable_if<!variable_eq<Var1, Var2>::value> {
   };
-
   
   //void testFunct() {
   //  static const char varname[] = "Yellow";
@@ -103,4 +102,13 @@ namespace sym {
       return "Var<\"" + std::string(v.getName()) + "\">()";
     return std::string(v.getName());
   }
+
+  /*! \brief Returns the binding powers for variables.
+
+    Arguments that cannot be split, like variables have very high
+    binding powers internally as they cannot be split.
+  */
+  template<auto N, class ...Args>
+  std::pair<int, int> BP(const Var<N, Args...>& v)
+  { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
 }

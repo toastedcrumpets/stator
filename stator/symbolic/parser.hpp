@@ -85,7 +85,8 @@ namespace sym {
 	// power.  Ignoring the implementation details, lets look at an example
 
 	//Token           :  sin  x    +    2    +    3
-	//Binding powers  :  inf    10   11   10   11
+	//Handedness      :   L   L    R    L    R    L
+	//Binding powers  :  inf     10#11     10#11
 	//Parsed Tree     :  (((sin  x) + 2) + 3)
 	//
 	// Sin has a very high (inf) binding power, as we want it to
@@ -129,10 +130,10 @@ namespace sym {
 	_right_operators["}"].reset(new HaltToken);
 	
 	//Most unary operators have high binding powers to grab the very next argument
-	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine, std::numeric_limits<int>::max()>());
-	_left_operators["cos"].reset(new UnaryOpToken<detail::Cosine, std::numeric_limits<int>::max()>());
-	_left_operators["exp"].reset(new UnaryOpToken<detail::Exp, std::numeric_limits<int>::max()>());
-	_left_operators["ln"].reset(new UnaryOpToken<detail::Log, std::numeric_limits<int>::max()>());
+	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine>());
+	_left_operators["cos"].reset(new UnaryOpToken<detail::Cosine>());
+	_left_operators["exp"].reset(new UnaryOpToken<detail::Exp>());
+	_left_operators["ln"].reset(new UnaryOpToken<detail::Log>());
 	
 	//The actual tokenisation is done in the consume() member
 	//function. The first call starts the process and clears the "end" state.
@@ -375,14 +376,14 @@ namespace sym {
       };
 
       
-      template<class Op, int tBP>
+      template<class Op>
       struct UnaryOpToken : LeftOperatorBase {
 	Expr apply(ExprTokenizer& tk) const {
 	  return Op::apply(tk.parseExpression(BP()));
 	}
 
 	int BP() const {
-	  return tBP;
+	  return Op::BP;
 	}
       };
 

@@ -55,54 +55,6 @@ namespace sym {
   class List;
   class Dict;
 
-  /*! \brief The generic holder/smart pointer for a runtime Abstract
-    Syntax Tree (AST) (expression).
-    
-    This class is simply a smart pointer, with specialised
-    constructors to allow it to convert compile-time expressions (and
-    formula strings) into runtime forms. It also inherits from
-    SymbolicOperator and can be used in compile-time expressions.
-  */
-  struct Expr : public shared_ptr<const RTBase>, public SymbolicOperator {
-    typedef shared_ptr<const RTBase> Base;
-
-    inline Expr() {}
-    inline Expr(const std::shared_ptr<const RTBase>& p) : Base(p) {}
-
-    Expr(const char*);
-    Expr(const std::string&);
-
-    Expr(const RTBase&);
-
-    //Type conversion constructors from compile-time objects
-    Expr(const double&);
-    
-    template<std::intmax_t Num, std::intmax_t Denom>
-    Expr(const C<Num, Denom>& c);
-
-    template<conststr N>
-    Expr(const Var<N> v);
-    
-    template<class Op, class Arg_t>
-    Expr(const UnaryOp<Arg_t, Op>&);
-
-    template<class LHS_t, class Op, class RHS_t>
-    Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
-
-    inline
-    Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
-
-    Expr(const List&);
-    Expr(const Dict&);
-    
-    bool operator==(const Expr&) const;
-    bool operator!=(const Expr& o) const { return !(*this == o); }
-    bool operator==(const detail::NoIdentity&) const { return false; }
-    explicit operator bool() const { return Base::operator bool(); }
-        
-    template<class T> const T& as() const;
-  };
-  
   namespace detail {
     template<class T>
     struct RT_type_index {
@@ -155,7 +107,109 @@ namespace sym {
       virtual RetType visit(const Dict& ) = 0;
       virtual RetType visit(const UnaryOp<Expr, detail::Negate>& ) = 0;
     };
+  }
+  
+  /*! \brief Abstract interface class for all runtime symbolic
+      classes. 
+      
+      This class defines the interface for all classes/symbols which
+      can be held by \ref Expr. Most actual functionality is
+      implemented using the \ref VisitorInterface via \ref visit.
+  */
+  class RTBase : public SymbolicOperator, public std::enable_shared_from_this<RTBase> {
+  public:
+    inline RTBase(int idx): _type_idx(idx) {}
+    
+    inline virtual ~RTBase() {}
 
+    virtual Expr clone() const = 0;
+
+    /*! \brief Comparison operator against Expr
+      
+      The template wizzardry is to make sure this operator is only
+      used for comparison against Expr types WITHOUT implicit
+      conversion. This is because derived types should implement all
+      other comparison operators which will be called by the visitor
+      inside compare.
+     */
+    template<class T, typename = typename std::enable_if<std::is_same<T, Expr>::value>::type>
+    bool operator==(const T& rhs) const {
+      return compare(rhs);
+    }
+
+    /*! \brief Starts a comparison.
+      
+      The only reason this exists is that the operator== is templated
+      to stop implicit conversions, and templated functions cannot be
+      virtual, so we handle the first dispatch here.
+     */
+    virtual bool compare(const Expr& rhs) const = 0;
+    
+    const int _type_idx;
+
+    template<class RetType>
+    RetType visit(detail::VisitorInterface<RetType>& c) const;
+  };
+
+  /*! \brief The generic holder/smart pointer for a runtime Abstract
+    Syntax Tree (AST) (expression).
+    
+    This class is simply a smart pointer, with specialised
+    constructors to allow it to convert compile-time expressions (and
+    formula strings) into runtime forms. It also inherits from
+    SymbolicOperator and can be used in compile-time expressions.
+  */
+  struct Expr : public shared_ptr<const RTBase>, public SymbolicOperator {
+    typedef shared_ptr<const RTBase> Base;
+
+    inline Expr() {}
+    inline Expr(const std::shared_ptr<const RTBase>& p) : Base(p) {}
+
+    Expr(const char*);
+    Expr(const std::string&);
+
+    Expr(const RTBase&);
+
+    //Type conversion constructors from compile-time objects
+    Expr(const double&);
+    
+    template<std::intmax_t Num, std::intmax_t Denom>
+    Expr(const C<Num, Denom>& c);
+
+    template<conststr N>
+    Expr(const Var<N> v);
+    
+    template<class Op, class Arg_t>
+    Expr(const UnaryOp<Arg_t, Op>&);
+
+    template<class LHS_t, class Op, class RHS_t>
+    Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
+
+    inline
+    Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
+
+    Expr(const List&);
+    Expr(const Dict&);
+
+    /*! \brief Expression comparison operator.
+      
+      This converts all types to an Expr ready for
+      comparison. Specialisation of comparison is done in the derived
+      classes of RTBase.
+     */
+    bool operator==(const Expr& rhs) const { return (*(*this)) == rhs; }
+
+    /*! \brief Shortcut implementation for NoIdentity. */
+    constexpr bool operator==(const detail::NoIdentity& ) { return false; }
+    
+    bool operator!=(const Expr& o) const { return !(*this == o); }
+    
+    explicit operator bool() const { return Base::operator bool(); }
+        
+    template<class T> const T& as() const;
+  };
+  
+  namespace detail { 
 
     /*! \brief A CRTP helper base class which transforms the visitor
         interface into a call to the derived classes apply function.
@@ -203,28 +257,25 @@ namespace sym {
     };
   }
 
-  /*! \brief Abstract interface class for all runtime symbolic
-      classes. 
+  namespace detail {
+    /*! \brief Comparison visitor.
+
+      This visitor completes type determinations for operator==
+      comparisons between RTBase derived types.
+     */
+    template<class LHS>
+    struct ComparisonVisitor : public sym::detail::VisitorHelper<ComparisonVisitor<LHS> > {
+      ComparisonVisitor(const LHS& l): _l(l) {}
       
-      This class defines the interface for all classes/symbols which
-      can be held by \ref Expr. Most actual functionality is
-      implemented using the \ref VisitorInterface via \ref visit.
-  */
-  class RTBase : public SymbolicOperator, public std::enable_shared_from_this<RTBase> {
-  public:
-    inline RTBase(int idx): _type_idx(idx) {}
-    
-    inline virtual ~RTBase() {}
+      template<class RHS> sym::Expr apply(const RHS& r) {
+	_result = _l == r;
+	return Expr();
+      }
 
-    virtual Expr clone() const = 0;
-
-    virtual bool operator==(const Expr o) const = 0;
-
-    const int _type_idx;
-
-    template<class RetType>
-    RetType visit(detail::VisitorInterface<RetType>& c) const;
-  };
+      const LHS& _l;
+      bool _result;
+    };
+  }
   
   /*! \brief CRTP helper base class which implements some of the
     common boilerplate code for runtime symbolic types.
@@ -238,13 +289,43 @@ namespace sym {
       return Expr(std::make_shared<Derived>(static_cast<const Derived&>(*this)));
     }
     
-    bool operator==(const Expr o) const {
-      auto other = dynamic_pointer_cast<const Derived>(o);
-      if (!other)
-	return false;
-      return *static_cast<const Derived*>(this) == *other;
+    virtual bool compare(const Expr& rhs) const {
+      const Derived& lhs(*static_cast<const Derived*>(this));
+      detail::ComparisonVisitor<Derived> visitor(lhs);
+      rhs->visit(visitor);
+      return visitor._result;
     }
   };  
+
+  namespace detail {
+    template<typename Visitor, typename LHS_t, typename Op>
+    struct DoubleDispatch2: public VisitorHelper<DoubleDispatch2<Visitor, LHS_t, Op> > {
+      DoubleDispatch2(const LHS_t& LHS, Visitor& visitor) : _LHS(LHS), _visitor(visitor) {}
+      
+      template<class RHS_t>
+      Expr apply(const RHS_t& RHS) { return _visitor.dd_visit(_LHS, RHS, Op()); }
+
+    private:
+      const LHS_t& _LHS;
+      Visitor& _visitor;
+    };
+
+    template<typename Visitor, typename Op>
+    struct DoubleDispatch1: public VisitorHelper<DoubleDispatch1<Visitor, Op> > {
+      DoubleDispatch1(const Expr& RHS, Visitor& visitor):
+	_RHS(RHS), _visitor(visitor) {}
+      
+      template<class LHS_t>
+      Expr apply(const LHS_t& lhs) {
+	DoubleDispatch2<Visitor, LHS_t, Op> visitor(lhs, _visitor);
+	return _RHS->visit(visitor);
+      }
+
+    private:
+      Expr _RHS;
+      Visitor& _visitor;
+    };
+  }
 
   namespace detail {
     /*! \brief Binding power visitor for sym::detail::BP(const Expr&). */
@@ -284,7 +365,12 @@ namespace sym {
     inline bool operator==(const VarRT& o) const {
       return _name == o._name;
     }
-        
+
+    template<class RHS>
+    constexpr bool operator==(const RHS&) const {
+      return false;
+    }
+    
     inline std::string getName() const { return _name; }
     
     std::string _name;
@@ -322,53 +408,24 @@ namespace sym {
   public:
     ConstantRT(const T& v): _val(v) {}
 
-    bool operator==(const ConstantRT& o) const {
+    template<typename T2>
+    bool operator==(const ConstantRT<T2>& o) const {
       return _val == o._val;
     }
-    
-    bool operator==(const Expr o) const;
+
+    template<class RHS>
+    bool operator==(const RHS& o) const {
+      if constexpr(detail::IsConstant<RHS>::value)
+	 return _val == o;
+      else
+	 return false;
+    }
     
     const T& get() const { return _val; }
     
   private:
     T _val;
   };
-  
-  namespace detail {
-    template<class LHS_t>
-    class CompareConstantsVisitor : public VisitorHelper<CompareConstantsVisitor<LHS_t> > {
-    public:
-      CompareConstantsVisitor(const LHS_t& l) : _l(l), _value(false) {}
-      
-      template<class T> Expr apply(const T& rhs) {
-	return worker(rhs, detail::select_overload{});
-      }
-
-      //This implementation is available whenever the two types have a comparison operator defined
-      template<class T>
-      auto worker(const T& rhs, detail::choice<0>) -> decltype(LHS_t() == rhs, Expr())
-      {
-	_value = _l == rhs;
-	return Expr();
-      }
-      
-      //If they don't have a comparison operator defined, we assume
-      //they are not comparable
-      template<class T>
-      Expr worker(const T& rhs, detail::choice<1>)
-      { return Expr(); }
-	
-      const LHS_t& _l;
-      bool _value;
-    };
-  }
-
-  template<class T>
-  bool ConstantRT<T>::operator==(const Expr o) const {
-    detail::CompareConstantsVisitor<T> visitor(_val);
-    o->visit(visitor);
-    return visitor._value;
-  }
   
 
   /*! \brief Specialisation of unary operator for runtime arguments
@@ -384,6 +441,11 @@ namespace sym {
 
     bool operator==(const UnaryOp<Expr,Op>& o) const {
       return (_arg == o._arg);
+    }
+
+    template<class RHS>
+    constexpr bool operator==(const RHS&) const {
+      return false;
     }
     
     Expr getArg() const {
@@ -405,6 +467,11 @@ namespace sym {
     
     bool operator==(const BinaryOp& o) const {
       return (_l == o._l) && (_r == o._r);
+    }
+
+    template<class RHS>
+    constexpr bool operator==(const RHS&) const {
+      return false;
     }
     
     Expr getLHS() const {
@@ -441,12 +508,18 @@ namespace sym {
     const_reference operator[](Store::size_type pos) const { return _store[pos]; }
 
     void reserve(Store::size_type cap) { _store.reserve(cap); }
+    void resize(Store::size_type cap) { _store.resize(cap); }
     void push_back(const Expr& value) { _store.push_back(value); }
     Store::size_type size() const noexcept { return _store.size(); } 
     bool empty() const noexcept { return _store.empty(); }
 
     bool operator==(const List& o) const {
       return _store == o._store;
+    }
+
+    template<class RHS>
+    constexpr bool operator==(const RHS&) const {
+      return false;
     }
     
   private:
@@ -456,13 +529,23 @@ namespace sym {
   template<typename Var>
   List derivative(const List& in, Var x) {
     List out;
-    out.reserve(in.size()); //Preallocate new list for speed
+    out.resize(in.size());
     for (size_t idx(0); idx < in.size(); ++idx)
       out[idx] = derivative(in[idx], x);
     return out;
   }
-
   
+  List operator+(const List& l, const List& r) {
+    if (l.size() != r.size())
+      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
+    List out;
+    out.resize(l.size());
+    
+    for (size_t idx(0); idx < l.size(); ++idx)
+      out[idx] = l[idx] + r[idx];
+    return out;
+  }
+
   class Dict: public RTBaseHelper<Dict> {
     typedef std::unordered_map<VarRT, Expr> Store;
 
@@ -492,6 +575,11 @@ namespace sym {
 
     bool operator==(const Dict& o) const {
       return _store == o._store;
+    }
+    
+    template<class RHS>
+    constexpr bool operator==(const RHS&) const {
+      return false;
     }
     
   private:
@@ -540,48 +628,68 @@ namespace sym {
 
     return ptr->get();
   }
+
+  //Need to forward declare this as its used in the SimplifyRT visitor
+  //Can't declare it here though, as it needs the SimplfiyRT implementation.
+  List simplify(const List&);
+  Dict simplify(const Dict&);
   
-  inline bool Expr::operator==(const Expr& e) const {
-    return (*(*this)) == e;
-  }
-
   namespace detail {
-    template<typename Visitor, typename LHS_t, typename Op>
-    struct DoubleDispatch2: public VisitorHelper<DoubleDispatch2<Visitor, LHS_t, Op> > {
-      DoubleDispatch2(const LHS_t& LHS, Visitor& visitor) : _LHS(LHS), _visitor(visitor) {}
-      
-      template<class RHS_t>
-      Expr apply(const RHS_t& RHS) { return _visitor.dd_visit(_LHS, RHS, Op()); }
-
-    private:
-      const LHS_t& _LHS;
-      Visitor& _visitor;
-    };
-
-    template<typename Visitor, typename Op>
-    struct DoubleDispatch1: public VisitorHelper<DoubleDispatch1<Visitor, Op> > {
-      DoubleDispatch1(const Expr& RHS, Visitor& visitor):
-	_RHS(RHS), _visitor(visitor) {}
-      
-      template<class LHS_t>
-      Expr apply(const LHS_t& lhs) {
-	DoubleDispatch2<Visitor, LHS_t, Op> visitor(lhs, _visitor);
-	return _RHS->visit(visitor);
+    struct SimplifyRT : VisitorHelper<SimplifyRT> {      
+      /*! 
+	\brief Default action is to return the original expression. 
+      */
+      template<class T>
+      Expr apply(const T& v) {
+	return Expr();
       }
 
-    private:
-      Expr _RHS;
-      Visitor& _visitor;
-    };
+      Expr apply(const List& v) {
+	return simplify(v);
+      }
 
-    struct SimplifyRT : VisitorHelper<SimplifyRT> {
-      template<class Op>
-      struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
-	Expr apply(const double& arg) { return Op::apply(arg); }
-	template<class T> Expr apply(const T& arg) { return Expr(); }
-      };
+      Expr apply(const Dict& v) {
+	return simplify(v);
+      }
+      
+      //////// Handling of BinaryOp simplification
 
-      //Direct evaluation of doubles
+      /*! \brief Simplify a BinaryOp expression. 
+       */
+      template<typename Op>
+      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
+	//First we try to simplify the LHS
+	Expr l = op.getLHS()->visit(*this);
+	bool lchanged = !!l;
+	if (!l) l = op._l;
+
+	//Now try to simplify the RHS
+	Expr r = op.getRHS()->visit(*this);
+	bool rchanged = !!r;
+	if (!r) r = op._r;
+
+	//Now check if either side is an identity
+	if (l == typename Op::left_zero())
+	  return typename Op::left_zero();
+	if (l == typename Op::left_identity())
+	  return r;
+	if (r == typename Op::right_zero())
+	  return typename Op::right_zero();
+	if (r == typename Op::right_identity())
+	  return l;
+	
+	//Try direct simplification via application
+	DoubleDispatch1<SimplifyRT, Op> visitor(r, *this);
+	Expr ret = l->visit(visitor);
+	if (ret)
+	  return ret;
+
+	if (lchanged || rchanged)
+	  return Expr(std::make_shared<BinaryOp<Expr, Op, Expr> >(l, r));
+
+	return Expr();
+      }
+      
       template<class T1, class T2, class Op>
       Expr dd_visit(const T1& l, const T2& r, Op) {
 	if (IsSymbolic<decltype(store(Op::apply(l, r)))>::value)
@@ -619,11 +727,12 @@ namespace sym {
 	return Expr();
       }
       
-      //By default return the blank (use 
-      template<class T>
-      Expr apply(const T& v) {
-	return Expr();
-      }
+      //////// Handling of UnaryOp simplification
+      template<class Op>
+      struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
+	Expr apply(const double& arg) { return Op::apply(arg); }
+	template<class T> Expr apply(const T& arg) { return Expr(); }
+      };
 
       template<typename Op>
       Expr apply(const UnaryOp<Expr, Op>& op) {
@@ -638,38 +747,6 @@ namespace sym {
 	  return Expr(std::make_shared<UnaryOp<Expr, Op> >(arg));
 	return Expr();
       }
-
-      //For binary operators, try to collapse them
-      template<typename Op>
-      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
-	Expr l = op.getLHS()->visit(*this);
-	bool lchanged = !!l;
-	if (!l) l = op._l;
-
-	Expr r = op.getRHS()->visit(*this);
-	bool rchanged = !!r;
-	if (!r) r = op._r;
-
-	if (l == typename Op::left_zero())
-	  return typename Op::left_zero();
-	if (l == typename Op::left_identity())
-	  return r;
-	if (r == typename Op::right_zero())
-	  return typename Op::right_zero();
-	if (r == typename Op::right_identity())
-	  return l;
-	
-	//Try direct simplification via application
-	DoubleDispatch1<SimplifyRT, Op> visitor(r, *this);
-	Expr ret = l->visit(visitor);
-	if (ret)
-	  return ret;
-
-	if (lchanged || rchanged)
-	  return Expr(std::make_shared<BinaryOp<Expr, Op, Expr> >(l, r));
-
-	return Expr();
-      }
     };
   }
 
@@ -678,6 +755,21 @@ namespace sym {
     Expr result = f->visit(visitor);
     return result ? result : f;
   }
+
+  List simplify(const List& in) {
+    List out;
+    out.resize(in.size());
+    for (size_t idx(0); idx < in.size(); ++idx)
+      out[idx] = simplify(in[idx]);
+    return out;
+  }  
+
+  Dict simplify(const Dict& in) {
+    Dict out;
+    for (const auto& p : in)
+      out[p.first] = simplify(p.second);
+    return out;
+  }  
   
   namespace detail {
     struct SubstituteRT : VisitorHelper<SubstituteRT> {
@@ -741,12 +833,22 @@ namespace sym {
     };
   }
   
-  template<class Var>
-  Expr derivative(const Expr& f, const Var v) {
+  /*! \brief Runtime derivative where a Var<> type is known for the second argument.
+   */
+  template<auto N>
+  Expr derivative(const Expr& f, const Var<N>& v) {
     detail::DerivativeRT visitor(v);
     return f->visit(visitor);
   }
 
+  /*! \brief Runtime derivative where variable is an Expr.
+    
+    Confirm its a variable and hand it over to the templated implementation.
+   */
+  Expr derivative(const Expr& f, const Expr& v) {
+    return derivative(f, v.as<VarRT>());
+  }
+  
   namespace detail {
     struct FastSubRT : VisitorHelper<FastSubRT> {
       FastSubRT(VarRT var, double replacement): _var(var), _replacement(replacement) {}

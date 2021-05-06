@@ -245,5 +245,5 @@ UNIT_TEST( symbolic_parser_lists )
 UNIT_TEST( symbolic_parser_dict )
 {
   //Dogfood a expression back into itself
-  expr_string_expr_conversion_check("{x:1-2, y:3}");
+  expr_string_expr_conversion_check("{x:-1, y:3, z:y}");
 }

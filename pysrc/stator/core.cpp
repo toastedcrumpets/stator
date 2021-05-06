@@ -12,9 +12,9 @@ PYBIND11_MODULE(core, m)
     .def(py::init<std::string>())
     .def(py::init<int>())
     .def(py::init<double>())
-    .def("__repr__", +[](const sym::Expr& self) { return "Expr('"+stator::repr(self)+"')"; })
-    .def("__str__", +[](const sym::Expr& self) { return stator::repr(self); })
-    .def("latex", +[](const sym::Expr& self) { return stator::repr<stator::ReprConfig<stator::Latex_output> >(self); })
+    .def("__repr__", +[](const sym::Expr& self) { return "Expr('"+sym::repr(self)+"')"; })
+    .def("__str__", +[](const sym::Expr& self) { return sym::repr(self); })
+    .def("latex", +[](const sym::Expr& self) { return sym::repr<stator::ReprConfig<stator::Latex_output> >(self); })
     .def("simplify", +[](const sym::Expr& self) { return sym::simplify(self); })
     .def("__add__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l+r); })
     .def("__radd__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l+r); })
@@ -24,9 +24,15 @@ PYBIND11_MODULE(core, m)
     .def("__rmul__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l*r); })
     .def("__div__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l/r); })
     .def("__rdiv__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l/r); })
+    .def("__eq__", +[](const sym::Expr& l, const sym::Expr& r) { return l == r; })
+    .def("debug_form", +[](const sym::Expr& self) { return "Expr('"+sym::repr<stator::ReprConfig<stator::Debug_output>>(self)+"')"; }) 
     .def(py::self / py::self)
     ;
 
+  m.def("derivative", static_cast<sym::Expr (*)(const sym::Expr&, const sym::Expr&)>(&sym::derivative));
+  m.def("simplify", static_cast<sym::Expr (*)(const sym::Expr&)>(&sym::simplify));
+  m.def("subs", static_cast<sym::Expr (*)(const sym::Expr&)>(&sym::simplify));
+  
   py::implicitly_convertible<int, sym::Expr>();
   py::implicitly_convertible<double, sym::Expr>();
 }

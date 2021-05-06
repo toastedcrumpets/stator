@@ -125,6 +125,6 @@ stator_test(symbolic_ad_test)
 ######################################################################
 ########## PYTHON INTERFACE
 ######################################################################
-#add_subdirectory(extern/pybind11)
-#pybind11_add_module(core pysrc/stator/core.cpp)
-#target_include_directories(core PRIVATE ${PROJECT_SOURCE_DIR})
+add_subdirectory(extern/pybind11)
+pybind11_add_module(core pysrc/stator/core.cpp)
+target_include_directories(core PRIVATE ${PROJECT_SOURCE_DIR})

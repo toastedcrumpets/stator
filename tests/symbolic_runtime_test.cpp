@@ -57,6 +57,23 @@ void compare_expression(const T1& f, const T2& g, bool output_error=true) {
   UNIT_TEST_CHECK_EQUAL(f_str, g_str);
 }
 
+UNIT_TEST( symbolic_rt_constants_direct )
+{
+  ConstantRT<double> l(2);
+  ConstantRT<double> r(2);
+  UNIT_TEST_CHECK_EQUAL(l, r);
+  UNIT_TEST_CHECK_EQUAL(l, 2.0);
+  UNIT_TEST_CHECK_EQUAL(l, 2);
+}
+
+UNIT_TEST( symbolic_rt_simplify )
+{
+  UNIT_TEST_CHECK_EQUAL(Expr("0*2"), Expr("0"));
+  Expr f = Expr("0") * Expr("2");
+  f = simplify(f);
+  UNIT_TEST_CHECK_EQUAL(f, Expr("0"));
+}
+
 
 UNIT_TEST( symbolic_rt_constants )
 {
@@ -185,4 +202,3 @@ UNIT_TEST( symbolic_runtime_derivative )
   UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("exp(x)"), Var<>())), Expr("exp(x)"));
   UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), Var<>())), Expr("exp(x)+x*exp(x)"));
 }
-

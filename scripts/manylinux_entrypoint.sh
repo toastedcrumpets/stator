@@ -17,7 +17,7 @@ yum install -y gtest-devel
 # Compile wheels
 ls /opt/python/
 mkdir -p /io/wheelhouse
-for VER in cp39-cp39; do #cp36-cp36m cp37-cp37m cp38-cp38 
+for VER in cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39; do # 
     PYBIN=/opt/python/$VER/bin
     "${PYBIN}/pip" install -r /io/dev-requirements.txt
     "${PYBIN}/pip" wheel /io/ --no-deps -w /io/wheelhouse/
@@ -30,7 +30,7 @@ for whl in /io/wheelhouse/*.whl; do
 done
 
 # Install packages and test
-for VER in cp39-cp39; do #cp36-cp36m cp37-cp37m cp38-cp38 
+for VER in cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39; do 
     PYBIN=/opt/python/$VER/bin
     "${PYBIN}/pip" install stator --no-index -f /io/wheelhouse
     #(cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)

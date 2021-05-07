@@ -370,11 +370,24 @@ namespace sym {
     constexpr bool operator==(const RHS&) const {
       return false;
     }
+
+    template<class Arg>
+    auto operator=(const Arg& a) const -> STATOR_AUTORETURN(equal(*this, a));
     
     inline std::string getName() const { return _name; }
     
     std::string _name;
   };
+
+  template<auto N, typename ...Args, typename Arg>
+  Expr sub(const VarRT& f, const EqualityOp<Var<N, Args...>, Arg>& x)
+  {
+    if (f == x._l)
+      return x._r;
+    else
+      return f;
+  }
+  
 }
 
 namespace std
@@ -552,6 +565,9 @@ namespace sym {
   public:
     Dict() {}
     
+    typedef Store::key_type key_type;
+    typedef Store::reference reference;
+    typedef Store::const_reference const_reference;
     typedef typename Store::iterator iterator;
     typedef typename Store::const_iterator const_iterator;
 
@@ -562,9 +578,8 @@ namespace sym {
     const_iterator end() const {return _store.end();}
     const_iterator cend() const {return _store.cend();}
 
-    typedef Store::key_type key_type;
-    typedef Store::reference reference;
-    typedef Store::const_reference const_reference;
+    iterator find( const key_type& key ) { return _store.find(key); }
+    const_iterator find( const key_type& key ) const { return _store.find(key); }
 
     Expr& operator[](const VarRT& k) { return _store[k]; }
     Expr& at(const VarRT& k) { return _store.at(k); }
@@ -766,10 +781,10 @@ namespace sym {
 
   Dict simplify(const Dict& in) {
     Dict out;
-    for (const auto& p : in)
+    for (const auto& p : in) 
       out[p.first] = simplify(p.second);
     return out;
-  }  
+  }
   
   namespace detail {
     struct SubstituteRT : VisitorHelper<SubstituteRT> {
@@ -785,6 +800,29 @@ namespace sym {
 	if (v == _var)
 	  return _replacement;
 	return Expr();
+      }
+
+      //Variable matching
+      Expr apply(const List& v) {
+	List ret;
+	
+	bool _replaced = false; //We only start regenerating the list when needed
+	for (size_t i(0); i < v.size(); ++i) {
+	  Expr t = v[i]->visit(*this);
+	  
+	  if (bool(t) && (!_replaced)) {
+	    //We're starting replacements, so copy everything skipped over so far
+	    ret.resize(v.size());
+	    for (size_t j(0); j < i; ++j)
+	      ret[j] = v[j];
+	    _replaced = true;
+	  }
+
+	  if (_replaced) //continue the copy where required
+	    ret[i] = (t) ? t : v[i];
+	}
+	
+	return (_replaced) ? ret : Expr();
       }
       
       template<typename Op>
@@ -807,11 +845,84 @@ namespace sym {
       VarRT _var;
       Expr _replacement;
     };
+
   }
-  
+
   template<class Var, class Arg>
   Expr sub(const Expr& f, const EqualityOp<Var, Arg>& rel) {
     detail::SubstituteRT visitor(rel._l, rel._r);
+    Expr result = f->visit(visitor);
+    return (result) ?  result : f;
+  }
+  
+  namespace detail {
+    struct SubstituteDictRT : VisitorHelper<SubstituteRT> {
+      SubstituteDictRT(const Dict& replacement):  _replacement(replacement) {}
+      
+      //By default, just return an empty Expr, and let the helper function return the original expression
+      template<class T>
+      Expr apply(const T& v)
+      { return Expr(); }
+
+      //Variable matching
+      Expr apply(const VarRT& v) {
+	std::cout << "!! Found " << v << std::endl;
+	auto it = _replacement.find(v);
+	if (it != _replacement.end()) {
+	  std::cout << "!! Replacing it with " << it->second << std::endl;
+	  return it->second;
+	}
+	std::cout << "!! Not replacing it " << v << std::endl;
+	return Expr();
+      }
+
+      //Variable matching
+      Expr apply(const List& v) {
+	List ret;
+	
+	bool _replaced = false; //We only start regenerating the list when needed
+	for (size_t i(0); i < v.size(); ++i) {
+	  Expr t = v[i]->visit(*this);
+	  
+	  if (bool(t) && ! _replaced) {
+	    //We're starting replacements, so copy everything skipped over so far
+	    ret.resize(v.size());
+	    for (size_t j(0); j < i; ++j)
+	      ret[j] = v[j];
+	    _replaced = true;
+	  }
+
+	  if (_replaced) //continue the copy where required
+	    ret[i] = (t) ? t : v[i];
+	}
+	
+	return (_replaced) ? ret : Expr();
+      }
+      
+      template<typename Op>
+      Expr apply(const UnaryOp<Expr, Op>& op) {
+	Expr arg = op.getArg()->visit(*this);
+	return arg ? Expr(Op::apply(arg)) : Expr();
+      }
+
+      template<typename Op>
+      Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
+	Expr l = op.getLHS()->visit(*this);
+	Expr r = op.getRHS()->visit(*this);
+
+	if (l || r)
+	  return Expr(Op::apply(l ? l : op._l, r ? r : op._r));
+	else
+	  return Expr();
+      }
+      
+      const Dict&  _replacement;
+    };
+
+  }
+
+  Expr sub(const Expr& f, const Dict& rep) {
+    detail::SubstituteDictRT visitor(rep);
     Expr result = f->visit(visitor);
     return (result) ?  result : f;
   }

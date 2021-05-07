@@ -202,3 +202,20 @@ UNIT_TEST( symbolic_runtime_derivative )
   UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("exp(x)"), Var<>())), Expr("exp(x)"));
   UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), Var<>())), Expr("exp(x)+x*exp(x)"));
 }
+
+UNIT_TEST( symbolic_list_basic )
+{
+  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), VarRT("x") = 2), Expr("[1,2,y]"));
+  UNIT_TEST_CHECK_EQUAL(derivative(Expr("[1, x, y]"), VarRT("x")), Expr("[0,1,0]"));
+}
+UNIT_TEST( symbolic_dict_basic )
+{
+  Dict v;
+  v[VarRT("x")] = 2;
+  v[VarRT("y")] = 3;
+  std::cout << "##1##1 " << v << std::endl;
+  UNIT_TEST_CHECK_EQUAL(sub(Expr("x"), v), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(sub(Expr("y"), v), Expr("3"));
+
+  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), v), Expr("[1,2,3]"));
+}

@@ -31,7 +31,7 @@ PYBIND11_MODULE(core, m)
 
   m.def("derivative", static_cast<sym::Expr (*)(const sym::Expr&, const sym::Expr&)>(&sym::derivative));
   m.def("simplify", static_cast<sym::Expr (*)(const sym::Expr&)>(&sym::simplify));
-  m.def("subs", static_cast<sym::Expr (*)(const sym::Expr&)>(&sym::simplify));
+  //m.def("sub", static_cast<sym::Expr (*)(const sym::Expr&, const sym::Expr&)>(&sym::sub));
   
   py::implicitly_convertible<int, sym::Expr>();
   py::implicitly_convertible<double, sym::Expr>();

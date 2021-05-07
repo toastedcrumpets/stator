@@ -22,13 +22,16 @@ class Testfit(unittest.TestCase):
         f = Expr("[1, x, 2*x^2]")
         x = Expr("x")
         df = derivative(f, x)
-        self.assertEqual(repr(simplify(df)), "Expr('[0, 1, 4*x]')")
-
+        df = simplify(df)
+        self.assertEqual(repr(df), "Expr('[0, 1, 4*x]')")
+        #self.assertEqual(repr(subs(df, x = 2)), "Expr('[0, 1, 8]')")
+        
 
     def test_dict(self):
         self.assertEqual(repr(Expr("{}")),"Expr('{}')")
         self.assertEqual(repr(Expr("{x:1}")),"Expr('{x:1}')")
 
+        
         
 if __name__ == "__main__":
     unittest.main()

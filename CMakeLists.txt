@@ -77,6 +77,7 @@ endif()
 ### First check if the compiler supports C++11 or C++0x and enable the build flag
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 ######################################################################
 ########## HEADER DIRECTORIES
@@ -125,6 +126,44 @@ stator_test(symbolic_ad_test)
 ######################################################################
 ########## PYTHON INTERFACE
 ######################################################################
+
+# Build a Python extension module using pybind11
+#   pybindings_add_module(<module>)
+# Here <module> should be the fully qualified name for the module,
+# e.g. pybindings_add_module(foo.bar._baz)
+# <module> becomes the target name in case you wish to do something to it later
+# The source for the binding *must* be placed in src/pybindings/{relpath}/py{name}.cc
+# E.g. for module=foo.bar._baz -> src/pybindings/bar/py_baz.cc
+function(pybindings_add_module module)
+    set(target_name ${module})
+    string(REPLACE "." "/" modpath ${module})
+    string(REPLACE "." ";" modlist ${module})
+
+    # The module name is the last entry
+    list(GET modlist -1 modname)
+
+    # Remove everything that is not the root or the module name
+    #list(REMOVE_AT modlist 0)
+    list(REMOVE_AT modlist -1)
+
+    # Get the relative path
+    if(modlist)
+        string(REPLACE ";" "/" relpath "${modlist}")
+    else()
+        set(relpath "")
+    endif()
+
+    # Define the binding source file
+    set(sources pysrc/${relpath}/${modname}.cpp)
+
+    # Invoke pybind11 and set where the library should go, and what it is called
+    pybind11_add_module(${target_name} ${sources})
+    set(outdir ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${relpath})
+    set_target_properties(${target_name} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${outdir})
+    set_target_properties(${target_name} PROPERTIES OUTPUT_NAME ${modname})
+endfunction()
+
 add_subdirectory(extern/pybind11)
-pybind11_add_module(core pysrc/stator/core.cpp)
-target_include_directories(core PRIVATE ${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR})
+pybindings_add_module(stator.core)
+

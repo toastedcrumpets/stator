@@ -213,7 +213,6 @@ UNIT_TEST( symbolic_dict_basic )
   Dict v;
   v[VarRT("x")] = 2;
   v[VarRT("y")] = 3;
-  std::cout << "##1##1 " << v << std::endl;
   UNIT_TEST_CHECK_EQUAL(sub(Expr("x"), v), Expr("2"));
   UNIT_TEST_CHECK_EQUAL(sub(Expr("y"), v), Expr("3"));
 

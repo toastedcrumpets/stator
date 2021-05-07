@@ -134,6 +134,7 @@ stator_test(symbolic_ad_test)
 # <module> becomes the target name in case you wish to do something to it later
 # The source for the binding *must* be placed in src/pybindings/{relpath}/py{name}.cc
 # E.g. for module=foo.bar._baz -> src/pybindings/bar/py_baz.cc
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "build" CACHE STRING "Where to place the built library")
 function(pybindings_add_module module)
     set(target_name ${module})
     string(REPLACE "." "/" modpath ${module})

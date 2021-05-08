@@ -208,6 +208,7 @@ UNIT_TEST( symbolic_list_basic )
   UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), VarRT("x") = 2), Expr("[1,2,y]"));
   UNIT_TEST_CHECK_EQUAL(derivative(Expr("[1, x, y]"), VarRT("x")), Expr("[0,1,0]"));
 }
+
 UNIT_TEST( symbolic_dict_basic )
 {
   Dict v;
@@ -217,4 +218,10 @@ UNIT_TEST( symbolic_dict_basic )
   UNIT_TEST_CHECK_EQUAL(sub(Expr("y"), v), Expr("3"));
 
   UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), v), Expr("[1,2,3]"));
+}
+
+UNIT_TEST( symbolic_sub_general )
+{
+  UNIT_TEST_CHECK_EQUAL(sub(Expr("x"), Expr("x=2")), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(sub(Expr("x"), Expr("{x:2, y:3}")), Expr("2"));
 }

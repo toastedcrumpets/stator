@@ -857,33 +857,28 @@ namespace sym {
   
   namespace detail {
     struct SubstituteDictRT : VisitorHelper<SubstituteDictRT> {
-      SubstituteDictRT(const Dict& replacement):  _replacement(replacement) {
-	std::cout << "!! Built SubstituteDictRT " << std::endl;
-      }
+      SubstituteDictRT(const Dict& replacement):
+	_replacement(replacement)
+      {}
       
       //By default, just return an empty Expr, and let the helper function return the original expression
       template<class T>
       Expr apply(const T& v)
       {
-	std::cout << "## Matching generic" << std::endl;
 	return Expr();
       }
 
       //Variable matching
       Expr apply(const VarRT& v) {
-	std::cout << "!! Found match var " << v << std::endl;
 	auto it = _replacement.find(v);
 	if (it != _replacement.end()) {
-	  std::cout << "!! Replacing it with " << it->second << std::endl;
 	  return it->second;
 	}
-	std::cout << "!! Not replacing it " << v << std::endl;
 	return Expr();
       }
 
       //Variable matching
       Expr apply(const List& v) {
-	std::cout << "!! Found match list " << v << std::endl;
 	List ret;
 	
 	bool _replaced = false; //We only start regenerating the list when needed
@@ -891,7 +886,6 @@ namespace sym {
 	  Expr t = v[i]->visit(*this);
 	  
 	  if (bool(t) && ! _replaced) {
-	    std::cout << "!! Starting replacing " << v[i] << " with " << t << std::endl;
 	    //We're starting replacements, so copy everything skipped over so far
 	    ret.resize(v.size());
 	    for (size_t j(0); j < i; ++j)
@@ -899,11 +893,9 @@ namespace sym {
 	    _replaced = true;
 	  }
 
-	  if (_replaced) {//continue the copy where required
-	    std::cout << "!! Continued replacing " << v[i] << " with " << t << std::endl;
+	  if (_replaced)
+	    //continue the copy where required
 	    ret[i] = (t) ? t : v[i];
-	  } else
-	    std::cout << "!! Not replacing " << v[i] << std::endl;
 	}
 	
 	return (_replaced) ? ret : Expr();
@@ -911,14 +903,12 @@ namespace sym {
       
       template<typename Op>
       Expr apply(const UnaryOp<Expr, Op>& op) {
-	std::cout << "!! Found UnaryOp " << std::endl;
 	Expr arg = op.getArg()->visit(*this);
 	return arg ? Expr(Op::apply(arg)) : Expr();
       }
 
       template<typename Op>
       Expr apply(const BinaryOp<Expr, Op, Expr>& op) {
-	std::cout << "!! Found BinaryOp " << std::endl;
 	Expr l = op.getLHS()->visit(*this);
 	Expr r = op.getRHS()->visit(*this);
 
@@ -935,11 +925,41 @@ namespace sym {
 
   Expr sub(const Expr& f, const Dict& rep) {
     detail::SubstituteDictRT visitor(rep);
-    std::cout << "Starting dictionary replacement " << std::endl;
     Expr result = f->visit(visitor);
     return (result) ?  result : f;
   }
 
+  namespace detail {
+    struct SubstituteExprRT : VisitorHelper<SubstituteExprRT> {
+      SubstituteExprRT(const Expr& f): _f(f) {}
+      
+      //By default, just return an empty Expr, and let the helper function return the original expression
+      template<class T>
+      Expr apply(const T& v)
+      {
+	stator_throw() << "No substitution process available for " << v << "\n Needs to be a Equality or a Dict.";
+      }
+
+      Expr apply(const Dict& d) {
+	return sub(_f, d);
+      }
+
+      Expr apply(const EqualityOp<Expr, Expr>& op) {
+	
+	return sub(_f, op._l.as<VarRT>() = op._r);
+      }
+	
+      const Expr& _f;
+    };
+  }
+  
+  Expr sub(const Expr& f, const Expr& rep) {
+    detail::SubstituteExprRT visitor(f);
+    Expr result = rep->visit(visitor);
+    return (result) ?  result : f;
+  }
+
+  
   namespace detail {
     struct DerivativeRT : VisitorHelper<DerivativeRT> {
       DerivativeRT(VarRT var): _var(var) {}
@@ -1055,6 +1075,14 @@ namespace sym {
     }
   }
   
+  template<class Config = DefaultReprConfig>
+  inline std::string repr(const sym::ConstantRT<double>& f)
+  {
+    if (Config::Debug_output)
+      return "ConstantRT<double>("+repr<Config>(f.get())+")";
+    return repr<Config>(f.get());
+  }
+
   template<class Config = DefaultReprConfig>
   inline std::string repr(const sym::List& f)
   {

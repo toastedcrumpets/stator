@@ -20,16 +20,15 @@
 #pragma once
 
 namespace sym {
-  /////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////        Standard functions         /////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////
-
   /*! \brief Symbolic representation of a unary operator (i.e., sin(x)).
    */
   template<class Arg, typename Op>
   struct UnaryOp: SymbolicOperator {
+  protected:
+     UnaryOp(const Arg& a): _arg(a) {}    
+  public:
+    static auto create(const Arg& a) { return UnaryOp(a); }
     Arg _arg;
-    UnaryOp(Arg a): _arg(a) {}
   };
   
   using std::sin;
@@ -39,58 +38,67 @@ namespace sym {
   using std::abs;
   
   namespace detail {
+    template<typename Arg, typename Op>
+    struct Type_index<UnaryOp<Arg, Op>> { static const int value = Op::type_index;  };
+    
     struct Sine {
       static constexpr int BP = std::numeric_limits<int>::max();
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(sin(a));
+      template<class Arg> static auto apply(const Arg& a) {return sin(a); }
       static inline std::string l_repr()       { return "sin "; }
       static inline std::string r_repr()       { return ""; }
       static inline std::string l_latex_repr() { return "\\sin "; }
       static inline std::string r_latex_repr() { return ""; }
+      static constexpr int type_index = 2;
     };
 
     struct Cosine {
       static constexpr int BP = std::numeric_limits<int>::max();
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(cos(a));
+      template<class Arg> static auto apply(const Arg& a) { return cos(a); }
       static inline std::string l_repr()       { return "cos "; }
       static inline std::string r_repr()       { return ""; }
       static inline std::string l_latex_repr() { return "\\cos "; }
       static inline std::string r_latex_repr() { return ""; }
+      static constexpr int type_index = 3;
     };
 
     struct Exp {
       static constexpr int BP = std::numeric_limits<int>::max();
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(exp(a));
+      template<class Arg> static auto apply(const Arg& a) { return exp(a); }
       static inline std::string l_repr()       { return "exp "; }
       static inline std::string r_repr()       { return ""; }
       static inline std::string l_latex_repr() { return "\\mathrm{e}^{"; }
       static inline std::string r_latex_repr() { return "}"; }
+      static constexpr int type_index = 5;
     };
 
     struct Log {
       static constexpr int BP = std::numeric_limits<int>::max();
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(log(a));
+      template<class Arg> static auto apply(const Arg& a) { return log(a); }
       static inline std::string l_repr()       { return "ln "; }
       static inline std::string r_repr()       { return ""; }
       static inline std::string l_latex_repr() { return "\\ln "; }
       static inline std::string r_latex_repr() { return "}"; }
+      static constexpr int type_index = 4;
     };
 
     struct Absolute {
       static constexpr int BP = 0; //Binding power is zero, as it wraps its arguments, no need to fight for them.
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(abs(a));
+      template<class Arg> static auto apply(const Arg& a) { return abs(a); }
       static inline std::string l_repr()       { return "|"; }
       static inline std::string r_repr()       { return "|"; }
       static inline std::string l_latex_repr() { return "\\left|"; }
       static inline std::string r_latex_repr() { return "\\right|"; }
+      static constexpr int type_index = 6;
     };
 
     struct Arbsign {
       static constexpr int BP = 0; //Binding power is zero, as it wraps its arguments, no need to fight for them.
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN((UnaryOp<decltype(store(a)), Arbsign>(a)));
+      template<class Arg> static auto apply(const Arg& a) { return store(UnaryOp<decltype(store(a)), Arbsign>::create(a)); }
       static inline std::string l_repr()       { return "±|"; }
       static inline std::string r_repr()       { return "|"; }
       static inline std::string l_latex_repr() { return "\\pm\\left|"; }
       static inline std::string r_latex_repr() { return "\\right|"; }
+      static constexpr int type_index = 7;
     };
 
     struct Negate {
@@ -98,65 +106,81 @@ namespace sym {
       //RBP as its equivalent. for example, exponents and
       //multiplication should be more powerful.
       static constexpr int BP = 21;
-      template<class Arg> static auto apply(const Arg& a) -> STATOR_AUTORETURN(-a);
+      template<class Arg> static auto apply(const Arg& a) { return -a; }
       static inline std::string l_repr()       { return "-"; }
       static inline std::string r_repr()       { return ""; }
       static inline std::string l_latex_repr() { return "-"; }
       static inline std::string r_latex_repr() { return ""; }
+      static constexpr int type_index = 17;
     };
   }
 
   /*! \brief Symbolic unary positive operator. */
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
-  Arg operator+(const Arg& l) { return l; }
+  auto operator+(const Arg& l) { return store(l); }
 
   /*! \brief Symbolic unary negation operator. */
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
-  auto operator-(const Arg& l)  -> STATOR_AUTORETURN((UnaryOp<decltype(store(l)), detail::Negate>(l)));
+  auto operator-(const Arg& arg) {
+    return store(UnaryOp<decltype(store(arg)), detail::Negate>::create(arg));
+  }
   
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
-  auto sin(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Sine>(arg)));
+  auto sin(const Arg& arg) {
+    return store(UnaryOp<decltype(store(arg)), detail::Sine>::create(arg));
+  }
 
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
-  auto cos(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Cosine>(arg)));
+  auto cos(const Arg& arg) {
+    return store(UnaryOp<decltype(store(arg)), detail::Cosine>::create(arg));
+  }
 
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
-  auto exp(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Exp>(arg)));
+  auto exp(const Arg& arg) {
+    return store(UnaryOp<decltype(store(arg)), detail::Exp>::create(arg));
+  }
 
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
-  auto log(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Log>(arg)));
+  auto log(const Arg& arg) {
+    return store(UnaryOp<decltype(store(arg)), detail::Log>::create(arg));
+  }
   
   template<class Arg,
 	   typename = typename std::enable_if<IsSymbolic<Arg>::value>::type>
-  auto abs(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Absolute>(arg)));
+  auto abs(const Arg& arg) {
+    return store(UnaryOp<decltype(store(arg)), detail::Absolute>::create(arg));
+  }
   
   template<class Arg>
-  auto arbsign(const Arg& arg) -> STATOR_AUTORETURN((UnaryOp<decltype(store(arg)), detail::Arbsign>(arg)));
+  auto arbsign(const Arg& arg) {
+    return store(UnaryOp<decltype(store(arg)), detail::Arbsign>::create(arg));
+  }
   
-  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Sine>& f, Var x)
-    -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::cos(f._arg));
-  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Cosine>& f, Var x)
-    -> STATOR_AUTORETURN(-derivative(f._arg, x) * sym::sin(f._arg));
-  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Exp>& f, Var x)
-    -> STATOR_AUTORETURN(derivative(f._arg, x) * f);
-  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Log>& f, Var x)
-    -> STATOR_AUTORETURN(derivative(f._arg, x) / f._arg);
-  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Absolute>& f, Var x)
-    -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::abs(f._arg) / f._arg);
-  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Arbsign>& f, Var x)
-    -> STATOR_AUTORETURN(derivative(f._arg, x) * sym::arbsign(Unity()));
-  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Negate>& f, Var x)
-    -> STATOR_AUTORETURN(-derivative(f._arg, x));
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Sine>& f, const Var& x)
+  { return store(derivative(f._arg, x) * sym::cos(f._arg)); }
+  
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Cosine>& f, const Var& x)
+  { return store(-derivative(f._arg, x) * sym::sin(f._arg)); }
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Exp>& f, const Var& x)
+  { return store(derivative(f._arg, x) * f); }
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Log>& f, const Var& x)
+  { return store(derivative(f._arg, x) / f._arg); }
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Absolute>& f, const Var& x)
+  { return store(derivative(f._arg, x) * sym::abs(f._arg) / f._arg); }
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Arbsign>& f, const Var& x)
+  { return store(derivative(f._arg, x) * sym::arbsign(Unity())); }
+  template<class Var, class Arg> auto derivative(const UnaryOp<Arg, detail::Negate>& f, const Var& x)
+  { return store(-derivative(f._arg, x)); }
 
   template<class Var, class Arg1, class Arg2, class Op>
   auto sub(const UnaryOp<Arg1, Op>& f, const EqualityOp<Var, Arg2>& x)
-    -> STATOR_AUTORETURN(Op::apply(sub(f._arg, x)));  
+  { return store(Op::apply(sub(f._arg, x)));  }
 
 
   /*! \brief A function allowing you to see the binding power of any
@@ -182,4 +206,17 @@ namespace sym {
       + std::string((Config::Latex_output) ? Op::r_latex_repr() : Op::r_repr())
       ;
   }
+}
+
+namespace std
+{
+  template<typename Arg, typename Op> struct hash<sym::UnaryOp<Arg, Op> >
+  {
+    std::size_t operator()(sym::UnaryOp<Arg, Op> const& v) const noexcept
+    {
+      std::size_t seed = Op::type_index;
+      stator::hash_combine(seed, std::hash<Arg>{}(v._arg));
+      return seed;
+    }
+  };
 }

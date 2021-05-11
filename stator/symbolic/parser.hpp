@@ -302,15 +302,16 @@ namespace sym {
 
       struct ListToken : public LeftOperatorBase {
 	Expr apply(ExprTokenizer& tk) const {
-	  List a;
-	  
+	  auto a = List::create();
+
 	  if (tk.next() == "]") {
 	    tk.consume();
 	    return a;
 	  }
 	  
 	  while (true) {
-	    a.push_back(tk.parseExpression(BP()));
+	    auto e = tk.parseExpression(BP());
+	    a->push_back(e);
 	    if (tk.next() == "]") break;
 	    tk.expect(",");
 	  }
@@ -328,11 +329,12 @@ namespace sym {
 
       struct DictToken : public LeftOperatorBase {
 	Expr apply(ExprTokenizer& tk) const {
-	  Dict a;
+	  auto a_ptr = Dict::create();
+	  auto& a = *a_ptr;
 	  
 	  if (tk.next() == "}") {
 	    tk.consume();
-	    return a;
+	    return a_ptr;
 	  }
 	  
 	  while (true) {
@@ -347,7 +349,7 @@ namespace sym {
 	  }
 	  
 	  tk.expect("}");
-	  return a;
+	  return a_ptr;
 	}
 
 	//Parenthesis bind the whole following expression
@@ -402,7 +404,7 @@ namespace sym {
       struct UnaryNegative : public LeftOperatorBase {
 	struct Visitor : VisitorHelper<Visitor> {
 	  template<class T> Expr apply(const T& val) {
-	    return -val;
+	    return Expr(-val);
 	  }
 	};
 	
@@ -451,7 +453,7 @@ namespace sym {
 	  if (!std::isalpha(c))
 	    stator_throw() << "Could not parse \""+token+"\" as a valid token?\n" << parserLoc();
 	    
-	return Expr(VarRT(token));
+	return VarRT::create(token);
       }
 
       /*!\brief Main parsing entry function.
@@ -550,7 +552,10 @@ namespace sym {
   Expr::Expr(const std::string& str)
   {
     auto tokenizer = detail::ExprTokenizer(str);
-    *this = simplify(tokenizer.parseExpression());
+    auto parsed = tokenizer.parseExpression();
+    auto simplified = simplify(parsed);
+
+    *this = simplified;
 
     //Check that the full string was parsed
     if (!tokenizer.empty())

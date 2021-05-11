@@ -59,11 +59,11 @@ void compare_expression(const T1& f, const T2& g, bool output_error=true) {
 
 UNIT_TEST( symbolic_rt_constants_direct )
 {
-  ConstantRT<double> l(2);
-  ConstantRT<double> r(2);
-  UNIT_TEST_CHECK_EQUAL(l, r);
-  UNIT_TEST_CHECK_EQUAL(l, 2.0);
-  UNIT_TEST_CHECK_EQUAL(l, 2);
+  auto l = ConstantRT<double>::create(2);
+  auto r = ConstantRT<double>::create(2);
+  UNIT_TEST_CHECK_EQUAL(*l, *r);
+  UNIT_TEST_CHECK_EQUAL(*l, 2.0);
+  UNIT_TEST_CHECK_EQUAL(*l, 2);
 }
 
 UNIT_TEST( symbolic_rt_simplify )
@@ -100,19 +100,19 @@ UNIT_TEST( symbolic_rt_constants )
 
 
   //Check that the particular type operators are working
-  f = double(3.0) + double(2);
+  f = Expr(double(3.0)) + Expr(double(2));
   UNIT_TEST_CHECK_EQUAL(5.0, simplify(f).as<double>());
 
-  f = double(3.0) - double(2);
+  f = Expr(double(3.0)) - Expr(double(2));
   UNIT_TEST_CHECK_EQUAL(1.0, simplify(f).as<double>());
 
-  f = double(3.0) * double(2);
+  f = Expr(double(3.0)) * Expr(double(2));
   UNIT_TEST_CHECK_EQUAL(6.0, simplify(f).as<double>());
 
-  f = double(3.0) / double(2);
+  f = Expr(double(3.0)) / Expr(double(2));
   UNIT_TEST_CHECK_EQUAL(3.0/2, simplify(f).as<double>());
 
-  f = pow(double(3.0),double(2));
+  f = Expr(pow(Expr(3.0), Expr(2)));
   UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
 }
 
@@ -124,16 +124,16 @@ UNIT_TEST( symbolic_rt_variables )
   Var<y_str> y;
   Expr f;
 
-  f = x;  
+  f = Expr(x);
   compare_expression(f, "x");
 
-  f = x * x;
+  f = Expr(x * x);
   compare_expression(f, x * x);
 
-  f = sub(f, x = y);
+  f = sub(f, Expr(x = y));
   compare_expression(f, y * y);
 
-  f = sub(f, y = 3.0);
+  f = sub(f, Expr(y = 3.0));
   UNIT_TEST_CHECK_EQUAL(9.0, simplify(f).as<double>());
 }
 
@@ -151,69 +151,90 @@ UNIT_TEST( symbolic_comparison_operator )
   UNIT_TEST_CHECK(Expr(log(x)) != Expr(exp(x)));
 }
 
+namespace sym {
+  template<class Var> auto tderivative(const UnaryOp<Expr, detail::Cosine>& f, const Var& x)
+    -> STATOR_AUTORETURN(-derivative(f._arg, x) * sym::sin(f._arg));
+}
+
 UNIT_TEST( symbolic_rt_unary_ops )
 {
   Var< > x;
 
-  Expr f = sin(x);
+  Expr f = Expr(sin(x));
   compare_expression(Expr(f), sin(x));
-  Expr df = simplify(derivative(f, x));
+  Expr df = simplify(derivative(f, Expr(x)));
   compare_expression(df, cos(x));
-  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, x=1.2)).as<double>(), 0.9320390859672263, 0.000000001);
-  
-  f = cos(x);
-  compare_expression(Expr(f), cos(x));
-  df = simplify(derivative(f, x));
-  compare_expression(df, -1 * sin(x));
-  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, x=1.2)).as<double>(), 0.3623577544766736, 0.000000001);
-
-  f = log(x);
-  compare_expression(Expr(f), log(x));
-  df = simplify(derivative(f, x));
-  compare_expression(df, 1/x);
-  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, x=1.2)).as<double>(), 0.1823215567939546, 0.000000001);
-
-  f = exp(x);
+  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, Expr(x=1.2))).as<double>(), 0.9320390859672263, 0.000000001);
+ 
+  f = Expr(exp(x));
   compare_expression(Expr(f), exp(x));
-  df = simplify(derivative(f, x));
+  df = simplify(derivative(f, Expr(x)));
   compare_expression(df, exp(x));
 
-  f = exp(log(x));
-  df = derivative(f, x);
+  f = Expr(cos(x));
+
+  auto x_ptr = VarRT::create("x");
+  auto& x_2 = *x_ptr;
+
+  compare_expression(Expr(f), cos(x));
+  auto ptr = cos(Expr(x));
+  df = simplify(sym::derivative(*ptr, x_2));
+  compare_expression(df, -1 * sin(x));
+  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, Expr(x=1.2))).as<double>(), 0.3623577544766736, 0.000000001);
+
+  f = Expr(log(x));
+  compare_expression(Expr(f), log(x));
+  df = simplify(derivative(f, Expr(x)));
+  compare_expression(df, 1/x);
+  UNIT_TEST_CHECK_CLOSE(simplify(sub(f, Expr(x=1.2))).as<double>(), 0.1823215567939546, 0.000000001);
+
+
+  f = Expr(exp(log(x)));
+  df = derivative(f, Expr(x));
 }
 
 UNIT_TEST( symbolic_mixed_expr )
 {
   Var< > x;
   
-  auto f = x + x * Expr(x);
-  auto g = sub(f, x=2);
+  auto f = Expr(x + x * Expr(x));
+  auto g = sub(f, Expr(x=2));
   UNIT_TEST_CHECK_EQUAL(simplify(Expr(g)).as<double>(), 6.0);
 }
 
 UNIT_TEST( symbolic_runtime_derivative )
 {
-  UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), VarRT("x")), Expr("0"));
-  UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), Var<>()), Expr("0"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("2*x"), Var<>())), Expr("2"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*x"), Var<>())), Expr("x+x"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x+x"), Var<>())), Expr("2"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("ln(x)"), Var<>())), Expr("1/x"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("exp(x)"), Var<>())), Expr("exp(x)"));
-  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), Var<>())), Expr("exp(x)+x*exp(x)"));
+  auto x_ptr = VarRT::create("x");
+  auto& x = *x_ptr;
+  UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), x), Expr("0"));
+  UNIT_TEST_CHECK_EQUAL(derivative(Expr("2.2"), x), Expr("0"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("2*x"), x)), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*x"), x)), Expr("x+x"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x+x"), x)), Expr("2"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("ln(x)"), x)), Expr("1/x"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("exp(x)"), x)), Expr("exp(x)"));
+  UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), x)), Expr("exp(x)+x*exp(x)"));
 }
 
 UNIT_TEST( symbolic_list_basic )
 {
-  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), VarRT("x") = 2), Expr("[1,2,y]"));
-  UNIT_TEST_CHECK_EQUAL(derivative(Expr("[1, x, y]"), VarRT("x")), Expr("[0,1,0]"));
+  auto x_ptr = VarRT::create("x");
+  auto& x = *x_ptr;
+  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), Expr(x=2)), Expr("[1,2,y]"));
+  UNIT_TEST_CHECK_EQUAL(derivative(Expr("[1, x, y]"), x), Expr("[0,1,0]"));
 }
 
 UNIT_TEST( symbolic_dict_basic )
 {
-  Dict v;
-  v[VarRT("x")] = 2;
-  v[VarRT("y")] = 3;
+  auto v_ptr = Dict::create();
+  auto& v = *v_ptr;
+
+  auto x_ptr = VarRT::create("x");
+  auto y_ptr = VarRT::create("y");
+  auto& x = *x_ptr;
+  auto& y = *y_ptr;
+  v[x] = Expr(2);
+  v[y] = Expr(3);
   UNIT_TEST_CHECK_EQUAL(sub(Expr("x"), v), Expr("2"));
   UNIT_TEST_CHECK_EQUAL(sub(Expr("y"), v), Expr("3"));
 

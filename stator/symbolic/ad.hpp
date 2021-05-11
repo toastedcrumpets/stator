@@ -223,7 +223,7 @@ namespace sym {
   
   template<size_t Nd, typename Var_t, typename Arg_t>
   Eigen::Matrix<double, Nd+1,1> ad(const BinaryOp<Expr, detail::Power, Expr>& op, const EqualityOp<Var_t, Arg_t>& sub) {
-    if (op._r->_type_idx == detail::RT_type_index<ConstantRT<double>>::value)
+    if (op._r->_type_idx == detail::Type_index<ConstantRT<double>>::value)
       return detail::ad_pow<Nd>(op._l, static_cast<const ConstantRT<double>&>(*op._r).get(), sub);
     else
       return detail::ad_pow<Nd>(op._l, op._r, sub);

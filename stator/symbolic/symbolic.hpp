@@ -95,6 +95,13 @@ namespace sym {
   std::ostream& operator<<(std::ostream& os, const T& v) {
     return os << repr(v);
   }
+
+  namespace detail {
+    template<class T>
+    struct Type_index {
+      static_assert(sizeof(T) == -1, "Missing index for runtime type");
+    };
+  }
 }
 
 

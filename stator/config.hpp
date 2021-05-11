@@ -50,6 +50,10 @@
 */
 #define STATOR_AUTORETURN(EXPR) decltype(EXPR) { return EXPR; }
 
+namespace sym {
+  class RTBase;
+}
+
 namespace stator {
   /*! \brief A convenience typedef for a non-aligned Eigen Matrix.*/
   template<typename Scalar, size_t D1, size_t D2> using Matrix = Eigen::Matrix<Scalar, D1, D2, Eigen::DontAlign>;
@@ -91,7 +95,10 @@ namespace stator {
       StoreType<decltype(A + B)>::type val = A + B;
       \endcode
     */
-    template<class T> auto store(const T& val) -> STATOR_AUTORETURN(store_impl(val, select_overload{}));
+    template<class T, typename = typename std::enable_if<!std::is_base_of<sym::RTBase, T>::value>::type>
+    auto store(const T& val) {
+      return store_impl(val, select_overload{});
+    }
 
     template<class T> struct dependent_false: std::false_type {};
     template<class T> struct dependent_true: std::true_type {};

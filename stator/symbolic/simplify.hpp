@@ -225,30 +225,30 @@ namespace sym {
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
   auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Op, Arg2>, Op, Arg3>& f, detail::choice<6>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l._l, simplify<Config>(BinaryOp<Arg2, Op, Arg3>(f._l._r, f._r)))));
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l._l, simplify<Config>(BinaryOp<Arg2, Op, Arg3>::create(f._l._r, f._r)))));
   
   // For associative operators, try A*(B*C) as (A*B)*C (but only do this if A*B has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
   auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<6>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg2>(f._l, f._r._l)), f._r._r)));
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg2>::create(f._l, f._r._l)), f._r._r)));
 
   // For associative and commutative operators, try (A*B)*C as (A*C)*B (but only do this if A*C has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
   auto simplify_BinaryOp(const BinaryOp<BinaryOp<Arg1, Op, Arg2>, Op, Arg3>& f, detail::choice<7>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>(f._l._l, f._r)), f._l._r)));
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>::create(f._l._l, f._r)), f._l._r)));
   
   // For associative and commutative operators, try A*(B*C) as (A*C)*B (but only do this if A*C has a simplification)
   template<class Config, class Arg1, class Arg2, class Arg3, class Op,
 	     typename = typename std::enable_if<Op::associative>::type>
   auto simplify_BinaryOp(const BinaryOp<Arg1, Op, BinaryOp<Arg2, Op, Arg3> >& f, detail::choice<7>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>(f._l, f._r._r)), f._r._l)));
+    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(BinaryOp<Arg1, Op, Arg3>::create(f._l, f._r._r)), f._r._l)));
 
 
   // Finally, the gateway to the above series of simplifications for BinaryOps!
   template<class Config = DefaultSimplifyConfig, class L, class Op, class R>
-  auto simplify(BinaryOp<L,Op,R> t) -> STATOR_AUTORETURN(simplify_BinaryOp<Config>(t, detail::select_overload{}));
+  auto simplify(const BinaryOp<L,Op,R>& t) -> STATOR_AUTORETURN(simplify_BinaryOp<Config>(t, detail::select_overload{}));
   
 
   /*! \relates Polynomial 

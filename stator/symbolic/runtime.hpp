@@ -42,6 +42,32 @@ namespace sym {
 }
 #endif
 
+/*
+  Runtime philosophy.
+  
+  Compile-time types do not automatically convert to runtime
+  expressions. This makes sure that the conversion to runtime is
+  deliberate. This is not only for performance, its a key development
+  choice too, as we can then provide specialised implementations
+  without worrying they'll loop back to the generic runtime
+  implmentation infinitely. Indeed, the runtime interface SHOULD
+  simply resolve to the compile-time functions by determining types
+  and calling the specialised versions.
+
+  Runtime types MUST be held in a shared_ptr, as expressions may reuse
+  parts of another for speed (for example the derivative of f*g can
+  reuse f and g in its result). This means they cannot be constructed,
+  only ::create()ed. This also allows some tricks regarding varying
+  the returned type depending on arguments.
+
+  Types generally have to be immutable then to allow expression reuse,
+  so we might need to revist this for List and Dict types later.
+  
+  Everything is caught by reference for speed, but must eventually be
+  returned inside an Expr to ensure lifetimes are long enough.
+  
+ */
+
 namespace sym {
   class RTBase;
   struct Expr;
@@ -51,35 +77,12 @@ namespace sym {
   template<class Op> struct UnaryOp<Expr, Op>;
   template<class Op> struct BinaryOp<Expr, Op, Expr>;
   template<class T>  class ConstantRT;
+  template<> struct Var<nullptr>;
   typedef Var<nullptr> VarRT;
   class List;
   class Dict;
 
-  namespace detail {
-    template<class T>
-    struct RT_type_index {
-      static_assert(sizeof(T) == -1, "Missing index for runtime type");
-    };
-
-    template<> struct RT_type_index<ConstantRT<double>>                     { static const int value = 0;  };
-    template<> struct RT_type_index<VarRT>                                  { static const int value = 1;  };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Sine>>            { static const int value = 2;  };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Cosine>>          { static const int value = 3;  };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Log>>             { static const int value = 4;  };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Exp>>             { static const int value = 5;  };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Absolute>>        { static const int value = 6;  };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Arbsign>>         { static const int value = 7;  };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Add, Expr>>      { static const int value = 8;  };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Subtract, Expr>> { static const int value = 9;  };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>> { static const int value = 10; };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>   { static const int value = 11; };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Power, Expr>>    { static const int value = 12; };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Equality, Expr>> { static const int value = 13; };
-    template<> struct RT_type_index<BinaryOp<Expr, detail::Array, Expr>>    { static const int value = 14; };
-    template<> struct RT_type_index<List>                                   { static const int value = 15; };
-    template<> struct RT_type_index<Dict>                                   { static const int value = 16; };
-    template<> struct RT_type_index<UnaryOp<Expr, detail::Negate>>          { static const int value = 17;  };
-    
+  namespace detail {    
     /*! \brief Abstract interface class for the visitor programming
       pattern for Expr types.
 
@@ -122,19 +125,10 @@ namespace sym {
     
     inline virtual ~RTBase() {}
 
-    virtual Expr clone() const = 0;
-
-    /*! \brief Comparison operator against Expr
-      
-      The template wizzardry is to make sure this operator is only
-      used for comparison against Expr types WITHOUT implicit
-      conversion. This is because derived types should implement all
-      other comparison operators which will be called by the visitor
-      inside compare.
-     */
-    template<class T, typename = typename std::enable_if<std::is_same<T, Expr>::value>::type>
+    /*! \brief Comparison operator against Expr. */
+    template<class T>
     bool operator==(const T& rhs) const {
-      return compare(rhs);
+      return compare(Expr(rhs));
     }
 
     /*! \brief Starts a comparison.
@@ -163,42 +157,46 @@ namespace sym {
     typedef shared_ptr<const RTBase> Base;
 
     inline Expr() {}
-    inline Expr(const std::shared_ptr<const RTBase>& p) : Base(p) {}
+    inline Expr(const std::shared_ptr<RTBase>& p) : Base(p) {}
 
+    template<class T, typename = typename std::enable_if<std::is_base_of<RTBase, T>::value>::type>
+    inline Expr(const std::shared_ptr<T>& p) : Base(p) {}
+    
     Expr(const char*);
     Expr(const std::string&);
-
     Expr(const RTBase&);
 
-    //Type conversion constructors from compile-time objects
-    Expr(const double&);
+    explicit Expr(const double&);
     
     template<std::intmax_t Num, std::intmax_t Denom>
-    Expr(const C<Num, Denom>& c);
+    explicit Expr(const C<Num, Denom>& c);
 
     template<conststr N>
-    Expr(const Var<N> v);
+    explicit Expr(const Var<N>& v);
+
+    explicit Expr(const VarRT& v);
     
     template<class Op, class Arg_t>
-    Expr(const UnaryOp<Arg_t, Op>&);
+    explicit Expr(const UnaryOp<Arg_t, Op>&);
 
     template<class LHS_t, class Op, class RHS_t>
-    Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
+    explicit Expr(const BinaryOp<LHS_t, Op, RHS_t>&);
 
     inline
     Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
 
-    Expr(const List&);
-    Expr(const Dict&);
+    explicit Expr(const List&);
+    explicit Expr(const Dict&);
 
     /*! \brief Expression comparison operator.
       
-      This converts all types to an Expr ready for
-      comparison. Specialisation of comparison is done in the derived
-      classes of RTBase.
+      Specialisation of comparison is done in the derived classes of
+      RTBase.
      */
-    bool operator==(const Expr& rhs) const { return (*(*this)) == rhs; }
+    template<class T>
+    bool operator==(const T& rhs) const { return (*(*this)) == rhs; }
 
+    
     /*! \brief Shortcut implementation for NoIdentity. */
     constexpr bool operator==(const detail::NoIdentity& ) { return false; }
     
@@ -208,9 +206,25 @@ namespace sym {
         
     template<class T> const T& as() const;
   };
-  
-  namespace detail { 
 
+}
+
+namespace stator {
+  template<class T, typename = typename std::enable_if<std::is_base_of<sym::RTBase, T>::value>::type>
+  auto store(const std::shared_ptr<T>& val) {
+    return sym::Expr(val);
+  }
+
+  template<class T, typename = typename std::enable_if<std::is_base_of<sym::RTBase, T>::value>::type>
+  auto store(const T& val) {
+    return sym::Expr(val);
+  }
+}
+
+namespace sym {
+  using stator::store;
+  
+  namespace detail {    
     /*! \brief A CRTP helper base class which transforms the visitor
         interface into a call to the derived classes apply function.
 
@@ -283,12 +297,8 @@ namespace sym {
   template<class Derived>
   class RTBaseHelper : public RTBase {
   public:
-    RTBaseHelper(): RTBase(detail::RT_type_index<Derived>::value) {}
-    
-    Expr clone() const {
-      return Expr(std::make_shared<Derived>(static_cast<const Derived&>(*this)));
-    }
-    
+    RTBaseHelper(): RTBase(detail::Type_index<Derived>::value) {}
+        
     virtual bool compare(const Expr& rhs) const {
       const Derived& lhs(*static_cast<const Derived*>(this));
       detail::ComparisonVisitor<Derived> visitor(lhs);
@@ -348,134 +358,17 @@ namespace sym {
     return vis._BP;
   }
 
-  
-  /*! \brief Specialisation of Var for runtime variables.*/
-  template<>
-  class Var<nullptr>: public RTBaseHelper<Var<nullptr> >, public Dynamic {
-  public:
-    inline Var(const std::string name="x") :
-      _name(name)
-    {}
-
-    template<conststr N>
-    Var(const Var<N> v):
-      _name(v.getName())
-    {}
-
-    inline bool operator==(const VarRT& o) const {
-      return _name == o._name;
-    }
-
-    template<class RHS>
-    constexpr bool operator==(const RHS&) const {
-      return false;
-    }
-
-    template<class Arg>
-    auto operator=(const Arg& a) const -> STATOR_AUTORETURN(equal(*this, a));
-    
-    inline std::string getName() const { return _name; }
-    
-    std::string _name;
-  };
-
-  template<auto N, typename ...Args, typename Arg>
-  Expr sub(const VarRT& f, const EqualityOp<Var<N, Args...>, Arg>& x)
-  {
-    if (f == x._l)
-      return x._r;
-    else
-      return f;
-  }
-  
-}
-
-namespace std
-{
-  template<> struct hash<sym::VarRT>
-  {
-    std::size_t operator()(sym::VarRT const& v) const noexcept
-    {
-      return std::hash<std::string>{}(v.getName());
-    }
-  };
-}
-  
-namespace sym { 
-  
-  /*! \brief Specialisation of Var for runtime variables.*/
-  
-  /*! \brief Determine the derivative of a variable by another variable.
-
-    If the variable is NOT the variable in which a derivative is
-    being taken, then this overload should be selected to return
-    Null.
-  */
-  Expr derivative(VarRT v1, VarRT v2) {
-    return Expr(v1 == v2);
-  }
-
-  
-  template<typename T>
-  class ConstantRT : public RTBaseHelper<ConstantRT<T> > {
-  public:
-    ConstantRT(const T& v): _val(v) {}
-
-    template<typename T2>
-    bool operator==(const ConstantRT<T2>& o) const {
-      return _val == o._val;
-    }
-
-    template<class RHS>
-    bool operator==(const RHS& o) const {
-      if constexpr(detail::IsConstant<RHS>::value)
-	 return _val == o;
-      else
-	 return false;
-    }
-    
-    const T& get() const { return _val; }
-    
-  private:
-    T _val;
-  };
-  
-
-  /*! \brief Specialisation of unary operator for runtime arguments
-      and use in runtime expressions (Expr).
-   */
-  template<typename Op>
-  struct UnaryOp<Expr,Op> : public RTBaseHelper<UnaryOp<Expr,Op> >, public Dynamic {
-    UnaryOp(const Expr& arg): _arg(arg) {}
-
-    Expr clone() const {
-      return Expr(std::make_shared<UnaryOp>(_arg->clone()));
-    }
-
-    bool operator==(const UnaryOp<Expr,Op>& o) const {
-      return (_arg == o._arg);
-    }
-
-    template<class RHS>
-    constexpr bool operator==(const RHS&) const {
-      return false;
-    }
-    
-    Expr getArg() const {
-      return _arg;
-    }
-
-    Expr _arg;
-  };
-
   /*! \brief Specialisation of BinaryOp for runtime arguments (Expr).
    */
   template<typename Op>
   struct BinaryOp<Expr, Op, Expr> : public RTBaseHelper<BinaryOp<Expr, Op, Expr> >, public Dynamic {
+  protected:
     BinaryOp(const Expr& lhs, const Expr& rhs): _l(lhs), _r(rhs) {}
+    BinaryOp(const BinaryOp& e) = default;
+  public:
 
-    Expr clone() const {
-      return Expr(std::make_shared<BinaryOp>(_l->clone(), _r->clone()));
+    static auto create(const Expr& lhs, const Expr& rhs) {
+      return std::shared_ptr<BinaryOp>(new BinaryOp(lhs, rhs));
     }
     
     bool operator==(const BinaryOp& o) const {
@@ -496,135 +389,196 @@ namespace sym {
     }
 
     Expr _l;
-    Expr _r;
+    Expr _r;    
   };
 
-  class List: public RTBaseHelper<List>  {
-    typedef std::vector<Expr> Store;
 
-    public:
-    List() {}
+  /*! \brief Specialisation of Var for runtime variables.*/
+  template<>
+  class Var<nullptr>: public RTBaseHelper<Var<nullptr> >, public Dynamic {
+  protected:
+    inline Var(const std::string name="x"):
+      _name(name)
+    {}
+
+    Var(const Var& v) = delete;
     
-    typedef typename Store::iterator iterator;
-    typedef typename Store::const_iterator const_iterator;
+    template<conststr N>
+    Var(const Var<N>& v):
+      _name(v.getName())
+    {}
 
-    iterator begin() {return _store.begin();}
-    const_iterator begin() const {return _store.begin();}
-    const_iterator cbegin() const {return _store.cbegin();}
-    iterator end() {return _store.end();}
-    const_iterator end() const {return _store.end();}
-    const_iterator cend() const {return _store.cend();}
+    
+  public:
+    static auto create(const std::string name="x") {
+      return std::shared_ptr<VarRT>(new Var(name));
+    }
 
-    typedef Store::reference reference;
-    typedef Store::const_reference const_reference;
-    reference& operator[](Store::size_type pos) { return _store[pos]; }
-    const_reference operator[](Store::size_type pos) const { return _store[pos]; }
+    template<conststr N>
+    static auto create(const Var<N>& v) {
+      return std::shared_ptr<VarRT>(new Var(v));
+    }
 
-    void reserve(Store::size_type cap) { _store.reserve(cap); }
-    void resize(Store::size_type cap) { _store.resize(cap); }
-    void push_back(const Expr& value) { _store.push_back(value); }
-    Store::size_type size() const noexcept { return _store.size(); } 
-    bool empty() const noexcept { return _store.empty(); }
-
-    bool operator==(const List& o) const {
-      return _store == o._store;
+    
+    inline bool operator==(const VarRT& o) const {
+      return _name == o._name;
     }
 
     template<class RHS>
     constexpr bool operator==(const RHS&) const {
       return false;
     }
+
+    template<class Arg>
+    auto operator=(const Arg& a) const {
+      Expr lhs = Expr(*this);
+      Expr rhs = Expr(a);
+      return equality(lhs, rhs);
+    }
     
-  private:
-    Store _store;
+    inline std::string getName() const { return _name; }
+    
+    std::string _name;
   };
 
-  template<typename Var>
-  List derivative(const List& in, Var x) {
-    List out;
-    out.resize(in.size());
-    for (size_t idx(0); idx < in.size(); ++idx)
-      out[idx] = derivative(in[idx], x);
-    return out;
+  template<auto N, typename ...Args, typename Arg>
+  Expr sub(const VarRT& f, const EqualityOp<Var<N, Args...>, Arg>& x)
+  {
+    if (f == x._l)
+      return x._r;
+    else
+      return f;
   }
   
-  List operator+(const List& l, const List& r) {
-    if (l.size() != r.size())
-      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
-    List out;
-    out.resize(l.size());
-    
-    for (size_t idx(0); idx < l.size(); ++idx)
-      out[idx] = l[idx] + r[idx];
-    return out;
+  namespace detail {
+    struct HashRT : VisitorHelper<HashRT, std::size_t> {
+      HashRT() {}
+
+      template<class T>
+      std::size_t apply(const T& v) {
+	std::hash<typename std::decay<T>::type> hasher;
+	return hasher(v);
+      }
+    };
+  }
+}
+
+namespace std
+{
+  template<> struct hash<sym::Expr>
+  {
+    std::size_t operator()(sym::Expr const& f) const noexcept
+    {
+      sym::detail::HashRT vis;
+      return f->visit(vis);
+    }
+  };
+}
+
+namespace sym {
+  /*! \brief Specialisation of Var for runtime variables.*/
+  
+  /*! \brief Determine the derivative of a variable by another variable.
+
+    If the variable is NOT the variable in which a derivative is
+    being taken, then this overload should be selected to return
+    Null.
+  */
+  Expr derivative(const VarRT& v1, const VarRT& v2) {
+    return Expr(v1 == v2);
   }
 
-  class Dict: public RTBaseHelper<Dict> {
-    typedef std::unordered_map<VarRT, Expr> Store;
-
-  public:
-    Dict() {}
+  
+  template<typename T>
+  class ConstantRT : public RTBaseHelper<ConstantRT<T> > {
+    ConstantRT(const T& v): _val(v) {}
     
-    typedef Store::key_type key_type;
-    typedef Store::reference reference;
-    typedef Store::const_reference const_reference;
-    typedef typename Store::iterator iterator;
-    typedef typename Store::const_iterator const_iterator;
-
-    iterator begin() {return _store.begin();}
-    const_iterator begin() const {return _store.begin();}
-    const_iterator cbegin() const {return _store.cbegin();}
-    iterator end() {return _store.end();}
-    const_iterator end() const {return _store.end();}
-    const_iterator cend() const {return _store.cend();}
-
-    iterator find( const key_type& key ) { return _store.find(key); }
-    const_iterator find( const key_type& key ) const { return _store.find(key); }
-
-    Expr& operator[](const VarRT& k) { return _store[k]; }
-    Expr& at(const VarRT& k) { return _store.at(k); }
-    const Expr& at(const VarRT& k) const { return _store.at(k); }
-
-    Store::size_type size() const noexcept { return _store.size(); } 
-    bool empty() const noexcept { return _store.empty(); }
-
-    bool operator==(const Dict& o) const {
-      return _store == o._store;
+  public:
+    static auto create(const T& val) {
+      return std::shared_ptr<ConstantRT>(new ConstantRT(val));
     }
     
+    template<typename T2>
+    bool operator==(const ConstantRT<T2>& o) const {
+      return _val == o._val;
+    }
+
+    template<class RHS>
+    bool operator==(const RHS& o) const {
+      if constexpr(detail::IsConstant<RHS>::value)
+	 return _val == o;
+      else
+	 return false;
+    }
+    
+    const T& get() const { return _val; }
+    
+  private:
+    T _val;
+  };
+
+  namespace detail {
+    template<class T>
+    struct Type_index<ConstantRT<T>> { static const int value = 0;  };
+  }
+  
+
+  /*! \brief Specialisation of unary operator for runtime arguments
+      and use in runtime expressions (Expr).
+   */
+  template<typename Op>
+  struct UnaryOp<Expr,Op> : public RTBaseHelper<UnaryOp<Expr,Op> >, public Dynamic {
+  protected:
+    UnaryOp(const Expr& arg): _arg(arg) {}
+    UnaryOp(const UnaryOp& e) = default;
+    
+  public:
+    static auto create(const Expr& arg) {
+      return std::shared_ptr<UnaryOp>(new UnaryOp(arg));
+    }
+
+    bool operator==(const UnaryOp<Expr,Op>& o) const {
+      return (_arg == o._arg);
+    }
+
     template<class RHS>
     constexpr bool operator==(const RHS&) const {
       return false;
     }
     
-  private:
-    Store _store;
+    Expr getArg() const {
+      return _arg;
+    }
+
+    Expr _arg;
   };
+}
 
-  template<typename Var>
-  Dict derivative(const Dict& in, Var x) {
-    stator_throw() << "Cannot take derivatives of dictionaries";
-  }
+#include <stator/symbolic/list_rt.hpp>
+#include <stator/symbolic/dict_rt.hpp>
 
-  inline Expr::Expr(const RTBase& v) : Base(v.clone()) {}
+namespace sym {
 
-  inline Expr::Expr(const double& v) : Base(std::make_shared<ConstantRT<double> >(v)) {}
+  inline Expr::Expr(const RTBase& v) : Base(v.shared_from_this()) {}
+
+  inline Expr::Expr(const double& v) : Base(ConstantRT<double>::create(v)) {}
   
   template<std::intmax_t Num, std::intmax_t Denom>
-  Expr::Expr(const C<Num, Denom>& c) : Base(std::make_shared<ConstantRT<double> >(double(Num) / Denom)) {}
+  Expr::Expr(const C<Num, Denom>& c) : Base(ConstantRT<double>::create(double(Num) / Denom)) {}
   
   template<class Op, class Arg_t>
-  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Base(std::make_shared<UnaryOp<Expr, Op> >(op._arg)) {}
+  Expr::Expr(const UnaryOp<Arg_t, Op>& op) : Base(UnaryOp<Expr, Op>::create(Expr(op._arg))) {}
 
   template<class LHS_t, class Op, class RHS_t>
-  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Base(std::make_shared<BinaryOp<Expr, Op, Expr> >(op._l, op._r)) {}
+  Expr::Expr(const BinaryOp<LHS_t, Op, RHS_t>& op) : Base(BinaryOp<Expr, Op, Expr>::create(Expr(op._l), Expr(op._r))) {}
   
   template<conststr N1>
-  Expr::Expr(const Var<N1> v) : Base(std::make_shared<VarRT>(v)) {}
+  Expr::Expr(const Var<N1>& v) : Base(VarRT::create(v)) {}
+  
+  inline Expr::Expr(const VarRT& v) : Base(v.shared_from_this()) {}
 
-  Expr::Expr(const List& v) : Base(std::make_shared<List>(v)) {}
-
-  Expr::Expr(const Dict& v) : Base(std::make_shared<Dict>(v)) {}
+  Expr::Expr(const List& v) : Base(v.shared_from_this()) {}
+  Expr::Expr(const Dict& v) : Base(v.shared_from_this()) {}
   
   template<class T>
   const T& Expr::as() const {
@@ -635,6 +589,7 @@ namespace sym {
     return *ptr;
   }
 
+  
   template<>
   const double& Expr::as<double>() const {
     const ConstantRT<double>* ptr = dynamic_cast<const ConstantRT<double>*>(Base::get());
@@ -646,8 +601,8 @@ namespace sym {
 
   //Need to forward declare this as its used in the SimplifyRT visitor
   //Can't declare it here though, as it needs the SimplfiyRT implementation.
-  List simplify(const List&);
-  Dict simplify(const Dict&);
+  Expr simplify(const List&);
+  Expr simplify(const Dict&);
   
   namespace detail {
     struct SimplifyRT : VisitorHelper<SimplifyRT> {      
@@ -660,7 +615,8 @@ namespace sym {
       }
 
       Expr apply(const List& v) {
-	return simplify(v);
+	auto result = simplify(v);
+	return result;
       }
 
       Expr apply(const Dict& v) {
@@ -685,13 +641,13 @@ namespace sym {
 
 	//Now check if either side is an identity
 	if (l == typename Op::left_zero())
-	  return typename Op::left_zero();
+	  return Expr(typename Op::left_zero());
 	if (l == typename Op::left_identity())
 	  return r;
 	if (r == typename Op::right_zero())
-	  return typename Op::right_zero();
+	  return Expr(typename Op::right_zero());
 	if (r == typename Op::right_identity())
-	  return l;
+	  return Expr(l);
 	
 	//Try direct simplification via application
 	DoubleDispatch1<SimplifyRT, Op> visitor(r, *this);
@@ -700,7 +656,7 @@ namespace sym {
 	  return ret;
 
 	if (lchanged || rchanged)
-	  return Expr(std::make_shared<BinaryOp<Expr, Op, Expr> >(l, r));
+	  return Expr(BinaryOp<Expr, Op, Expr>::create(l, r));
 
 	return Expr();
       }
@@ -726,26 +682,28 @@ namespace sym {
       //Direct evaluation of doubles
       Expr dd_visit(const double& l, const BinaryOp<Expr, detail::Multiply, Expr>& r, detail::Multiply) {
 	if (dynamic_cast<const ConstantRT<double>*>(r.getLHS().get()))
-	  return Expr(BinaryOp<Expr, detail::Multiply, Expr>(l * static_cast<const ConstantRT<double>*>(r.getLHS().get())->get(), r.getRHS()));
+	  return Expr(l * static_cast<const ConstantRT<double>*>(r.getLHS().get())->get() * r.getRHS());
 
 	if (dynamic_cast<const ConstantRT<double>*>(r.getRHS().get()))
-	  return Expr(BinaryOp<Expr, detail::Multiply, Expr>(l * static_cast<const ConstantRT<double>*>(r.getRHS().get())->get(), r.getLHS()));
+	  return Expr(l * static_cast<const ConstantRT<double>*>(r.getRHS().get())->get() * r.getLHS());
+	
 	return Expr();
       }
 
       Expr dd_visit(const BinaryOp<Expr, detail::Multiply, Expr>& r, const double& l, detail::Multiply) {
 	if (dynamic_cast<const ConstantRT<double>*>(r.getLHS().get()))
-	  return Expr(BinaryOp<Expr, detail::Multiply, Expr>(l * static_cast<const ConstantRT<double>*>(r.getLHS().get())->get(), r.getRHS()));
+	  return Expr(l * static_cast<const ConstantRT<double>*>(r.getLHS().get())->get() * r.getRHS());
 
 	if (dynamic_cast<const ConstantRT<double>*>(r.getRHS().get()))
-	  return Expr(BinaryOp<Expr, detail::Multiply, Expr>(l * static_cast<const ConstantRT<double>*>(r.getRHS().get())->get(), r.getLHS()));
+	  return Expr(l * static_cast<const ConstantRT<double>*>(r.getRHS().get())->get() * r.getLHS());
+	
 	return Expr();
       }
       
       //////// Handling of UnaryOp simplification
       template<class Op>
       struct UnaryEval : VisitorHelper<UnaryEval<Op> > {
-	Expr apply(const double& arg) { return Op::apply(arg); }
+	Expr apply(const double& arg) { return Expr(Op::apply(arg)); }
 	template<class T> Expr apply(const T& arg) { return Expr(); }
       };
 
@@ -759,7 +717,7 @@ namespace sym {
 	if (ret)
 	  return ret;	
 	if (arg)
-	  return Expr(std::make_shared<UnaryOp<Expr, Op> >(arg));
+	  return Expr(UnaryOp<Expr, Op>::create(arg));
 	return Expr();
       }
     };
@@ -771,24 +729,31 @@ namespace sym {
     return result ? result : f;
   }
 
-  List simplify(const List& in) {
-    List out;
+  Expr simplify(const List& in) {
+    auto out_ptr =  List::create();
+    auto& out = *out_ptr;
+    
     out.resize(in.size());
-    for (size_t idx(0); idx < in.size(); ++idx)
-      out[idx] = simplify(in[idx]);
-    return out;
-  }  
+    for (size_t idx(0); idx < in.size(); ++idx) {
+      auto s = simplify(in[idx]);
+      out[idx] = s;
+    }
+    return out_ptr;
+  }
 
-  Dict simplify(const Dict& in) {
-    Dict out;
+  Expr simplify(const Dict& in) {
+    auto out_ptr =  Dict::create();
+    auto& out = *out_ptr;
+    
     for (const auto& p : in) 
       out[p.first] = simplify(p.second);
+    
     return out;
   }
   
   namespace detail {
     struct SubstituteRT : VisitorHelper<SubstituteRT> {
-      SubstituteRT(VarRT var, Expr replacement): _var(var), _replacement(replacement) {}
+      SubstituteRT(const VarRT& var, Expr replacement): _var(var), _replacement(replacement) {}
       
       //By default, just return an empty Expr, and let the helper function return the original expression
       template<class T>
@@ -804,7 +769,8 @@ namespace sym {
 
       //Variable matching
       Expr apply(const List& v) {
-	List ret;
+	auto ret_ptr = List::create();
+	auto& ret = *ret_ptr;
 	
 	bool _replaced = false; //We only start regenerating the list when needed
 	for (size_t i(0); i < v.size(); ++i) {
@@ -822,7 +788,7 @@ namespace sym {
 	    ret[i] = (t) ? t : v[i];
 	}
 	
-	return (_replaced) ? ret : Expr();
+	return (_replaced) ? ret_ptr : Expr();
       }
       
       template<typename Op>
@@ -842,17 +808,9 @@ namespace sym {
 	  return Expr();
       }
       
-      VarRT _var;
+      const VarRT& _var;
       Expr _replacement;
     };
-
-  }
-
-  template<class Var, class Arg>
-  Expr sub(const Expr& f, const EqualityOp<Var, Arg>& rel) {
-    detail::SubstituteRT visitor(rel._l, rel._r);
-    Expr result = f->visit(visitor);
-    return (result) ?  result : f;
   }
   
   namespace detail {
@@ -879,7 +837,8 @@ namespace sym {
 
       //Variable matching
       Expr apply(const List& v) {
-	List ret;
+	auto ret_ptr = List::create();
+	auto& ret = *ret_ptr;
 	
 	bool _replaced = false; //We only start regenerating the list when needed
 	for (size_t i(0); i < v.size(); ++i) {
@@ -898,7 +857,7 @@ namespace sym {
 	    ret[i] = (t) ? t : v[i];
 	}
 	
-	return (_replaced) ? ret : Expr();
+	return (_replaced) ? ret_ptr : Expr();
       }
       
       template<typename Op>
@@ -945,8 +904,10 @@ namespace sym {
       }
 
       Expr apply(const EqualityOp<Expr, Expr>& op) {
-	
-	return sub(_f, op._l.as<VarRT>() = op._r);
+	const VarRT& v = op._l.as<VarRT>();
+	detail::SubstituteRT visitor(v, op._r);
+	Expr result = _f->visit(visitor);
+	return (result) ?  result : _f;
       }
 	
       const Expr& _f;
@@ -962,25 +923,20 @@ namespace sym {
   
   namespace detail {
     struct DerivativeRT : VisitorHelper<DerivativeRT> {
-      DerivativeRT(VarRT var): _var(var) {}
+      DerivativeRT(const VarRT& var): _var(var) {}
 
       template<class Op>
       Expr apply(const Op& v) {
-      	return derivative(v, _var);
+      	return Expr(derivative(v, _var));
       }
 
-      Expr apply(const Expr& v) {
-	stator_throw() << "No specialised compile-time implementation available for " << v;
-      }
-      
-      VarRT _var;
+      const VarRT& _var;
     };
   }
   
   /*! \brief Runtime derivative where a Var<> type is known for the second argument.
    */
-  template<auto N>
-  Expr derivative(const Expr& f, const Var<N>& v) {
+  Expr derivative(const Expr& f, const VarRT& v) {
     detail::DerivativeRT visitor(v);
     return f->visit(visitor);
   }
@@ -995,7 +951,7 @@ namespace sym {
   
   namespace detail {
     struct FastSubRT : VisitorHelper<FastSubRT> {
-      FastSubRT(VarRT var, double replacement): _var(var), _replacement(replacement) {}
+      FastSubRT(const VarRT& var, double replacement): _var(var), _replacement(replacement) {}
       
       //By default, throw an exception!
       template<class T>
@@ -1037,7 +993,7 @@ namespace sym {
       Expr apply(const BinaryOp<Expr, detail::Array, Expr>& op)
       { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
       
-      VarRT _var;
+      const VarRT& _var;
       double _replacement;
       double _intermediate;
     };
@@ -1053,24 +1009,24 @@ namespace sym {
   template<class RetType>
   RetType RTBase::visit(detail::VisitorInterface<RetType>& c) const {
     switch (_type_idx) {
-    case detail::RT_type_index<ConstantRT<double>>::value:                     return c.visit(static_cast<const ConstantRT<double>&>(*this).get());
-    case detail::RT_type_index<VarRT>::value:                                  return c.visit(static_cast<const VarRT&>(*this));
-    case detail::RT_type_index<UnaryOp<Expr, detail::Sine>>::value:            return c.visit(static_cast<const UnaryOp<Expr, detail::Sine>&>(*this));
-    case detail::RT_type_index<UnaryOp<Expr, detail::Cosine>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Cosine>&>(*this));
-    case detail::RT_type_index<UnaryOp<Expr, detail::Log>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Log>&>(*this));
-    case detail::RT_type_index<UnaryOp<Expr, detail::Exp>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Exp>&>(*this));
-    case detail::RT_type_index<UnaryOp<Expr, detail::Absolute>>::value:        return c.visit(static_cast<const UnaryOp<Expr, detail::Absolute>&>(*this));
-    case detail::RT_type_index<UnaryOp<Expr, detail::Arbsign>>::value:         return c.visit(static_cast<const UnaryOp<Expr, detail::Arbsign>&>(*this));
-    case detail::RT_type_index<BinaryOp<Expr, detail::Add, Expr>>::value:      return c.visit(static_cast<const BinaryOp<Expr, detail::Add, Expr>&>(*this));
-    case detail::RT_type_index<BinaryOp<Expr, detail::Subtract, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Subtract, Expr>&>(*this));
-    case detail::RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Multiply, Expr>&>(*this));
-    case detail::RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>::value:   return c.visit(static_cast<const BinaryOp<Expr, detail::Divide, Expr>&>(*this));
-    case detail::RT_type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
-    case detail::RT_type_index<BinaryOp<Expr, detail::Equality, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Equality, Expr>&>(*this));
-    case detail::RT_type_index<BinaryOp<Expr, detail::Array, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Array, Expr>&>(*this));
-    case detail::RT_type_index<List>::value:                                   return c.visit(static_cast<const List&>(*this));
-    case detail::RT_type_index<Dict>::value:                                   return c.visit(static_cast<const Dict&>(*this));
-    case detail::RT_type_index<UnaryOp<Expr, detail::Negate>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Negate>&>(*this));
+    case detail::Type_index<ConstantRT<double>>::value:                     return c.visit(static_cast<const ConstantRT<double>&>(*this).get());
+    case detail::Type_index<VarRT>::value:                                  return c.visit(static_cast<const VarRT&>(*this));
+    case detail::Type_index<UnaryOp<Expr, detail::Sine>>::value:            return c.visit(static_cast<const UnaryOp<Expr, detail::Sine>&>(*this));
+    case detail::Type_index<UnaryOp<Expr, detail::Cosine>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Cosine>&>(*this));
+    case detail::Type_index<UnaryOp<Expr, detail::Log>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Log>&>(*this));
+    case detail::Type_index<UnaryOp<Expr, detail::Exp>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Exp>&>(*this));
+    case detail::Type_index<UnaryOp<Expr, detail::Absolute>>::value:        return c.visit(static_cast<const UnaryOp<Expr, detail::Absolute>&>(*this));
+    case detail::Type_index<UnaryOp<Expr, detail::Arbsign>>::value:         return c.visit(static_cast<const UnaryOp<Expr, detail::Arbsign>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Add, Expr>>::value:      return c.visit(static_cast<const BinaryOp<Expr, detail::Add, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Subtract, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Subtract, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Multiply, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Multiply, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Divide, Expr>>::value:   return c.visit(static_cast<const BinaryOp<Expr, detail::Divide, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Equality, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Equality, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Array, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Array, Expr>&>(*this));
+    case detail::Type_index<List>::value:                                   return c.visit(static_cast<const List&>(*this));
+    case detail::Type_index<Dict>::value:                                   return c.visit(static_cast<const Dict&>(*this));
+    case detail::Type_index<UnaryOp<Expr, detail::Negate>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Negate>&>(*this));
     default: stator_throw() << "Unhandled type index (" << _type_idx << ") for the visitor";
     }
   }

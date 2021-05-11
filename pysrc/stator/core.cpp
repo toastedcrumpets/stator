@@ -23,13 +23,15 @@ struct ToPythonVisitor : public sym::detail::VisitorHelper<ToPythonVisitor> {
     return sym::Expr();
   }
 
-  sym::Expr apply(const sym::Dict& v) {
-    py::dict out;
-    for (const auto& itm : v)
-      out[py::cast(sym::Expr(itm.first))] = to_python(itm.second);
-    result = out;
-    return sym::Expr();
-  }
+  //sym::Expr apply(const sym::Dict& v) {
+  //  py::dict out;
+  //  for (const auto& itm : v) {
+  //    sym::Expr var = py::cast<py::str>(itm.first);
+  //    out[py::cast(sym::Expr())] = to_python(itm.second);
+  //  }
+  //  result = out;
+  //  return sym::Expr();
+  //}
   
   sym::Expr apply(const double& v) {
     result = py::cast(v);
@@ -58,9 +60,21 @@ struct ToPythonVisitor : public sym::detail::VisitorHelper<ToPythonVisitor> {
 };
 
 py::object to_python(const sym::Expr& b) {
+  sym::Expr simple_b = simplify(b);
   ToPythonVisitor visitor;
-  b->visit(visitor);
+  simple_b->visit(visitor);
   return visitor.result;
+}
+
+sym::Expr make_Expr(const py::dict& d) {
+  auto out_ptr = sym::Dict::create();
+  auto& out = *out_ptr;
+  for (const auto& item : d) {
+    sym::Expr key = py::cast<sym::Expr>(item.first);
+    sym::Expr value = py::cast<sym::Expr>(item.second);
+    out[key] = value;
+  }
+  return out;
 }
 
 
@@ -71,24 +85,26 @@ PYBIND11_MODULE(core, m)
     .def(py::init<std::string>())
     .def(py::init<int>())
     .def(py::init<double>())
+    .def(py::init([](const py::dict d){ return make_Expr(d); }))
     .def("__repr__", +[](const sym::Expr& self) { return "Expr('"+sym::repr(self)+"')"; })
     .def("__str__", +[](const sym::Expr& self) { return sym::repr(self); })
     .def("latex", +[](const sym::Expr& self) { return sym::repr<stator::ReprConfig<stator::Latex_output> >(self); })
     .def("simplify", +[](const sym::Expr& self) { return sym::simplify(self); })
-    .def("__add__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l+r); })
-    .def("__radd__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l+r); })
-    .def("__sub__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l-r); })
-    .def("__rsub__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l-r); })
-    .def("__mul__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l*r); })
-    .def("__rmul__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l*r); })
-    .def("__div__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l/r); })
-    .def("__rdiv__", +[](const sym::Expr& l, const sym::Expr& r) { return sym::Expr(l/r); })
+    .def("__add__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l+r); })
+    .def("__radd__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l+r); })
+    .def("__sub__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l-r); })
+    .def("__rsub__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l-r); })
+    .def("__mul__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l*r); })
+    .def("__rmul__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l*r); })
+    .def("__div__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l/r); })
+    .def("__rdiv__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l/r); })
+    .def("__truediv__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l/r); })
+    .def("__rtruediv__", +[](const sym::Expr& l, const sym::Expr& r) { return to_python(l/r); })
     .def("__eq__", +[](const sym::Expr& l, const sym::Expr& r) { return l == r; })
-    //.def(py::hash(py::self))
-    .def("equal", +[](const sym::Expr& l, const sym::Expr& r) { return equal(l, r); })
-    .def("debug_form", +[](const sym::Expr& self) { return "Expr('"+sym::repr<stator::ReprConfig<stator::Debug_output>>(self)+"')"; }) 
-    .def(py::self / py::self)
-    .def("to_python", +[](const sym::Expr& self) { return to_python(self); })
+    .def(py::hash(py::self))
+    .def("equal", +[](const sym::Expr& l, const sym::Expr& r) { return equality(l, r); })
+    .def("debug_form", +[](const sym::Expr& self) { return "Expr('"+sym::repr<stator::ReprConfig<stator::Debug_output>>(self)+"')"; })
+    .def("to_python", &to_python)
     ;
 
   m.def("derivative", static_cast<sym::Expr (*)(const sym::Expr&, const sym::Expr&)>(&sym::derivative));

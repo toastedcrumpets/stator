@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <stator/hash.hpp>
 
 namespace sym {
   struct VarBase {};
@@ -16,7 +17,7 @@ namespace sym {
   template<conststr name = default_var_name, typename ...Args>
   struct Var : SymbolicOperator, VarBase {
     template<class Arg>
-    auto operator=(const Arg& a) const -> STATOR_AUTORETURN(equal(*this, a));
+    auto operator=(const Arg& a) const -> STATOR_AUTORETURN(equality(*this, a));
     
     template<const char* name2, typename ...Args2>
     constexpr bool operator==(const Var<name2, Args2...>&) const { return std::string_view(name) ==  name2; }
@@ -26,29 +27,6 @@ namespace sym {
     
     static constexpr std::string_view getName() { return name; }
   };
-
-  void test() {
-    static constexpr char var_name1[] = "x";
-    
-    if constexpr(Var<var_name1>() == Var<var_name1>())
-      return;
-    else
-      return;
-  }
-  
-  //template<typename ...Args>
-  //struct Var<0,Args...> : SymbolicOperator {
-  //  std::string _name;
-  //  Var(const std::string name): _name(name) {}
-  //
-  //  template<auto name2, typename ...Args2>
-  //  constexpr bool operator==(const Var<name2, Args2...>& a) const { return getName() == a.getName(); }
-  //
-  //  template<auto name2, typename ...Args2>
-  //  constexpr bool operator!=(const Var<name2, Args2...>& a) const { return !(getName() == a.getName()); }
-  //  
-  //  constexpr std::string_view getName() { return _name; }
-  //};
 
   template<typename Var1, typename Var2>
   struct variable_eq {
@@ -68,13 +46,6 @@ namespace sym {
   struct enable_if_var_not_eq : std::enable_if<!variable_eq<Var1, Var2>::value> {
   };
   
-  //void testFunct() {
-  //  static const char varname[] = "Yellow";
-  //  Var<varname> B();
-  //
-  //  Var<0> x(std::string("Hello world"));
-  //}
-  
   /*! \brief Determine the derivative of a symbolic expression.
     
     This default implementation gives all consants
@@ -82,7 +53,7 @@ namespace sym {
   */
   template<class T, auto N, typename ...Args,
 	     typename = typename std::enable_if<detail::IsConstant<T>::value>::type>
-  Null derivative(const T&, Var<N, Args...>) { return Null(); }
+  Null derivative(const T&, const Var<N, Args...>&) { return Null(); }
 
   /*! \brief Determine the derivative of a variable by another variable.
   */
@@ -111,4 +82,23 @@ namespace sym {
   template<auto N, class ...Args>
   std::pair<int, int> BP(const Var<N, Args...>& v)
   { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
+
+  namespace detail {
+    template<auto N, class ...Args>
+    struct Type_index<Var<N, Args...> >
+    { static const int value = 1;  };
+  }
+}
+
+namespace std
+{
+  template<auto N, class ...Args> struct hash<sym::Var<N, Args...> >
+  {
+    std::size_t operator()(sym::Var<N, Args...> const& v) const noexcept
+    {
+      std::size_t seed = sym::detail::Type_index<sym::Var<N, Args...>>::value;
+      stator::hash_combine(seed, std::hash<std::string>{}(v.getName()));
+      return seed;
+    }
+  };
 }

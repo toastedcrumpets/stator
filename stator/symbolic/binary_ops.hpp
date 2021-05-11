@@ -24,13 +24,19 @@ namespace sym {
    */
   template<class LHS, typename Op, class RHS>
   struct BinaryOp: SymbolicOperator {
+  protected:
+    BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
+  public:
+    static BinaryOp create(const LHS& l, const RHS& r) { return BinaryOp(l, r); }
+    
     const LHS _l;
     const RHS _r;
-    BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
   };
   
   namespace detail {
-    
+    template<typename LHS, typename Op, typename RHS>
+    struct Type_index<BinaryOp<LHS, Op, RHS>> { static const int value = Op::type_index;  };
+
     struct NoIdentity {
       template<class T>
       constexpr bool operator==(const T&) const { return false; }
@@ -48,24 +54,6 @@ namespace sym {
       return Op::leftBindingPower - (Op::associativity == Associativity::RIGHT) - (Op::associativity == Associativity::NONE);
     }
 
-    struct Equality {
-      static constexpr int leftBindingPower = 10;
-      static constexpr auto associativity = Associativity::RIGHT;
-      static constexpr bool commutative = false;
-      static constexpr bool associative = false;
-      typedef NoIdentity left_identity;
-      typedef NoIdentity right_identity;
-      typedef NoIdentity left_zero;
-      typedef NoIdentity right_zero;
-      static inline std::string l_repr() { return ""; }
-      static inline std::string repr() { return "="; }
-      static inline std::string r_repr() { return ""; }
-      static inline std::string l_latex_repr() { return ""; }
-      static inline std::string latex_repr() { return "="; }
-      static inline std::string r_latex_repr() { return ""; }
-      template<class L, class R> static auto apply(L& l, const R& r) -> STATOR_AUTORETURN((BinaryOp<L, detail::Equality, R>(l, r)));
-    };
-
     struct Add {
       static constexpr int leftBindingPower = 20;
       static constexpr auto associativity = Associativity::LEFT;
@@ -82,7 +70,8 @@ namespace sym {
       static inline std::string latex_repr() { return "+"; }
       static inline std::string r_latex_repr() { return ""; }
       //Apply has to accept by const ref, as returned objs may reference/alias the arguments, so everything needs at least the parent scope
-      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l + r);
+      template<class L, class R> static auto apply(const L& l, const R& r) { return l + r; }
+      static constexpr int type_index = 8;
     };
 
     struct Subtract {
@@ -100,7 +89,8 @@ namespace sym {
       static inline std::string l_latex_repr() { return ""; }
       static inline std::string latex_repr() { return "-"; }
       static inline std::string r_latex_repr() { return ""; }
-      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l - r);
+      template<class L, class R> static auto apply(const L& l, const R& r) { return l - r; }
+      static constexpr int type_index = 9;
     };
 
     struct Multiply {
@@ -118,7 +108,8 @@ namespace sym {
       static inline std::string l_latex_repr() { return ""; }
       static inline std::string latex_repr() { return "\\times "; }
       static inline std::string r_latex_repr() { return ""; }
-      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l * r);
+      template<class L, class R> static auto apply(const L& l, const R& r) { return l * r; }
+      static constexpr int type_index = 10;
     };
 
     struct Divide {
@@ -136,7 +127,8 @@ namespace sym {
       static inline std::string l_latex_repr() { return "\\frac{"; }
       static inline std::string latex_repr() { return "}{"; }
       static inline std::string r_latex_repr() { return "}"; }
-      template<class L, class R> static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(l / r);
+      template<class L, class R> static auto apply(const L& l, const R& r) { return l / r; }
+      static constexpr int type_index = 11;
     };
 
     struct Power {
@@ -158,7 +150,29 @@ namespace sym {
       //the MSVSC compiler gets confused
       template<class L, class R,
 	       typename = typename std::enable_if<!std::is_base_of<Eigen::EigenBase<R>, R>::value>::type>
-      static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN(pow(l, r));
+      static auto apply(const L& l, const R& r) { return pow(l, r); }
+      static constexpr int type_index = 12;
+    };
+
+    struct Equality {
+      static constexpr int leftBindingPower = 10;
+      static constexpr auto associativity = Associativity::RIGHT;
+      static constexpr bool commutative = false;
+      static constexpr bool associative = false;
+      typedef NoIdentity left_identity;
+      typedef NoIdentity right_identity;
+      typedef NoIdentity left_zero;
+      typedef NoIdentity right_zero;
+      static inline std::string l_repr() { return ""; }
+      static inline std::string repr() { return "="; }
+      static inline std::string r_repr() { return ""; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "="; }
+      static inline std::string r_latex_repr() { return ""; }
+      template<class L, class R> static auto apply(const L& l, const R& r) {
+	return BinaryOp<decltype(store(l)), detail::Equality, decltype(store(r))>::create(l, r);
+      }
+      static constexpr int type_index = 13;
     };
 
     struct Array {
@@ -176,11 +190,13 @@ namespace sym {
       typedef NoIdentity right_identity;
       typedef NoIdentity right_zero;
       typedef NoIdentity left_zero;
-      //We have to prevent silly powers (i.e. matrix powers) otherwise
-      //the MSVSC compiler gets confused
       template<class L, class R>
-      static auto apply(const L& l, const R& r) -> STATOR_AUTORETURN((BinaryOp<L, detail::Array, R>(l, r)));
+      static auto apply(const L& l, const R& r) {
+	return BinaryOp<decltype(store(l)), detail::Array, decltype(store(r))>::create(l, r);
+      }
+      static constexpr int type_index = 14;
     };
+    
   }
 
   template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add,      RHS>;
@@ -218,34 +234,37 @@ namespace sym {
   };
 
   /*! \brief Symbolic addition operator. */
-    template<class LHS, class RHS,
-	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator+(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((AddOp<decltype(store(l)), decltype(store(r))>(l, r)))
+  template<class LHS, class RHS,
+	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
+  auto operator+(const LHS& l, const RHS& r)  {
+    return store(AddOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+  }
 
   /*! \brief Symbolic multiplication operator. */
-    template<class LHS, class RHS,
-	     typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator*(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((MultiplyOp<decltype(store(l)), decltype(store(r))>(l, r)))
+  template<class LHS, class RHS,
+	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
+  auto operator*(const LHS& l, const RHS& r) {
+    return store(MultiplyOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+  }
 
   /*! \brief Symbolic subtraction operator. */
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator-(const LHS& l, const RHS& r) 
-  -> STATOR_AUTORETURN((SubtractOp<decltype(store(l)), decltype(store(r))>(l, r)))
+  auto operator-(const LHS& l, const RHS& r) {
+    return store(SubtractOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+  }
 
   /*! \brief Symbolic divide operator. */
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
     auto operator/(const LHS& l, const RHS& r) 
-  -> STATOR_AUTORETURN((DivideOp<decltype(store(l)), decltype(store(r))>(l, r)))
+  -> STATOR_AUTORETURN((DivideOp<decltype(store(l)), decltype(store(r))>::create(l, r)))
   
   /*! \brief Symbolic power operator. */
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
   auto pow(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((PowerOp<decltype(store(l)), decltype(store(r))>(l, r)));
+    -> STATOR_AUTORETURN((PowerOp<decltype(store(l)), decltype(store(r))>::create(l, r)));
 
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value)>::type>
@@ -307,57 +326,66 @@ namespace sym {
     definition.
    */
   template<class LHS, class RHS>
-  auto equal(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((EqualityOp<decltype(store(l)), decltype(store(r))>(l, r)));
+  auto equality(const LHS& l, const RHS& r) {
+    return store(EqualityOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+  }
 
   /*! \brief Symbolic array access operator. */
   template<class LHS, class RHS>
-  auto array_access(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((ArrayOp<decltype(store(l)), decltype(store(r))>(l, r)));
+  auto array_access(const LHS& l, const RHS& r) {
+    return store(ArrayOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+  }
   
   /*! \brief Derivatives of AddOp operations.
    */
   template<class Var, class LHS, class RHS>
-  auto derivative(const AddOp<LHS, RHS>& f, Var v)
-    -> STATOR_AUTORETURN(derivative(f._l, v) + derivative(f._r, v))
+  auto derivative(const AddOp<LHS, RHS>& f, const Var& v) {
+    return derivative(f._l, v) + derivative(f._r, v);
+  }
 
   /*! \brief Derivatives of SubtractOp operations.
    */
-    template<class Var, class LHS, class RHS>
-    auto derivative(const SubtractOp<LHS, RHS>& f, Var v)
-    -> STATOR_AUTORETURN(derivative(f._l, v) - derivative(f._r, v))
+  template<class Var, class LHS, class RHS>
+  auto derivative(const SubtractOp<LHS, RHS>& f, const Var& v) {
+    return derivative(f._l, v) - derivative(f._r, v);
+  }
 
   /*! \brief Derivatives of MultiplyOp operations.
    */
     template<class Var, class LHS, class RHS>
-    auto derivative(const MultiplyOp<LHS, RHS>& f, Var v)
-    -> STATOR_AUTORETURN(derivative(f._l, v) * f._r + f._l * derivative(f._r, v))
+    auto derivative(const MultiplyOp<LHS, RHS>& f, const Var& v) {
+      return derivative(f._l, v) * f._r + f._l * derivative(f._r, v);
+    }
 
   /*! \brief Derivatives of DivideOp operations.
 
     This is the quotient rule
    */
     template<class Var, class LHS, class RHS>
-    auto derivative(const DivideOp<LHS, RHS>& f, Var v)
-    -> STATOR_AUTORETURN((derivative(f._l, v) * f._r - f._l * derivative(f._r, v)) / pow(f._r, C<2>()))
+    auto derivative(const DivideOp<LHS, RHS>& f, const Var& v) {
+      return (derivative(f._l, v) * f._r - f._l * derivative(f._r, v)) / pow(f._r, C<2>());
+    }
 
   /*! \brief Derivatives of PowerOp operation specialised for constant powers.
    */
   template<class Var, class Arg, std::intmax_t num, std::intmax_t den>
-    auto derivative(const PowerOp<Arg, C<num, den> >& f, Var v)
-    -> STATOR_AUTORETURN((C<num, den>() * derivative(f._l, v) * pow(f._l, C<num, den>()-C<1>())));
+  auto derivative(const PowerOp<Arg, C<num, den> >& f, const Var& v) {
+    return C<num, den>() * derivative(f._l, v) * pow(f._l, C<num, den>()-C<1>());
+  }
 
   /*! \brief Derivative of a PowerOp operation.
    */
   template<class Var, class Arg, class Power>
-    auto derivative(const PowerOp<Arg, Power>& f, Var v)
-    -> STATOR_AUTORETURN(f._r * derivative(f._l, v) * pow(f._l, f._r - C<1>()) + derivative(f._r, v) * log(f._l) * f);
+  auto derivative(const PowerOp<Arg, Power>& f, const Var& v) {
+    return f._r * derivative(f._l, v) * pow(f._l, f._r - C<1>()) + derivative(f._r, v) * log(f._l) * f;
+  }
 
   /*! \brief Derivative of a EqualityOp operation.
    */
   template<class Var, class LHS, class RHS>
-    auto derivative(const EqualityOp<LHS, RHS>& f, Var v)
-    -> STATOR_AUTORETURN(equal(derivative(f._l, v), derivative(f._r, v)));
+  auto derivative(const EqualityOp<LHS, RHS>& f, const Var& v) {
+    return equality(derivative(f._l, v), derivative(f._r, v));
+  }
   /*! \}*/
 
   /*! \brief Derivative of an array operation.
@@ -365,13 +393,15 @@ namespace sym {
     For now, we just return the variable.
    */
   template<class Var, class LHS, class RHS>
-    auto derivative(const ArrayOp<LHS, RHS>& f, Var v)
-    -> STATOR_AUTORETURN(f);
+  auto derivative(const ArrayOp<LHS, RHS>& f, const Var& v) {
+    return store(f);
+  }
   /*! \}*/
 
   template<class LHS, class RHS, class Op, class Var, class Arg> 
-  auto sub(BinaryOp<LHS, Op, RHS> f, EqualityOp<Var, Arg> x)
-    -> STATOR_AUTORETURN_BYVALUE(Op::apply(sub(f._l, x), sub(f._r, x)));
+  auto sub(const BinaryOp<LHS, Op, RHS>& f, const EqualityOp<Var, Arg>& x) {
+    return Op::apply(sub(f._l, x), sub(f._r, x));
+  }
 
   namespace detail {
     /*! \brief Wrap the passed string in parenthesis.
@@ -414,4 +444,18 @@ namespace sym {
       + RHS_repr
       + (Config::Latex_output ? Op::r_latex_repr() : Op::r_repr());
   }
+}
+
+namespace std
+{
+  template<typename LHS, typename Op, typename RHS> struct hash<sym::BinaryOp<LHS, Op, RHS> >
+  {
+    std::size_t operator()(sym::BinaryOp<LHS, Op, RHS> const& v) const noexcept
+    {
+      std::size_t seed = Op::type_index;
+      stator::hash_combine(seed, std::hash<LHS>{}(v._l));
+      stator::hash_combine(seed, std::hash<RHS>{}(v._r));
+      return seed;
+    }
+  };
 }

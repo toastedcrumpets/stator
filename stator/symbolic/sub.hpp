@@ -34,7 +34,7 @@ namespace sym {
   */
   template<class T, class Var, class Arg,
 	   typename = typename std::enable_if<detail::IsConstant<T>::value>::type >
-  auto sub(const T& f, const EqualityOp<Var, Arg>&) -> STATOR_AUTORETURN_BYVALUE(f);
+  auto sub(const T& f, const EqualityOp<Var, Arg>&) { return store(f); }
   
   /*! \brief Evaluates a symbolic Var at a given point.
     
@@ -44,7 +44,7 @@ namespace sym {
   template<conststr N1, conststr N2, typename ...Args1, typename ...Args2, class Arg,
 	   typename = typename enable_if_var_eq<Var<N1, Args1...>, Var<N2, Args2...> >::type>
   auto sub(const Var<N1, Args1...>& f, const EqualityOp<Var<N2, Args2...>, Arg>& x)
-   -> STATOR_AUTORETURN_BYVALUE(x._r);
+  { return store(x._r); }
 
   /*! \brief Evaluates a symbolic Var at a given point.
     

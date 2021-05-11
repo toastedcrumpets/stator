@@ -4,8 +4,6 @@ import math
 import unittest
 class TestExample(unittest.TestCase):
     def test_basic(self):
-        #Example start
-        
         # Use the built-in expression parser to make objects like variables
         x = Expr("x")
         # You can then create more complex expressions
@@ -27,8 +25,6 @@ class TestExample(unittest.TestCase):
 
         # Substitution can use dictionaries to provide computation 'contexts'
         print(sub(funcs, {x:1, Expr('y'): 2})) # [1.0, 1.0, 0.5, 0.16666666666666666, 0.8414709848078965, 0.9092974268256817]
-
-        #Example end
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,7 +15,7 @@ namespace sym {
       vectors/matrices.
   */
   template<class T, typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<T>, T>::value>::type>
-  auto empty_sum(const T&) -> STATOR_AUTORETURN_BYVALUE(T::Zero());
+  auto empty_sum(const T&) { return store(T::Zero()); }
 
   /*! \brief Returns the empty sum (i.e. equivalent of zero) for
       complex types.

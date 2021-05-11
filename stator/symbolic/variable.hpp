@@ -17,7 +17,9 @@ namespace sym {
   template<conststr name = default_var_name, typename ...Args>
   struct Var : SymbolicOperator, VarBase {
     template<class Arg>
-    auto operator=(const Arg& a) const -> STATOR_AUTORETURN(equality(*this, a));
+    auto operator=(const Arg& a) const {
+      return equality(*this, a);
+    }
     
     template<const char* name2, typename ...Args2>
     constexpr bool operator==(const Var<name2, Args2...>&) const { return std::string_view(name) ==  name2; }

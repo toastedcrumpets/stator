@@ -257,37 +257,39 @@ namespace sym {
   /*! \brief Symbolic divide operator. */
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-    auto operator/(const LHS& l, const RHS& r) 
-  -> STATOR_AUTORETURN((DivideOp<decltype(store(l)), decltype(store(r))>::create(l, r)))
+  auto operator/(const LHS& l, const RHS& r) {
+    return store(DivideOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+  }
   
   /*! \brief Symbolic power operator. */
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
-  auto pow(const LHS& l, const RHS& r) 
-    -> STATOR_AUTORETURN((PowerOp<decltype(store(l)), decltype(store(r))>::create(l, r)));
+  auto pow(const LHS& l, const RHS& r) {
+    return store(PowerOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+  }
 
   template<class LHS, class RHS,
-	   typename = typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value)>::type>
-  auto pow(const LHS& l, const RHS& r) -> STATOR_AUTORETURN(std::pow(l, r));
+	   typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value), bool>::type = true>
+  auto pow(const LHS& l, const RHS& r) { return std::pow(l, r); }
 
   template<class LHS, std::intmax_t num, std::intmax_t den,
-	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
-  auto pow(const LHS& l, const C<num, den>& r) -> STATOR_AUTORETURN(std::pow(l, double(r)));
+	   typename std::enable_if<std::is_arithmetic<LHS>::value, bool>::type = true>
+  auto pow(const LHS& l, const C<num, den>& r) { return std::pow(l, double(r)); } 
   
   template<class LHS,
 	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
-  auto pow(const LHS& l, const C<1,3>& r) -> STATOR_AUTORETURN(std::cbrt(l));
+  auto pow(const LHS& l, const C<1,3>& r) { return std::cbrt(l); }
 
   template<class LHS,
 	   typename = typename std::enable_if<std::is_arithmetic<LHS>::value>::type>
-  auto pow(const LHS& l, const C<1,2>& r) -> STATOR_AUTORETURN(std::sqrt(l));
+  auto pow(const LHS& l, const C<1,2>& r) { return std::sqrt(l); }
 
   template<class LHS,
 	   typename = typename std::enable_if<std::is_base_of<Eigen::EigenBase<LHS>, LHS>::value>::type>
-  auto pow(const LHS& l, const C<2,1>& r) -> STATOR_AUTORETURN_BYVALUE(l.squaredNorm());
+  auto pow(const LHS& l, const C<2,1>& r) { return store(l.squaredNorm()); }
   
   template<class LHS>
-  auto pow(const LHS& l, const C<1,1>& r) -> STATOR_AUTORETURN(l);
+  auto pow(const LHS& l, const C<1,1>& r) { return l; }
   
   namespace {
     /*! \brief Generic implementation of the eval routine for PowerOp.
@@ -300,9 +302,10 @@ namespace sym {
     template<size_t Power>
     struct PowerOpSub {
       template<class Arg_t>
-      static auto eval(Arg_t x)
-        -> STATOR_AUTORETURN(PowerOpSub<Power-1>::eval(x) * x)
-	};
+      static auto eval(Arg_t x) {
+        return PowerOpSub<Power-1>::eval(x) * x;
+      }
+    };
 
     template<>
     struct PowerOpSub<1> {
@@ -316,8 +319,9 @@ namespace sym {
   }
   
   template<std::intmax_t num1, std::intmax_t den1, std::intmax_t num2>
-  auto pow(const C<num1, den1>& l, const C<num2,1>& r)
-    -> STATOR_AUTORETURN(PowerOpSub<num2>::eval(sub(l, num2)));
+  auto pow(const C<num1, den1>& l, const C<num2,1>& r) {
+    return PowerOpSub<num2>::eval(sub(l, num2));
+  }
   
   /*! \brief Symbolic equality operator. 
 

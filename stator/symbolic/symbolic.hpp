@@ -51,8 +51,6 @@ namespace sym {
       construction of expressions) for that class.
   */
   struct SymbolicOperator {
-    //template<class T>
-    //auto operator[](const T& key) const -> STATOR_AUTORETURN()
   };
 
   /*! \brief A test if a class is symbolic. 

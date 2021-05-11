@@ -26,24 +26,26 @@ namespace sym {
   namespace detail {
     template<size_t State, size_t max_Order, class Var>
     struct TaylorSeriesWorker {
-	template<class Real>
-	static Null eval(const Null& f, const Real& a)
-	{ return Null(); }
+      template<class Real>
+      static Null eval(const Null& f, const Real& a)
+      { return Null(); }
       
-	template<class F, class Real>
-	static auto eval(const F& f, const Real& a) 
-        -> STATOR_AUTORETURN((typename InvFactorial<State>::value() * sub(f, Var() = a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a)))
+      template<class F, class Real>
+      static auto eval(const F& f, const Real& a) {
+	return typename InvFactorial<State>::value() * sub(f, Var() = a) + (Var() - a) * TaylorSeriesWorker<State+1, max_Order, Var>::eval(derivative(f, Var()), a);
+      }
     };
 
     template<size_t max_Order, class Var>
     struct TaylorSeriesWorker<max_Order,max_Order, Var> {
-	template<class F, class Real>
-	static auto eval(const F& f, const Real& a)
-        -> STATOR_AUTORETURN((typename InvFactorial<max_Order>::value() * sub(f, Var() = a)));
+      template<class F, class Real>
+      static auto eval(const F& f, const Real& a) {
+        return typename InvFactorial<max_Order>::value() * sub(f, Var() = a);
+      }
       
-	template<class Real>
-	static Null eval(const Null& f, const Real& a)
-	{ return Null(); }
+      template<class Real>
+      static Null eval(const Null& f, const Real& a)
+      { return Null(); }
     };
   }
 
@@ -51,6 +53,7 @@ namespace sym {
     expression.
   */
   template<size_t Order, class Var, class F, class Real>
-  auto taylor_series(const F& f, Real a, Var)
-    -> STATOR_AUTORETURN(try_simplify(detail::TaylorSeriesWorker<0, Order, Var>::eval(f, a)));
+  auto taylor_series(const F& f, Real a, Var) {
+    return try_simplify(detail::TaylorSeriesWorker<0, Order, Var>::eval(f, a));
+  }
 } // namespace symbolic

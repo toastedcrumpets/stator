@@ -269,9 +269,10 @@ namespace sym {
      */
     template<size_t Stage>
     struct PolySubWorker {
-	template<size_t Order, class PolyVar, class Coeff_t, class X>
-	static auto eval(const Polynomial<Order, Coeff_t, PolyVar>& f, const X& x)
-        -> STATOR_AUTORETURN(f[Order - Stage] + x * PolySubWorker<Stage - 1>::eval(f, x));
+      template<size_t Order, class PolyVar, class Coeff_t, class X>
+      static auto eval(const Polynomial<Order, Coeff_t, PolyVar>& f, const X& x) {
+	return f[Order - Stage] + x * PolySubWorker<Stage - 1>::eval(f, x);
+      }
     };
     
     /*! \brief Worker class for symbolically evaluating a substitution on
@@ -281,9 +282,10 @@ namespace sym {
      */
     template<>
     struct PolySubWorker<0> {
-	template<size_t Order, class PolyVar, class Coeff_t, class X>
-	static auto eval(const Polynomial<Order, Coeff_t, PolyVar>& f, const X& x)
-        -> STATOR_AUTORETURN(f[Order]);
+      template<size_t Order, class PolyVar, class Coeff_t, class X>
+      static auto eval(const Polynomial<Order, Coeff_t, PolyVar>& f, const X& x) {
+        return f[Order];
+      }
     };
   }
 
@@ -303,8 +305,9 @@ namespace sym {
                                               || (std::is_base_of<Eigen::EigenBase<Coeff_t>, Coeff_t>::value && std::is_arithmetic<Coeff_t2>::value)
                                               >::type,
 	     typename = typename enable_if_var_eq<PolyVar, SubVar>::type>
-    auto sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const EqualityOp<SubVar, Coeff_t2>& x_container)
-   -> STATOR_AUTORETURN(detail::PolySubWorker<Order>::eval(f, x_container._val))
+  auto sub(const Polynomial<Order, Coeff_t, PolyVar>& f, const EqualityOp<SubVar, Coeff_t2>& x_container) {
+    return detail::PolySubWorker<Order>::eval(f, x_container._val);
+  }
 
   /*! \brief Fast evaluation of multiple derivatives of a
       polynomial.

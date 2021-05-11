@@ -106,22 +106,30 @@ namespace sym {
   };
 
   template<std::intmax_t n1, std::intmax_t d1>
-  constexpr auto operator-(C<n1, d1>) -> STATOR_AUTORETURN((C<-n1, d1>()));
+  constexpr auto operator-(C<n1, d1>) { return C<-n1, d1>(); }
 
   template<std::intmax_t n1, std::intmax_t d1>
-  constexpr auto operator+(C<n1, d1>) -> STATOR_AUTORETURN((C<n1, d1>()));
+  constexpr auto operator+(C<n1, d1>) { return C<n1, d1>(); }
   
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
-  constexpr auto operator+(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_add<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
+  constexpr auto operator+(C<n1, d1>, C<n2, d2>) {
+    return typename detail::C_wrap<std::ratio_add<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type();
+  }
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
-  constexpr auto operator-(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_subtract<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
+  constexpr auto operator-(C<n1, d1>, C<n2, d2>) {
+    return typename detail::C_wrap<std::ratio_subtract<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type();
+  }
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
-  constexpr auto operator*(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_multiply<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
+  constexpr auto operator*(C<n1, d1>, C<n2, d2>) {
+    return typename detail::C_wrap<std::ratio_multiply<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type();
+  }
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
-  constexpr auto operator/(C<n1, d1>, C<n2, d2>) -> STATOR_AUTORETURN((typename detail::C_wrap<std::ratio_divide<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type()));
+  constexpr auto operator/(C<n1, d1>, C<n2, d2>) {
+    return typename detail::C_wrap<std::ratio_divide<std::ratio<n1,d1>, std::ratio<n2,d2> > >::type();
+  }
 
   template<std::intmax_t n1, std::intmax_t d1, std::intmax_t n2, std::intmax_t d2>
   constexpr bool operator==(const C<n1, d1>&, const C<n2, d2>&)
@@ -134,16 +142,16 @@ namespace sym {
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
   T operator-(const T& l, Null) { return l; }
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
-  auto operator-(Null, const T& r) -> STATOR_AUTORETURN(-r);
+  auto operator-(Null, const T& r) { return -r; }
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
   Null operator*(const T&, Null) { return Null(); }
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
   Null operator*(Null, const T&) { return Null(); }
   
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
-  auto operator*(const T& a, Unity) -> STATOR_AUTORETURN(a);
+  auto operator*(const T& a, Unity) { return a; }
   template<class T, typename = typename std::enable_if<!is_C<T>::value>::type>
-  auto operator*(Unity, const T& a) -> STATOR_AUTORETURN(a);
+  auto operator*(Unity, const T& a) { return a; }
   
   /*! \brief Symbolic Inverse factorial function.
    
@@ -186,10 +194,10 @@ namespace sym {
   constexpr Null cos_Cimpl(const C<num, den>& a, detail::choice<0>) { return {}; }
 
   template<std::intmax_t num, std::intmax_t den>
-  auto sin(const C<num, den>& a) -> STATOR_AUTORETURN(sin_Cimpl(a, detail::select_overload{}));  
+  auto sin(const C<num, den>& a) { return sin_Cimpl(a, detail::select_overload{}); }
 
   template<std::intmax_t num, std::intmax_t den>
-  auto cos(const C<num, den>& a) -> STATOR_AUTORETURN(cos_Cimpl(a, detail::select_overload{}));
+  auto cos(const C<num, den>& a) { return cos_Cimpl(a, detail::select_overload{}); }
 
   template<std::intmax_t num, std::intmax_t den>
   constexpr C<(1 - 2 * (num < 0)) * num, (1 - 2 * (den < 0)) * den> abs(const C<num, den>& a) { return {}; }

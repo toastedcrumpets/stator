@@ -9,52 +9,29 @@ using namespace pybind11::literals;
 
 py::object to_python(const sym::Expr&);
   
-struct ToPythonVisitor : public sym::detail::VisitorHelper<ToPythonVisitor> {
-  template<class T> sym::Expr apply(const T& v) {
-    result = py::cast(sym::Expr(v));
-    return sym::Expr();
+struct ToPythonVisitor : public sym::detail::VisitorHelper<ToPythonVisitor, py::object> {
+  template<class T>
+  py::object apply(const T& v) {
+    return py::cast(sym::Expr(v));
   }
 
-  sym::Expr apply(const sym::List& v) {
+  py::object apply(const sym::List& v) {
     py::list out;
     for (const auto& itm : v)
       out.append(to_python(itm));
-    result = out;
-    return sym::Expr();
+    return out;
   }
 
-  //sym::Expr apply(const sym::Dict& v) {
-  //  py::dict out;
-  //  for (const auto& itm : v) {
-  //    sym::Expr var = py::cast<py::str>(itm.first);
-  //    out[py::cast(sym::Expr())] = to_python(itm.second);
-  //  }
-  //  result = out;
-  //  return sym::Expr();
-  //}
-  
-  sym::Expr apply(const double& v) {
-    result = py::cast(v);
-    return sym::Expr();
+  py::object apply(const sym::Dict& v) {
+    py::dict out;
+    for (const auto& itm : v)
+      out[to_python(itm.first)] = to_python(itm.second);
+    return out;
   }
   
-  //template<> struct RT_type_index<VarRT>                                  { static const int value = 1;  };
-  //template<> struct RT_type_index<UnaryOp<Expr, detail::Sine>>            { static const int value = 2;  };
-  //template<> struct RT_type_index<UnaryOp<Expr, detail::Cosine>>          { static const int value = 3;  };
-  //template<> struct RT_type_index<UnaryOp<Expr, detail::Log>>             { static const int value = 4;  };
-  //template<> struct RT_type_index<UnaryOp<Expr, detail::Exp>>             { static const int value = 5;  };
-  //template<> struct RT_type_index<UnaryOp<Expr, detail::Absolute>>        { static const int value = 6;  };
-  //template<> struct RT_type_index<UnaryOp<Expr, detail::Arbsign>>         { static const int value = 7;  };
-  //template<> struct RT_type_index<BinaryOp<Expr, detail::Add, Expr>>      { static const int value = 8;  };
-  //template<> struct RT_type_index<BinaryOp<Expr, detail::Subtract, Expr>> { static const int value = 9;  };
-  //template<> struct RT_type_index<BinaryOp<Expr, detail::Multiply, Expr>> { static const int value = 10; };
-  //template<> struct RT_type_index<BinaryOp<Expr, detail::Divide, Expr>>   { static const int value = 11; };
-  //template<> struct RT_type_index<BinaryOp<Expr, detail::Power, Expr>>    { static const int value = 12; };
-  //template<> struct RT_type_index<BinaryOp<Expr, detail::Equality, Expr>> { static const int value = 13; };
-  //template<> struct RT_type_index<BinaryOp<Expr, detail::Array, Expr>>    { static const int value = 14; };
-  //template<> struct RT_type_index<List>                                   { static const int value = 15; };
-  //template<> struct RT_type_index<Dict>                                   { static const int value = 16; };
-  //template<> struct RT_type_index<UnaryOp<Expr, detail::Negate>>          { static const int value = 17;  };
+  py::object apply(const double& v) {
+    return py::cast(v);
+  }
   
   py::object result;
 };
@@ -62,8 +39,7 @@ struct ToPythonVisitor : public sym::detail::VisitorHelper<ToPythonVisitor> {
 py::object to_python(const sym::Expr& b) {
   sym::Expr simple_b = simplify(b);
   ToPythonVisitor visitor;
-  simple_b->visit(visitor);
-  return visitor.result;
+  return simple_b->visit(visitor);
 }
 
 sym::Expr make_Expr(const py::dict& d) {
@@ -77,6 +53,13 @@ sym::Expr make_Expr(const py::dict& d) {
   return out;
 }
 
+sym::Expr make_Expr(const py::list& l) {
+  auto out_ptr = sym::List::create();
+  auto& out = *out_ptr;
+  for (const auto& item : l)
+    out.push_back(py::cast<sym::Expr>(item));
+  return out;
+}
 
 PYBIND11_MODULE(core, m)
 {
@@ -86,6 +69,7 @@ PYBIND11_MODULE(core, m)
     .def(py::init<int>())
     .def(py::init<double>())
     .def(py::init([](const py::dict d){ return make_Expr(d); }))
+    .def(py::init([](const py::list l){ return make_Expr(l); }))
     .def("__repr__", +[](const sym::Expr& self) { return "Expr('"+sym::repr(self)+"')"; })
     .def("__str__", +[](const sym::Expr& self) { return sym::repr(self); })
     .def("latex", +[](const sym::Expr& self) { return sym::repr<stator::ReprConfig<stator::Latex_output> >(self); })
@@ -107,9 +91,10 @@ PYBIND11_MODULE(core, m)
     .def("to_python", &to_python)
     ;
 
-  m.def("derivative", static_cast<sym::Expr (*)(const sym::Expr&, const sym::Expr&)>(&sym::derivative));
+  m.def("derivative", +[](const sym::Expr& l, const sym::Expr& r){ return sym::simplify(sym::derivative(l, r)); });
   m.def("simplify", static_cast<sym::Expr (*)(const sym::Expr&)>(&sym::simplify));
-  m.def("sub", static_cast<sym::Expr (*)(const sym::Expr&, const sym::Expr&)>(&sym::sub));
+  m.def("sub", +[](const sym::Expr& l, const sym::Expr& r){ return to_python(sym::sub(l, r)); });
+  m.def("sub", +[](const sym::Expr& l, const py::dict& r){ return to_python(sym::sub(l, make_Expr(r))); });
   
   py::implicitly_convertible<int, sym::Expr>();
   py::implicitly_convertible<double, sym::Expr>();

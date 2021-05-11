@@ -20,9 +20,8 @@ class Testfit(unittest.TestCase):
         f = Expr("[1, x, 2*x^2]")
         x = Expr("x")
         df = derivative(f, x)
-        df = simplify(df)
-        self.assertEqual(repr(df), "Expr('[0, 1, 4*x]')")
-        self.assertEqual(repr(simplify(sub(df, Expr('x=2')))), "Expr('[0, 1, 8]')")
+        self.assertEqual(repr(simplify(df)), "Expr('[0, 1, 4*x]')")
+        self.assertEqual(sub(df, Expr('x=2')), [0, 1, 8])
         
 
     def test_dict(self):
@@ -30,13 +29,16 @@ class Testfit(unittest.TestCase):
         self.assertEqual(repr(Expr("{x:1}")),"Expr('{x:1}')")
 
     def test_sub_generic(self):
-        self.assertEqual(repr(sub(Expr("x"), Expr('{x:2}'))),"Expr('2')")
+        self.assertEqual(sub(Expr("x"), Expr('{x:2}')), 2)
 
-    def test_type_conversions(self):
-        self.assertEqual(Expr("2+2").to_python(), 4)
+    def test_to_python_conversions(self):
+        self.assertEqual(Expr("2+2"), 4)
         self.assertEqual(Expr("[1,2,3]").to_python(), [1,2,3])
-        #self.assertEqual(Expr("{x:1, y:(z-2)}").to_python(), {Expr('x'):1, Expr('y'):Expr('z-2'),})
-        
+        self.assertEqual(Expr("{x:1+2, y:(1+x)}").to_python(), {Expr('x'):3, Expr('y'):Expr('1+x')})
+
+    def test_from_python_conversions(self):
+        self.assertEqual(Expr({Expr('x'): 1, Expr('y'):Expr('1-x')}), Expr('{x:1, y:1-x}'))
+        self.assertEqual(Expr([1, Expr('1-x')]), Expr('[1, 1-x]'))
         
 if __name__ == "__main__":
     unittest.main()

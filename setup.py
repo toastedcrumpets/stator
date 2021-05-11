@@ -104,16 +104,18 @@ class CatchTestCommand(TestCommand):
         # Run catch tests
         subprocess.call(['ctest -j8 --output-on-failure'], cwd=os.path.join('build', self.distutils_dir_name('temp')), shell=True)
 
+from os import path
 
+with open(path.join(path.abspath(path.dirname(__file__)), 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name="stator",
-    version="0.0.1",
+    version="0.0.2",
     author="Marcus Bannerman",
     author_email="m.bannerman@gmail.com",
     url="https://github.com/toastedcrumpets/stator",
     description="The python stator interface.",
-    long_description="",
     package_dir={
         '': 'pysrc',
     },
@@ -124,4 +126,6 @@ setup(
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     zip_safe=False,
+    long_description=long_description,
+    long_description_content_type='text/markdown',
 )

@@ -68,8 +68,14 @@ namespace sym {
   template<class Config = DefaultSimplifyConfig> void simplify();
 
   namespace detail {
+    /*
+      This option only exists if simplify is defined for this case,
+      thanks to the way return types are deduced.
+     */
     template<class Config, class T>
-    auto try_simplify_imp(const T& a, detail::choice<0>) -> STATOR_AUTORETURN(simplify<Config>(a));
+    auto try_simplify_imp(const T& a, detail::choice<0>) -> decltype(simplify<Config>(a)) {
+      return simplify<Config>(a);
+    }
     
     template<class Config, class T>
     T try_simplify_imp(const T& a, detail::choice<1>) {
@@ -81,7 +87,7 @@ namespace sym {
       available.
    */
   template<class Config = DefaultSimplifyConfig, class T>
-  auto try_simplify(const T& a) -> decltype(detail::try_simplify_imp<Config>(a, detail::select_overload{})) {
+  auto try_simplify(const T& a) {
     return detail::try_simplify_imp<Config>(a, detail::select_overload{});
   }
 
@@ -92,28 +98,32 @@ namespace sym {
   /*! \brief A variant of simplify that expands into Polynomial
       types aggressively.
    */
-  template<class T> auto expand(const T& a)
-    -> STATOR_AUTORETURN(simplify<ExpandConfig>(a));
+  template<class T> auto expand(const T& a) {
+    return simplify<ExpandConfig>(a);
+  }
 
   /*! \brief A variant of try_simplify that expands into Polynomial
       types aggressively.
    */
-  template<class T> auto try_expand(const T& a)
-    -> STATOR_AUTORETURN(try_simplify<ExpandConfig>(a));
+  template<class T> auto try_expand(const T& a) {
+    return try_simplify<ExpandConfig>(a);
+  }
   
   typedef SimplifyConfig<expand_Constants> NConfig;
 
   /*! \brief A variant of simplify that converts compile time symbols
       into numbers.
    */
-  template<class T> auto N(const T& a)
-    -> STATOR_AUTORETURN(simplify<NConfig>(a));
+  template<class T> auto N(const T& a) {
+    return simplify<NConfig>(a);
+  }
 
   /*! \brief A variant of try_simplify that converts compile time
       symbols into numbers.
    */
-  template<class T> auto try_N(const T& a)
-    -> STATOR_AUTORETURN(try_simplify<NConfig>(a));
+  template<class T> auto try_N(const T& a) {
+    return try_simplify<NConfig>(a);
+  }
 
   /////////////////// BINARY OPERATORS /////////////////////////////
   // 
@@ -140,17 +150,21 @@ namespace sym {
 
   // Eliminate any identity operations
   template<class Config, class LHS, class Op>
-  auto simplify_BinaryOp(const BinaryOp<LHS, Op, typename Op::right_identity>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._l));
+  auto simplify_BinaryOp(const BinaryOp<LHS, Op, typename Op::right_identity>& op, detail::choice<0>) {
+    return try_simplify<Config>(op._l);
+  }
 
   template<class Config, class RHS, class Op,
 	     typename = typename std::enable_if<!std::is_same<RHS, typename Op::right_identity>::value>::type>
-  auto simplify_BinaryOp(const BinaryOp<typename Op::left_identity, Op, RHS>& op, detail::choice<0>) -> STATOR_AUTORETURN(try_simplify<Config>(op._r));
+  auto simplify_BinaryOp(const BinaryOp<typename Op::left_identity, Op, RHS>& op, detail::choice<0>) {
+    return try_simplify<Config>(op._r);
+  }
 
   //Special case for divide
   template<class Config, conststr N1, conststr N2, class ...VarArgs1, class ...VarArgs2,
 	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
   Unity simplify_BinaryOp(const BinaryOp<Var<N1, VarArgs1...>, detail::Divide, Var<N2, VarArgs2...>>& op, detail::choice<0>)
-  { return {};}
+  { return {}; }
   
   //Special case for the subtraction binary operator becoming the unary negation operator
   template<class Config, class RHS, typename = typename std::enable_if<!std::is_same<RHS, Null>::value>::type>
@@ -160,41 +174,48 @@ namespace sym {
   template<class Config, conststr N1, conststr N2, class ...VarArgs1, class ...VarArgs2,
 	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
   auto simplify_BinaryOp(const MultiplyOp<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >&, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(Var<N1, VarArgs1...>(), C<2>()));
+    -> decltype(sym::pow(Var<N1, VarArgs1...>(), C<2>())) { return sym::pow(Var<N1, VarArgs1...>(), C<2>()); }
   
   template<class Config, conststr N1, conststr N2, class ...VarArgs1, class ...VarArgs2, class Order,
 	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
   auto simplify_BinaryOp(const MultiplyOp<PowerOp<Var<N1, VarArgs1...>, Order>, Var<N2, VarArgs2...> >& f, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(Var<N1, VarArgs1...>{}, f._l._r + C<1>()));
+    -> decltype(sym::pow(Var<N1, VarArgs1...>{}, f._l._r + C<1>()))
+  { return sym::pow(Var<N1, VarArgs1...>{}, f._l._r + C<1>()); }
   
   template<class Config, conststr N1, conststr N2, class ...VarArgs1, class ...VarArgs2,  class Order,
 	   typename = typename enable_if_var_eq<Var<N1, VarArgs1...>, Var<N2, VarArgs2...> >::type>
   auto simplify_BinaryOp(const MultiplyOp<Var<N1, VarArgs1...>, PowerOp<Var<N2, VarArgs2...>, Order> >& f, detail::choice<0>)
-    -> STATOR_AUTORETURN(sym::pow(Var<N1,VarArgs1...>{}, f._r._r + C<1>()));
+    -> decltype(sym::pow(Var<N1,VarArgs1...>{}, f._r._r + C<1>()))
+  { return sym::pow(Var<N1,VarArgs1...>{}, f._r._r + C<1>()); }
       
   // Simplification of both arguments available
   template<class Config, class LHS, class RHS, class Op>
   auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<2>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(f._l), simplify<Config>(f._r))));
+    -> decltype(try_simplify<Config>(Op::apply(simplify<Config>(f._l), simplify<Config>(f._r))))
+  { return try_simplify<Config>(Op::apply(simplify<Config>(f._l), simplify<Config>(f._r))); }
   
   // Simplification of only one argument available
   template<class Config, class LHS, class RHS, class Op>
   auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<3>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(simplify<Config>(f._l), f._r)));
+    -> decltype(try_simplify<Config>(Op::apply(simplify<Config>(f._l), f._r)))
+  { return try_simplify<Config>(Op::apply(simplify<Config>(f._l), f._r)); }
   
   template<class Config, class LHS, class RHS, class Op>
   auto simplify_BinaryOp(const BinaryOp<LHS, Op, RHS>& f, detail::choice<3>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(Op::apply(f._l, simplify<Config>(f._r))));
+    -> decltype(try_simplify<Config>(Op::apply(f._l, simplify<Config>(f._r))))
+  { return try_simplify<Config>(Op::apply(f._l, simplify<Config>(f._r))); }
 
   /////////////////// PowerOp OPERATORS /////////////////////////////
    
   template<class Config, class Arg, std::intmax_t Power>
   auto simplify_powerop_impl(const PowerOp<Arg, C<Power,1> >& f, detail::choice<0>)
-    -> STATOR_AUTORETURN(try_simplify<Config>(PowerOpSub<Power>::eval(simplify<Config>(f._l))));
+    -> decltype(try_simplify<Config>(PowerOpSub<Power>::eval(simplify<Config>(f._l))))
+  { return try_simplify<Config>(PowerOpSub<Power>::eval(simplify<Config>(f._l))); }
       
   template<class Config, class Arg, std::intmax_t Power>
   auto simplify_powerop_impl(const PowerOp<Arg, C<Power,1> >& f, detail::choice<1>)
-    -> STATOR_AUTORETURN(simplify<Config>(PowerOpSub<Power>::eval(f._l)));
+    -> decltype(simplify<Config>(PowerOpSub<Power>::eval(f._l)))
+  { return simplify<Config>(PowerOpSub<Power>::eval(f._l)); }
 
   //Disable expansion of PowerOps of variables (otherwise we will recurse to death)
   template<class T> struct PowerOpEnableExpansion { static const bool value = true; };
@@ -207,7 +228,9 @@ namespace sym {
    */
   template<class Config = DefaultSimplifyConfig, class Arg, std::intmax_t Power,
 	     typename = typename std::enable_if<PowerOpEnableExpansion<Arg>::value>::type>
-  auto simplify(const PowerOp<Arg, C<Power, 1> >& f) -> STATOR_AUTORETURN(simplify_powerop_impl<Config>(f, detail::select_overload{}));
+  auto simplify(const PowerOp<Arg, C<Power, 1> >& f) {
+    return simplify_powerop_impl<Config>(f, detail::select_overload{});
+  }
 
   
   //Implement other simplifications at least at choice<5> or above, reordering should be a last case option!

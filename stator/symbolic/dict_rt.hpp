@@ -74,6 +74,36 @@ namespace sym {
   Dict derivative(const Dict& in, const Var& x) {
     stator_throw() << "Cannot take derivatives of dictionaries";
   }
+
+  Expr simplify(const Dict& in) {
+    auto out_ptr =  Dict::create();
+    auto& out = *out_ptr;
+    
+    for (const auto& p : in) 
+      out[p.first] = simplify(p.second);
+    
+    return out;
+  }
+
+  template<class Config = DefaultReprConfig>
+  inline std::string repr(const sym::Dict& f)
+  {
+    std::string out = std::string((Config::Latex_output) ? "\\left\\{" : "{");
+    const std::string end = std::string((Config::Latex_output) ? "\\right\\}" : "}");
+    if (f.empty())
+      return out+end;
+
+    std::vector<std::pair<std::string, const Dict::key_type*> > keys;
+    for (const auto& term : f)
+      keys.emplace_back(repr<Config>(term.first), &term.first);
+
+    sort(keys.begin(), keys.end(), [](const auto& l, const auto& r){ return l.first < r.first; });
+
+    for (const auto& k : keys)
+      out += k.first + ":" + repr<Config>(f.at(*k.second)) + ", ";
+    
+    return out.substr(0, out.size() - 2) + end;
+  }
 }
 
 namespace std

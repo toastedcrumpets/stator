@@ -91,6 +91,32 @@ namespace sym {
     
     return out;
   }
+
+  Expr simplify(const List& in) {
+    auto out_ptr =  List::create();
+    auto& out = *out_ptr;
+    
+    out.resize(in.size());
+    for (size_t idx(0); idx < in.size(); ++idx) {
+      auto s = simplify(in[idx]);
+      out[idx] = s;
+    }
+    return out_ptr;
+  }
+
+  template<class Config = DefaultReprConfig>
+  inline std::string repr(const sym::List& f)
+  {
+    std::string out = std::string((Config::Latex_output) ? "\\left[" : "[");
+    const std::string end = std::string((Config::Latex_output) ? "\\right]" : "]");
+    if (f.empty())
+      return out+end;
+    
+    for (const auto& term : f)
+      out += repr<Config>(term) + ", ";
+    
+    return out.substr(0, out.size() - 2) + end;
+  }
 }
 
 namespace std

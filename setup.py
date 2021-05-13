@@ -40,7 +40,7 @@ class CMakeBuild(build_ext):
         ]
 
         cfg = 'Debug' if self.debug else 'Release'
-        #cfg = 'Debug'
+        cfg = 'Debug'
         build_args = ['--config', cfg]
 
         cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]

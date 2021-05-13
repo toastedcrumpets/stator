@@ -31,6 +31,7 @@ namespace sym {
     }
     
     typedef Store::key_type key_type;
+    typedef Store::value_type value_type;
     typedef Store::reference reference;
     typedef Store::const_reference const_reference;
     typedef typename Store::iterator iterator;
@@ -54,18 +55,76 @@ namespace sym {
     bool empty() const noexcept { return _store.empty(); }
 
     bool operator==(const Dict& o) const {
-      return _store == o._store;
+      //Shortcut comparison before proceeding with item by item
+      return (this == &o) || (_store == o._store);
     }
-    
+
     template<class RHS>
     constexpr bool operator==(const RHS&) const {
       return false;
+    }
+    
+    std::pair<iterator,bool> insert( const value_type& value ) {
+      return _store.insert(value);
+    }
+    
+    std::pair<iterator,bool> insert( value_type&& value ) {
+      return _store.insert(std::move(value));
     }
     
   private:
     Store _store;
   };
 
+  auto operator+(const Dict& l, const Dict& r)  {
+    auto out_ptr = Dict::create();
+    auto& out = *out_ptr;
+    
+    for (const auto& item : l)
+      out.insert(item);
+
+    for (const auto& item : r) {
+      auto it = out.find(item.first);
+      if (it != out.end())
+	out[item.first] = out[item.first] + item.second;
+      else
+	out.insert(item);
+    }
+    
+    return out_ptr;
+  }
+  
+  auto operator-(const Dict& l, const Dict& r)  {
+    auto out_ptr = Dict::create();
+    auto& out = *out_ptr;
+    
+    for (const auto& item : l)
+      out.insert(item);
+
+    for (const auto& item : r) {
+      auto it = out.find(item.first);
+      if (it != out.end())
+	out[item.first] = out[item.first] - item.second;
+      else
+	out[item.first] = -item.second;
+    }
+    
+    return out_ptr;
+  }
+
+  auto operator*(const Dict& l, const Dict& r)  {
+    auto out_ptr = Dict::create();
+    auto& out = *out_ptr;
+    
+    for (const auto& item : l) {
+      auto it = r.find(item.first);
+      if (it != r.end())
+	out[item.first] = item.second * it->second;
+    }
+    
+    return out_ptr;
+  }
+    
   namespace detail {
     template<> struct Type_index<Dict> { static const int value = 16; };
   }
@@ -85,6 +144,9 @@ namespace sym {
     return out;
   }
 
+  std::pair<int, int> BP(const Dict& v)
+  { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
+  
   template<class Config = DefaultReprConfig>
   inline std::string repr(const sym::Dict& f)
   {

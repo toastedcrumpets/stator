@@ -18,3 +18,29 @@
 */
 
 #pragma once
+
+namespace sym {
+  namespace detail {
+    struct Units {
+      static constexpr int leftBindingPower = 60;
+      static constexpr auto associativity = Associativity::LEFT;
+      static constexpr bool commutative = true;
+      static constexpr bool associative = true;
+      typedef NoIdentity left_identity;
+      typedef Unity right_identity;
+      typedef Null left_zero;
+      typedef NoIdentity right_zero;
+      static inline std::string l_repr() { return ""; }
+      static inline std::string repr() { return "{"; }
+      static inline std::string r_repr() { return "}"; }
+      static inline std::string l_latex_repr() { return ""; }
+      static inline std::string latex_repr() { return "\left\{"; }
+      static inline std::string r_latex_repr() { return "\right\}"; }
+      template<class L, class R> static auto apply(const L& l, const R& r) {
+	return BinaryOp<decltype(store(l)), detail::Units, decltype(store(r))>::create(l, r);
+      }
+      static constexpr int type_index = 18;
+    };
+  }
+  
+}

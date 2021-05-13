@@ -35,7 +35,8 @@ namespace sym {
     }
     
     bool operator==(const BinaryOp& o) const {
-      return (_l == o._l) && (_r == o._r);
+      //Shortcut comparison before proceeding with item by item
+      return (this == &o) || ((_l == o._l) && (_r == o._r));
     }
 
     template<class RHS>

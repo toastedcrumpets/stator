@@ -35,8 +35,9 @@ namespace sym {
       return std::shared_ptr<UnaryOp>(new UnaryOp(arg));
     }
 
-    bool operator==(const UnaryOp<Expr,Op>& o) const {
-      return (_arg == o._arg);
+    bool operator==(const UnaryOp& o) const {
+      //Shortcut comparison before proceeding with item by item
+      return (this == &o) || (_arg == o._arg);
     }
 
     template<class RHS>

@@ -87,8 +87,7 @@ namespace sym {
 
   namespace detail {
     template<auto N, class ...Args>
-    struct Type_index<Var<N, Args...> >
-    { static const int value = 1;  };
+    struct Type_index<Var<N, Args...> > { static const int value = 1;  };
   }
 }
 

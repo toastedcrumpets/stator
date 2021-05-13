@@ -53,7 +53,8 @@ namespace sym {
     bool empty() const noexcept { return _store.empty(); }
 
     bool operator==(const List& o) const {
-      return _store == o._store;
+      //Shortcut comparison before proceeding with item by item
+      return (this == &o) || (_store == o._store);
     }
 
     template<class RHS>
@@ -79,7 +80,7 @@ namespace sym {
     return out;
   }
   
-  Expr operator+(const List& l, const List& r) {
+  auto operator+(const List& l, const List& r) {
     if (l.size() != r.size())
       stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
     
@@ -92,6 +93,45 @@ namespace sym {
     return out;
   }
 
+  auto operator-(const List& l, const List& r) {
+    if (l.size() != r.size())
+      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
+    
+    auto out = List::create();
+    out->resize(l.size());
+    
+    for (size_t idx(0); idx < l.size(); ++idx)
+      (*out)[idx] = l[idx] - r[idx];
+    
+    return out;
+  }
+
+  auto operator*(const List& l, const List& r) {
+    if (l.size() != r.size())
+      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
+    
+    auto out = List::create();
+    out->resize(l.size());
+    
+    for (size_t idx(0); idx < l.size(); ++idx)
+      (*out)[idx] = l[idx] * r[idx];
+    
+    return out;
+  }
+
+  auto operator/(const List& l, const List& r) {
+    if (l.size() != r.size())
+      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
+    
+    auto out = List::create();
+    out->resize(l.size());
+    
+    for (size_t idx(0); idx < l.size(); ++idx)
+      (*out)[idx] = l[idx] / r[idx];
+    
+    return out;
+  }
+  
   Expr simplify(const List& in) {
     auto out_ptr =  List::create();
     auto& out = *out_ptr;
@@ -104,8 +144,12 @@ namespace sym {
     return out_ptr;
   }
 
+  std::pair<int, int> BP(const List& v)
+  { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
+
+  
   template<class Config = DefaultReprConfig>
-  inline std::string repr(const sym::List& f)
+  inline std::string repr(const List& f)
   {
     std::string out = std::string((Config::Latex_output) ? "\\left[" : "[");
     const std::string end = std::string((Config::Latex_output) ? "\\right]" : "]");

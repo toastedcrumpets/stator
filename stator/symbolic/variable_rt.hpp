@@ -48,7 +48,8 @@ namespace sym {
 
     
     inline bool operator==(const VarRT& o) const {
-      return _name == o._name;
+      //Shortcut comparison before proceeding with string comparison
+      return (this == &o) || (_name == o._name);
     }
 
     template<class RHS>

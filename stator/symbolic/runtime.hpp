@@ -279,16 +279,14 @@ namespace sym {
       comparisons between RTBase derived types.
      */
     template<class LHS>
-    struct ComparisonVisitor : public sym::detail::VisitorHelper<ComparisonVisitor<LHS> > {
+    struct ComparisonVisitor : public sym::detail::VisitorHelper<ComparisonVisitor<LHS>, bool> {
       ComparisonVisitor(const LHS& l): _l(l) {}
       
-      template<class RHS> sym::Expr apply(const RHS& r) {
-	_result = _l == r;
-	return Expr();
+      template<class RHS> bool apply(const RHS& r) {
+	return _l == r;
       }
 
       const LHS& _l;
-      bool _result;
     };
   }
   
@@ -303,20 +301,16 @@ namespace sym {
     virtual bool compare(const Expr& rhs) const {
       const Derived& lhs(*static_cast<const Derived*>(this));
       detail::ComparisonVisitor<Derived> visitor(lhs);
-      rhs->visit(visitor);
-      return visitor._result;
+      return rhs->visit(visitor);
     }
   };  
 
   namespace detail {
     /*! \brief Binding power visitor for sym::detail::BP(const Expr&). */
-    struct BPVisitor : public sym::detail::VisitorHelper<BPVisitor> {
-      template<class T> sym::Expr apply(const T& rhs) {
-	_BP = BP(rhs);
-	return Expr();
+    struct BPVisitor : public sym::detail::VisitorHelper<BPVisitor, std::pair<int, int>> {
+      template<class T> std::pair<int, int> apply(const T& rhs) {
+	return BP(rhs);
       }
-      
-      std::pair<int, int> _BP;
     };
   }
   
@@ -325,8 +319,7 @@ namespace sym {
   */
   inline std::pair<int, int> BP(const Expr& v) {
     detail::BPVisitor vis;
-    v->visit(vis);
-    return vis._BP;
+     return v->visit(vis);
   }
 }
 
@@ -497,6 +490,16 @@ namespace sym {
 	return Expr(store(Op::apply(l, r)));
       }
 
+      template<class Op>
+      Expr dd_visit(const Dict& l, const Dict& r, Op) {
+	return Expr(simplify(Op::apply(l, r)));
+      }
+
+      template<class Op>
+      Expr dd_visit(const List& l, const List& r, Op) {
+	return Expr(simplify(Op::apply(l, r)));
+      }
+      
       //Direct evaluation of doubles
       template<class T2>
       Expr dd_visit(const double& l, const T2& r, detail::Subtract) {
@@ -873,21 +876,17 @@ namespace sym {
 
   namespace detail {
     template<class Config>
-    struct ReprVisitor : public sym::detail::VisitorHelper<ReprVisitor<Config> > {
-      template<class T> sym::Expr apply(const T& rhs) {
-	_repr = repr<Config>(rhs);
-	return sym::Expr();
+    struct ReprVisitor : public sym::detail::VisitorHelper<ReprVisitor<Config>, std::string> {
+      template<class T> std::string apply(const T& rhs) {
+	return repr<Config>(rhs);
       }
-
-      std::string _repr;
     };
   }
 
   template<class Config>
   std::string repr(const sym::RTBase& b) {
     detail::ReprVisitor<Config> visitor;
-    b.visit(visitor);
-    return visitor._repr;
+    return b.visit(visitor);
   }
 
   /*! \brief Give a representation of an Expr. 

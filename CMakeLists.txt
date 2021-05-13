@@ -111,7 +111,7 @@ function(stator_test name) #Registers a unit-test
   add_test(${name} ${name})
 endfunction(stator_test)
 
-#add_executable(symbolic_example ${CMAKE_CURRENT_SOURCE_DIR}/examples/symbolic_example.cpp)
+add_executable(symbolic_example ${CMAKE_CURRENT_SOURCE_DIR}/examples/symbolic_example.cpp)
 
 #stator_test(orphan_static_list)
 stator_test(stack_vector_test)

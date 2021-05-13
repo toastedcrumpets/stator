@@ -23,33 +23,35 @@
 */
 
 #include <iostream>
-#include <stator/symbolic/symbolic.hpp>
+#include <stator/symbolic/runtime.hpp>
 
 int main(int argc, char **argv) {
   using namespace sym;
   //The default variable is the letter x
   Var<> x;
   
-  //But you can specify your own variables by letter:
-  Var<vidx<'y'> > y;
+  //But you can specify your own variables:
+  static constexpr char y_str[] = "y";  
+  Var<y_str> y;
+  //A future C++ standard (C++20 maybe?) will let you write
+  //Var<"y"> y;
+  //But we're not there yet
   
-  //Or by index:
-  Var<vidx<42>> v42;
-  
-  //We have to catch symbolic expressions using "auto" as their type is very complex
+  //We have to catch symbolic expressions using "auto" as their type
+  //is very complex and encodes the actual expression
   auto f1 = x * x + sin(y);
   
   std::cout << f1 << std::endl;
-  //Output: ((x × x) + sin(y))
+  //Output: x*x+(sin y)
   auto f1_xsub = sub(f1, x = y + 2);
   
   std::cout << f1_xsub << std::endl;
-  //Output: (((y + 2) × (y + 2)) + sin(y))
+  //Output: (y+2)*(y+2)+(sin y)
   std::cout << sub(f1_xsub, y = 3.14159265359) << std::endl;
   //Output: 26.436...
   auto f2 = (3-3) * x;
   std::cout << f2 << std::endl;
-  //Output: (0 × x)
+  //Output: 0*x
   C<1, 2> half;
   C<2> two;
   
@@ -67,28 +69,28 @@ int main(int argc, char **argv) {
   //Output: C<0>()
   auto f4 = C<1>() * sin(x);
   std::cout << f4 << std::endl;
-  //Output: sin(x)
+  //Output: sin x
   auto f5 = cos(2 * x);
   auto df5_dx = derivative(f5, x);
 
   std::cout << df5_dx << std::endl;
-  //Output: (-2 × sin((2 × x)))
+  //Output: -2*(sin(2 × x))
   //A taylor series of sin(2x) around zero
   std::cout << taylor_series<3>(sin(C<2>() * x), C<0>(), x) << std::endl;
-  //Output: (x × (C<2>() + ((x ^ C<2>()) × C<-4,3>())))
-  std::cout << x * x * x * x * x << std::endl;
-  //Output: ((((x × x) × x) × x) × x)
+  //Output: x*(2 + (x ^2*()-4/3))
 
+  std::cout << x * x * x * x * x << std::endl;
+  //Output: x*x*x*x*x
   std::cout << simplify(x * x * x * x * x) << std::endl;
-  //Output: (x ^ C<5>())         (which is equivalent to "pow(x, C<5>())")
+  //Output: x^5   (which is equivalent to "pow(x, C<5>())")
   
   auto f6 = taylor_series<3>(sin(C<2>() * x), C<0>(), x);
   std::cout << f6 << std::endl;
-  //Output: (x × (C<2>() + ((x ^ C<2>()) × C<-4,3>())))
+  //Output: x*(2+x^2*(-4/3))
 
   auto f6_poly = expand(f6);
   std::cout << f6_poly << std::endl;
-  //Output: P(-1.33333 × x³ + 2 × x)
+  //Output: P(-1.3333333333333333*x^3 + 2*x)
 
   std::cout << f6_poly[0] << std::endl;
   //Output: 0
@@ -107,16 +109,13 @@ int main(int argc, char **argv) {
   //Extracting a value of a root
   std::cout << f6_roots[2] << std::endl;
   //Output: 1.22474
-  Eigen::Matrix<double, 1, 3> r{1.0, 2.0, 3.0};
-  Eigen::Matrix<double, 1, 3> v{1.0, 0.5, 0.1};
-  auto fvec = r + x * v;
-  std::cout << sub(fvec, x = 12) << std::endl;
-  //Output:  13   8 4.2
 
   {//Quick example
-    
-    Var<vidx<'x'> > x; //Create a variable "x"
-    Var<vidx<'y'> > y; //Create a variable "y"
+
+    static constexpr char x_str[] = "x";
+    Var<x_str> x; //Create a variable "x"
+    static constexpr char y_str[] = "y";
+    Var<y_str> y; //Create a variable "y"
     
     auto f = sin(x) + 2 * cos(x); //Define a function f(x)
 
@@ -125,7 +124,7 @@ int main(int argc, char **argv) {
 
     //Print the function to screen
     std::cout << g << std::endl;
-    //Output: (sin((y × y)) + (2 × cos((y × y))))
+    //Output: sin (y*y)+2*(cos (y*y))
 
     //Evaluate the function
     double a = sub(g, y = 2.3); // a = g(2.3)
@@ -133,21 +132,18 @@ int main(int argc, char **argv) {
     //Output: 0.254279
     auto dg_dy = derivative(g, y);  // dg/dy
     std::cout << dg_dy << std::endl;
-    //Output: (((y + y) × cos((y × y))) + (2 × ((C<-1>() × (y + y)) × sin((y × y)))))
+    //Output: (y+y)*(cos (y*y))+2*((-(y+y))*(sin (y*y)))
     //Take a 5th order taylor series of the derivative around y=0
     auto poly = expand(taylor_series<5>(dg_dy, C<0>(), y));
     std::cout << poly << std::endl;
-    //Output: P(-1 × y^5 + -4 × y³ + 2 × y)
+    //Output: P(-1*y^5 + -4*y^3 + 2*y)
 
     //Calculate the real roots of this 5th order polynomial
     std::cout << solve_real_roots(poly) << std::endl;
     //Output: StackVector{ -0.67044 0.67044 }
     Expr f_rt = "sin(x) + 2 * cos(x)";
-    Expr g_rt = sub(f_rt, x=y*y);
+    Expr g_rt = sub(f_rt, x=y * y);
     a = simplify(sub(g_rt, y = 2.3)).as<double>(); // a = g(2.3)
     Expr dg_dy_rt = derivative(g_rt, y);
   }//End of the example
-
-  //Lame use of the variable to prevent "unused variable" warnings
-  v42=1;
 }

@@ -692,6 +692,14 @@ namespace sym {
 
   }
 
+  template<conststr N, class T>
+  Expr sub(const Expr& f, const BinaryOp<Var<N>, detail::Equality, T>& op) {
+    auto v_ptr = VarRT::create(op._l);
+    detail::SubstituteRT visitor(*v_ptr, Expr(op._r));
+    Expr result = f->visit(visitor);
+    return (result) ?  result : f;
+  }
+  
   Expr sub(const Expr& f, const Dict& rep) {
     detail::SubstituteDictRT visitor(rep);
     Expr result = f->visit(visitor);
@@ -751,6 +759,12 @@ namespace sym {
     return f->visit(visitor);
   }
 
+  template<conststr N>
+  Expr derivative(const Expr& f, const Var<N>& v) {
+    auto v_ptr = VarRT::create(v);
+    return derivative(f, *v_ptr);
+  }
+  
   /*! \brief Runtime derivative where variable is an Expr.
     
     Confirm its a variable and hand it over to the templated implementation.

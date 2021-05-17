@@ -99,36 +99,10 @@ else()
 endif(DOXYGEN_FOUND)
 
 ######################################################################
-######### TEST TARGETS
-######################################################################
-find_package(GTest REQUIRED)
-
-
-function(stator_test name) #Registers a unit-test
-  add_executable(${name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${name}.cpp)
-  target_include_directories(${name} PUBLIC ${GTEST_INCLUDE_DIRS})
-  target_link_libraries(${name} PUBLIC ${GTEST_LIBRARIES} pthread)
-  add_test(${name} ${name})
-endfunction(stator_test)
-
-add_executable(symbolic_example ${CMAKE_CURRENT_SOURCE_DIR}/examples/symbolic_example.cpp)
-
-#stator_test(orphan_static_list)
-stator_test(stack_vector_test)
-#stator_test(geometry_shapes_test)
-stator_test(symbolic_generic_test)
-stator_test(symbolic_polynomial_test)
-stator_test(symbolic_poly_solve_roots_test)
-stator_test(symbolic_poly_taylor_test)
-stator_test(symbolic_runtime_test)
-stator_test(symbolic_numeric_test)
-stator_test(symbolic_parser_test)
-stator_test(symbolic_ad_test)
-#stator_test(symbolic_integration_test)
-
-######################################################################
 ########## PYTHON INTERFACE
 ######################################################################
+
+add_subdirectory(extern/pybind11)
 
 # Build a Python extension module using pybind11
 #   pybindings_add_module(<module>)
@@ -167,7 +141,38 @@ function(pybindings_add_module module)
     set_target_properties(${target_name} PROPERTIES OUTPUT_NAME ${modname})
 endfunction()
 
-add_subdirectory(extern/pybind11)
 include_directories(${PROJECT_SOURCE_DIR})
 pybindings_add_module(stator.core)
+
+
+######################################################################
+######### TEST TARGETS
+######################################################################
+add_executable(symbolic_example ${CMAKE_CURRENT_SOURCE_DIR}/examples/symbolic_example.cpp)
+
+find_package(GTest REQUIRED)
+
+if(GTest_FOUND)
+  function(stator_test name) #Registers a unit-test
+    add_executable(${name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${name}.cpp)
+    target_include_directories(${name} PUBLIC ${GTEST_INCLUDE_DIRS})
+    target_link_libraries(${name} PUBLIC ${GTEST_LIBRARIES} pthread)
+    add_test(${name} ${name})
+  endfunction(stator_test)
+
+  #stator_test(orphan_static_list)
+  stator_test(stack_vector_test)
+  #stator_test(geometry_shapes_test)
+  stator_test(symbolic_generic_test)
+  stator_test(symbolic_polynomial_test)
+  stator_test(symbolic_poly_solve_roots_test)
+  stator_test(symbolic_poly_taylor_test)
+  stator_test(symbolic_runtime_test)
+  stator_test(symbolic_numeric_test)
+  stator_test(symbolic_parser_test)
+  stator_test(symbolic_ad_test)
+  #stator_test(symbolic_integration_test)
+else()
+  message(WARNING "Cannot find GTest library, disabling unit tests!")
+endif()
 

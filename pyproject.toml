@@ -4,6 +4,7 @@ requires = [
     "wheel",
     "pybind11>=2.6.0",
     "cmake>=3.13",
+    "pytest-cpp>=1.5.0",
 ]
 
 build-backend = "setuptools.build_meta"

@@ -35,25 +35,11 @@ spec:
 		    script {
 			dockerBuildImage = docker.image('toastedcrumpets/autopipefit-toolchain')
 			dockerBuildImage.pull()
-			dockerBuildImage.inside {
-				sh "apt-get update && apt-get install -y --no-install-recommends libgtest-dev"
-			}
 		    }
 		}
 	    }
 	}
-	stage('Install dependencies') {
-	    steps{
-		container('dind') {
-		    script {
-			dockerBuildImage.inside {
-				sh "apt-get install -y libgtest-dev"
-			}
-		    }
-		}
-	    }
-	}
-	stage('Configure') {
+	stage('C++ Configure') {
 	    steps{
 		container('dind') {
 		    script {

@@ -1,4 +1,7 @@
 cmake_minimum_required (VERSION 3.0)
+
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
+
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "No build type selected, default to Release")
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo" FORCE)
@@ -171,6 +174,7 @@ if(GTest_FOUND)
   stator_test(symbolic_numeric_test)
   stator_test(symbolic_parser_test)
   stator_test(symbolic_ad_test)
+
   stator_test(symbolic_interval_test)
   #stator_test(symbolic_integration_test)
 else()

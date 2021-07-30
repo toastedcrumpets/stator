@@ -43,6 +43,11 @@ print(derivative(funcs, x)) # [0, 1, 4*x/4, 18*x^2/36, cos x, 0]
 print(sub(funcs, {x:1, Expr('y'): 2})) # [1.0, 1.0, 0.5, 0.16666666666666666, 0.8414709848078965, 0.9092974268256817]
 ```
 
+# Requirements
+
+You need the Google test library to build the unit tests. The Boost
+interval library is needed for interval arithmetic support.
+
 # Alternatives/Similar software 
 
 For the compile-time C++ library:
@@ -58,3 +63,7 @@ For the python bindings:
 - [sympy](https://www.sympy.org/): The full-featured CAS for python, but also quite slow.
 - [symengine](https://symengine.org/index.html): Just like
   stator. It's actually a C++ CAS engine with python wrappers.
+
+For the interval arithmetic
+- [Kodiak](https://github.com/nasa/Kodiak) This is a full library for interval arithmatic solving.
+- [Julia](https://github.com/JuliaIntervals/IntervalArithmetic.jl) A brilliant implementation of interval solving.

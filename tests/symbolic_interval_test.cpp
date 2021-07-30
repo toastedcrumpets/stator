@@ -18,7 +18,6 @@
 */
 
 //stator
-#include <stator/symbolic/symbolic.hpp>
 #include <stator/symbolic/interval.hpp>
 #define UNIT_TEST_SUITE_NAME Symbolic_
 #define UNIT_TEST_GOOGLE
@@ -26,6 +25,7 @@
 
 static constexpr char x_str[] = "x";
 static constexpr char y_str[] = "y";
+
 
 UNIT_TEST( symbolic_interval_basic ) {
   sym::interval<double> i1(0, 2);
@@ -44,4 +44,17 @@ UNIT_TEST( symbolic_interval_basic ) {
   }
 
   UNIT_TEST_CHECK_EQUAL(sym::repr(out), "-3...5");
+}
+
+template<class F, class X>
+auto root_find(const F& f, const X& x, const sym::interval<double>& range) {
+  return sym::interval<double>(0.0, 0.0);
+}
+
+UNIT_TEST( symbolic_interval_root ) {
+  sym::Var<x_str> x;
+
+  auto f = x * x - 2.0 * x + 1.0;
+
+  auto res = root_find(f, x, sym::interval<double>(0.0, 0.0));
 }

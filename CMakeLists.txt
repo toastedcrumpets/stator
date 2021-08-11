@@ -174,7 +174,7 @@ if(GTest_FOUND)
   stator_test(symbolic_numeric_test)
   stator_test(symbolic_parser_test)
   stator_test(symbolic_ad_test)
-
+  stator_test(symbolic_array_test)
   stator_test(symbolic_interval_test)
   #stator_test(symbolic_integration_test)
 else()

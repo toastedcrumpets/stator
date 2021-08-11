@@ -221,6 +221,7 @@ namespace sym {
       virtual RetType visit(const BinaryOp<Expr, detail::Power, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Array, Expr>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& ) = 0;
       virtual RetType visit(const List& ) = 0;
       virtual RetType visit(const Dict& ) = 0;
       virtual RetType visit(const UnaryOp<Expr, detail::Negate>& ) = 0;
@@ -262,6 +263,8 @@ namespace sym {
       inline virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const BinaryOp<Expr, detail::Array, Expr>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      inline virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const List& x)
       { return static_cast<Derived*>(this)->apply(x); }
@@ -816,6 +819,9 @@ namespace sym {
 
       Expr apply(const BinaryOp<Expr, detail::Array, Expr>& op)
       { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
+
+      Expr apply(const BinaryOp<Expr, detail::Units, Expr>& op)
+      { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
       
       const VarRT& _var;
       double _replacement;
@@ -848,6 +854,7 @@ namespace sym {
     case detail::Type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Equality, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Equality, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Array, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Array, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Units, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Units, Expr>&>(*this));
     case detail::Type_index<List>::value:                                   return c.visit(static_cast<const List&>(*this));
     case detail::Type_index<Dict>::value:                                   return c.visit(static_cast<const Dict&>(*this));
     case detail::Type_index<UnaryOp<Expr, detail::Negate>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Negate>&>(*this));

@@ -196,7 +196,6 @@ namespace sym {
       }
       static constexpr int type_index = 14;
     };
-    
   }
 
   template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add,      RHS>;

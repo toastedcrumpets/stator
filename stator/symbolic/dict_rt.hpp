@@ -20,6 +20,9 @@
 #pragma once
 
 namespace sym {
+  class Dict;
+  typedef std::shared_ptr<Dict> DictPtr;
+  
   class Dict: public RTBaseHelper<Dict> {
     typedef std::unordered_map<Expr, Expr> Store;
 
@@ -27,7 +30,7 @@ namespace sym {
     Dict(const Dict& l) = default;
   public:
     static auto create() {
-      return std::shared_ptr<Dict>(new Dict());
+      return DictPtr(new Dict());
     }
     
     typedef Store::key_type key_type;

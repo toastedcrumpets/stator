@@ -45,6 +45,10 @@ class Testfit(unittest.TestCase):
     def test_from_python_conversions(self):
         self.assertEqual(Expr({Expr('x'): 1, Expr('y'):Expr('1-x')}), Expr('{x:1, y:1-x}'))
         self.assertEqual(Expr([1, Expr('1-x')]), Expr('[1, 1-x]'))
+
+    def test_units(self):
+        print(simplify(Expr('2.2{m}')+Expr('2.2{m}')))
+        #self.assertTrue(False
         
 if __name__ == "__main__":
     unittest.main()

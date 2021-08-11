@@ -102,6 +102,7 @@ namespace sym {
 	_right_operators["*"].reset(new BinaryOpToken<detail::Multiply>());
 	_right_operators["/"].reset(new BinaryOpToken<detail::Divide>());
 	_right_operators["^"].reset(new BinaryOpToken<detail::Power>());
+	_right_operators["{"].reset(new WrappedBinaryOpToken<detail::Units>("}"));
 
 	//The unary operators, slightly higher binding power than addition/subtraction
 	_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower+1>());

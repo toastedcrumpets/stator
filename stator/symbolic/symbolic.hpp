@@ -113,6 +113,7 @@ namespace sym {
 #include <stator/symbolic/simplify.hpp>
 #include <stator/symbolic/integrate.hpp>
 #include <stator/symbolic/taylor.hpp>
+#include <stator/symbolic/units.hpp>
 
 // If you need runtime expressions and parsing, please include
 // <stator/symbolic/runtime.hpp> instead of this file.

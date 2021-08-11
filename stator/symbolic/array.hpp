@@ -147,11 +147,11 @@ namespace sym {
     };
   }
   
-  template<class T, size_t D, class Addressing = RowMajor<D>>
+  template<class T, size_t D = -1u, size_t StoreSize = -1u, class Addressing = RowMajor<D>>
   class Array {
     Addressing _addressing;
     
-    typedef std::vector<T> Store;
+    typedef typename detail::LinearStore<T, StoreSize>::type Store;
     Store _store;
     
   public:
@@ -167,7 +167,12 @@ namespace sym {
 
     
     Array(const Addressing& a = Addressing()): _addressing(a) {
-      _store.resize(a.store_size());
+      if constexpr (StoreSize == -1u) {
+	_store.resize(_addressing.store_size());
+      } else {
+	if (_addressing.store_size() > StoreSize)
+	  stator_throw() << "StoreSize is too small for this dimensionality";
+      }
     }
 
     T& operator[](const Coords& c) {
@@ -190,11 +195,15 @@ namespace sym {
     }
     
     size_t size() const { return _addressing.size(); }
+    
     bool empty() const { return _addressing.size() == 0; }
     
     void resize(const Coords& d) {
       _addressing.resize(d);
-      _store.resize(_addressing.store_size());
+      
+      if constexpr (StoreSize == -1u) {
+	_store.resize(_addressing.store_size());
+      }
     }
   };
 }

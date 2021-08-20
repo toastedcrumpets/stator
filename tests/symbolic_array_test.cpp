@@ -26,16 +26,9 @@
 //static constexpr char x_str[] = "x";
 //static constexpr char y_str[] = "y";
 
-UNIT_TEST( symbolic_array_RowMajor ) {
-  sym::RowMajor<2> rm({2, 3});
-  UNIT_TEST_CHECK_EQUAL(rm.size(), 6);
-  UNIT_TEST_CHECK_EQUAL((rm[{0,2}]), 2);
-  UNIT_TEST_CHECK_EQUAL((rm[{1,2}]), 5);
-  
-}
-
-UNIT_TEST( symbolic_array_static_access ) {
-  sym::Array<double, 2> A;
+UNIT_TEST( symbolic_array_staticD_dynamicStore ) {
+  typedef sym::Array<double, sym::RowMajorIndexing<double, 2, -1u> > Array;
+  Array A;
   UNIT_TEST_CHECK_EQUAL(A.size(), 0);
   UNIT_TEST_CHECK_EQUAL(A.empty(), true);
 
@@ -60,7 +53,7 @@ UNIT_TEST( symbolic_array_static_access ) {
   UNIT_TEST_CHECK_EQUAL(A[1][2], 6);
 
   //Check read-only array access
-  const sym::Array<double, 2>& B = A;
+  const Array& B = A;
 
   UNIT_TEST_CHECK_EQUAL(B[0][0], 1);
   UNIT_TEST_CHECK_EQUAL(B[1][0], 2);
@@ -70,53 +63,15 @@ UNIT_TEST( symbolic_array_static_access ) {
   UNIT_TEST_CHECK_EQUAL(B[1][2], 6);
 }
 
-UNIT_TEST(symbolic_array_dynamic_access) {
-  sym::Array<double, -1u> A;
+UNIT_TEST(symbolic_array_staticD_staticStore) {
+  typedef sym::Array<double, sym::RowMajorIndexing<double, 2, 9>> Array;
+  Array A;
   
   UNIT_TEST_CHECK_EQUAL(A.size(), 0);
   UNIT_TEST_CHECK_EQUAL(A.empty(), true);
 
   A.resize({2,3});
-  UNIT_TEST_CHECK_EQUAL(A.getAddressing()._dimensions, (std::vector<size_t>{2,3}));
-  UNIT_TEST_CHECK_EQUAL(A.size(), 6);
-  UNIT_TEST_CHECK_EQUAL(A.getStore().size(), 6);
-  UNIT_TEST_CHECK_EQUAL(A.empty(), false);
-  UNIT_TEST_CHECK_EQUAL(A[0][2]._coords, (std::vector<size_t>{0,2}));
-  
-  //Check array operators
-  A[0][0] = 1;
-  A[1][0] = 2;
-  A[0][1] = 3;
-  A[1][1] = 4;
-  A[0][2] = 5;
-  A[1][2] = 6;
-    
-  UNIT_TEST_CHECK_EQUAL(A[0][0], 1);
-  UNIT_TEST_CHECK_EQUAL(A[1][0], 2);
-  UNIT_TEST_CHECK_EQUAL(A[0][1], 3);
-  UNIT_TEST_CHECK_EQUAL(A[1][1], 4);
-  UNIT_TEST_CHECK_EQUAL(A[0][2], 5);
-  UNIT_TEST_CHECK_EQUAL(A[1][2], 6);
-
-  //Check read-only array access
-  const sym::Array<double, -1u>& B = A;
-  
-  UNIT_TEST_CHECK_EQUAL(B[0][0], 1);
-  UNIT_TEST_CHECK_EQUAL(B[1][0], 2);
-  UNIT_TEST_CHECK_EQUAL(B[0][1], 3);
-  UNIT_TEST_CHECK_EQUAL(B[1][1], 4);
-  UNIT_TEST_CHECK_EQUAL(B[0][2], 5);
-  UNIT_TEST_CHECK_EQUAL(B[1][2], 6);
-}
-
-UNIT_TEST(symbolic_array_stack_access) {
-  sym::Array<double, 2, 9> A;
-  
-  UNIT_TEST_CHECK_EQUAL(A.size(), 0);
-  UNIT_TEST_CHECK_EQUAL(A.empty(), true);
-
-  A.resize({2,3});
-  UNIT_TEST_CHECK_EQUAL(A.getAddressing()._dimensions, (std::array<size_t, 2>{2,3}));
+  UNIT_TEST_CHECK_EQUAL(A._dimensions, (std::array<size_t, 2>{2,3}));
   UNIT_TEST_CHECK_EQUAL(A.size(), 6);
   UNIT_TEST_CHECK_EQUAL(A.getStore().size(), 9);
   UNIT_TEST_CHECK_EQUAL(A.empty(), false);
@@ -137,7 +92,7 @@ UNIT_TEST(symbolic_array_stack_access) {
   UNIT_TEST_CHECK_EQUAL(A[1][2], 6);
 
   //Check read-only array access
-  const auto& B = A;
+  const Array& B = A;
   
   UNIT_TEST_CHECK_EQUAL(B[0][0], 1);
   UNIT_TEST_CHECK_EQUAL(B[1][0], 2);
@@ -146,3 +101,7 @@ UNIT_TEST(symbolic_array_stack_access) {
   UNIT_TEST_CHECK_EQUAL(B[0][2], 5);
   UNIT_TEST_CHECK_EQUAL(B[1][2], 6);
 }
+
+#include <stator/symbolic/runtime.hpp>
+#include <stator/symbolic/array_rt.hpp>
+

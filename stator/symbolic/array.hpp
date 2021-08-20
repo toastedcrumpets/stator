@@ -20,6 +20,8 @@
 #pragma once
 
 #include <stator/symbolic/symbolic.hpp>
+#include <iterator> // For std::forward_iterator_tag
+#include <cstddef>  // For std::ptrdiff_t
 
 namespace sym {
   namespace detail {
@@ -33,44 +35,118 @@ namespace sym {
       typedef std::vector<T> type;
     };
   }
-  
-  template<size_t D>
-  class RowMajor {
+
+  template<class T, size_t StoreSize>
+  class IndexingBase {
   public:
+    typedef typename detail::LinearStore<T, StoreSize>::type Store;
+    typedef typename Store::value_type value_type;
+    typedef typename Store::reference reference;
+    typedef typename Store::const_reference const_reference;
+
+    Store& getStore() { return _store; }
+    const Store& getStore() const { return _store; }
+
+    size_t store_size() const {
+      return _store.size();
+    }
+    
+  protected:
+    Store _store;
+  };
+  
+  template<class T, size_t StoreSize = -1u>
+  class LinearIndexing : public IndexingBase<T, StoreSize> {
+  public:
+    typedef IndexingBase<T, StoreSize> Base;
+    typedef size_t Coords;
+    size_t _dimension;
+    
+    LinearIndexing(): _dimension(0) {}
+
+    LinearIndexing(const size_t d) { resize(d); }
+
+    const auto& operator[](const Coords& d) const {
+      return Base::_store[d];
+    }
+
+    auto& operator[](const Coords& d) {
+      return Base::_store[d];
+    }
+
+    auto begin() const { return Base::_store.begin(); }
+    auto begin(){ return Base::_store.begin(); }
+    auto end() const { return Base::_store.end(); }
+    auto end() { return Base::_store.end(); }
+    
+    void resize(const Coords& d) {
+      if constexpr (StoreSize == -1u) {
+	  _dimension = d;
+	  Base::_store.resize(d);
+      } else {
+	if (d > Base::_store.size())
+	  stator_throw() << "Cannot resize fixed-length array!";
+	_dimension = d;
+      }
+    }
+    
+    size_t size() const { return _dimension; }
+    bool empty() const { return _dimension == 0; }
+  };
+  
+  template<class T, size_t D, size_t StoreSize>
+  class RowMajorIndexing : public IndexingBase<T, StoreSize> {
+  public:
+    typedef IndexingBase<T, StoreSize> Base;
     typedef typename detail::LinearStore<size_t, D>::type Coords;
     Coords _dimensions;
     
-    RowMajor(): _dimensions() {} //This zero initialises the dimensions
-    RowMajor(const Coords& d): _dimensions(d) {} //This zero initialises the dimensions
+    RowMajorIndexing(): _dimensions() {} //This zero initialises the dimensions
+    RowMajorIndexing(const Coords& d) { resize(d); }
     
-    size_t operator[](const Coords& d) const {
-      size_t address = 0;
+    auto begin() const { return Base::_store.begin(); }
+    auto begin(){ return Base::_store.begin(); }
+    auto end() const { return Base::_store.end(); }
+    auto end() { return Base::_store.end(); }
 
+    size_t coords_to_index(const Coords& d) const {
+      size_t address = 0;
       for (size_t i(0); i < _dimensions.size(); ++i) {
 	address *= _dimensions[i];
 	address += d[i];
       }
-      
       return address;
+    }
+    
+    const auto& operator[](const Coords& d) const {
+      return Base::_store[coords_to_index(d)];
+    }
+    auto&       operator[](const Coords& d) {
+      return Base::_store[coords_to_index(d)];
     }
     
     void resize(const Coords& d) {
       _dimensions = d;
+      if constexpr (StoreSize == -1u) {
+	  Base::_store.resize(store_size());
+	} else
+	if (store_size() > StoreSize)
+	  stator_throw() << "StoreSize is too small for this dimensionality";
+    }
+
+    size_t size() const {
+      return store_size();
     }
     
-    size_t size() const {
+    bool empty() const { return store_size() == 0; }
+    
+    size_t store_size() const {
       size_t s = _dimensions.size() > 0;
       for (size_t i(0); i < _dimensions.size(); ++i)
 	s *= _dimensions[i];
       return s;
     }
 
-    size_t store_size() const {
-      return size();
-    }
-  };
-
-  namespace detail {
     template<size_t Dim, class Array>
     struct ArrayAccessor {
       Array& _array;
@@ -108,20 +184,20 @@ namespace sym {
       
       ArrayAccessor(Array& a):
 	_array(a),
-	_coords(a.getAddressing()._dimensions.size()),
+	_coords(a._dimensions.size()),
 	_idx(0)
       {}
 
-      template<class T>
-      auto& operator=(const T& rhs) {
+      template<class RHS>
+      auto& operator=(const RHS& rhs) {
 	if (_idx != _coords.size())
 	  stator_throw() << "Address was not fully specified, dimensionality is " << _coords.size();
 	
 	return _array[_coords] = rhs;
       }
 
-      template<class T>
-      bool operator==(const T& rhs) const {
+      template<class RHS>
+      bool operator==(const RHS& rhs) const {
 	if (_idx != _coords.size())
 	  stator_throw() << "Address was not fully specified, dimensionality is " << _coords.size();
 	
@@ -145,65 +221,22 @@ namespace sym {
 	return *this;
       }
     };
-  }
-  
-  template<class T, size_t D = -1u, size_t StoreSize = -1u, class Addressing = RowMajor<D>>
-  class Array {
-    Addressing _addressing;
-    
-    typedef typename detail::LinearStore<T, StoreSize>::type Store;
-    Store _store;
-    
-  public:
-    typedef typename Addressing::Coords Coords;
-    typedef typename Store::value_type value_type;
-    typedef typename Store::reference reference;
-    typedef typename Store::const_reference const_reference;
-    
-    Store& getStore() { return _store; }
-    const Store& getStore() const { return _store; }
-    Addressing& getAddressing() { return _addressing; }
-    const Addressing& getAddressing() const { return _addressing; }
-
-    
-    Array(const Addressing& a = Addressing()): _addressing(a) {
-      if constexpr (StoreSize == -1u) {
-	_store.resize(_addressing.store_size());
-      } else {
-	if (_addressing.store_size() > StoreSize)
-	  stator_throw() << "StoreSize is too small for this dimensionality";
-      }
-    }
-
-    T& operator[](const Coords& c) {
-      return _store[_addressing[c]];
-    }
-
-    const T& operator[](const Coords& c) const {
-      return _store[_addressing[c]];
-    }
 
     //These accessors need to use the -> decltype form, as they return
     //ArrayAccessors by value, unless D=1, then we return array
     //elements by (possibly const) reference. 
-    auto operator[](const size_t& c) -> decltype(detail::ArrayAccessor<D, Array>(*this)[c]) {
-      return detail::ArrayAccessor<D, Array>(*this)[c];
+    auto operator[](const size_t& c) -> decltype(ArrayAccessor<D, RowMajorIndexing>(*this)[c]) {
+      return ArrayAccessor<D, RowMajorIndexing>(*this)[c];
     }
 
-    auto operator[](const size_t& c) const -> decltype(detail::ArrayAccessor<D, const Array>(*this)[c]) {
-      return detail::ArrayAccessor<D, const Array>(*this)[c];
+    auto operator[](const size_t& c) const -> decltype(ArrayAccessor<D, const RowMajorIndexing>(*this)[c]) {
+      return ArrayAccessor<D, const RowMajorIndexing>(*this)[c];
     }
-    
-    size_t size() const { return _addressing.size(); }
-    
-    bool empty() const { return _addressing.size() == 0; }
-    
-    void resize(const Coords& d) {
-      _addressing.resize(d);
-      
-      if constexpr (StoreSize == -1u) {
-	_store.resize(_addressing.store_size());
-      }
-    }
+  };
+
+  template<class T, class Addressing = RowMajorIndexing<T, -1u, -1u> >
+  class Array : public Addressing {
+  public:
+    using Addressing::Addressing;
   };
 }

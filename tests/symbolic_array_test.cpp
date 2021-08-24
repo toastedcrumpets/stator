@@ -27,7 +27,7 @@
 //static constexpr char y_str[] = "y";
 
 UNIT_TEST( symbolic_array_staticD_dynamicStore ) {
-  typedef sym::Array<double, sym::RowMajorIndexing<double, 2, -1u> > Array;
+  typedef sym::Array<double, sym::RowMajorAddressing<-1u, 2> > Array;
   Array A;
   UNIT_TEST_CHECK_EQUAL(A.size(), 0);
   UNIT_TEST_CHECK_EQUAL(A.empty(), true);
@@ -64,7 +64,7 @@ UNIT_TEST( symbolic_array_staticD_dynamicStore ) {
 }
 
 UNIT_TEST(symbolic_array_staticD_staticStore) {
-  typedef sym::Array<double, sym::RowMajorIndexing<double, 2, 9>> Array;
+  typedef sym::Array<double, sym::RowMajorAddressing<9, 2>> Array;
   Array A;
   
   UNIT_TEST_CHECK_EQUAL(A.size(), 0);

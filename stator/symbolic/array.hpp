@@ -37,13 +37,13 @@ namespace sym {
   }
 
   template<class T, size_t StoreSize>
-  class IndexingBase {
+  class AddressingBase {
   public:
     typedef typename detail::LinearStore<T, StoreSize>::type Store;
     typedef typename Store::value_type value_type;
     typedef typename Store::reference reference;
     typedef typename Store::const_reference const_reference;
-
+    
     Store& getStore() { return _store; }
     const Store& getStore() const { return _store; }
 
@@ -54,17 +54,23 @@ namespace sym {
   protected:
     Store _store;
   };
-  
-  template<class T, size_t StoreSize = -1u>
-  class LinearIndexing : public IndexingBase<T, StoreSize> {
+
+  template<class T, class AddressingType>
+  class Addressing;
+
+  template<size_t StoreSize>
+  struct LinearAddressing {};
+    
+  template<class T, size_t StoreSize>
+  class Addressing<T, LinearAddressing<StoreSize>> : public AddressingBase<T, StoreSize> {
   public:
-    typedef IndexingBase<T, StoreSize> Base;
+    typedef AddressingBase<T, StoreSize> Base;
     typedef size_t Coords;
     size_t _dimension;
     
-    LinearIndexing(): _dimension(0) {}
+    Addressing(): _dimension(0) {}
 
-    LinearIndexing(const size_t d) { resize(d); }
+    Addressing(const size_t d) { resize(d); }
 
     const auto& operator[](const Coords& d) const {
       return Base::_store[d];
@@ -93,16 +99,20 @@ namespace sym {
     size_t size() const { return _dimension; }
     bool empty() const { return _dimension == 0; }
   };
+
+  template<size_t StoreSize, size_t D>
+  struct RowMajorAddressing {};
   
-  template<class T, size_t D, size_t StoreSize>
-  class RowMajorIndexing : public IndexingBase<T, StoreSize> {
+  
+  template<class T, size_t StoreSize, size_t D>
+  class Addressing<T, RowMajorAddressing<StoreSize, D> > : public AddressingBase<T, StoreSize> {
   public:
-    typedef IndexingBase<T, StoreSize> Base;
+    typedef AddressingBase<T, StoreSize> Base;
     typedef typename detail::LinearStore<size_t, D>::type Coords;
     Coords _dimensions;
-    
-    RowMajorIndexing(): _dimensions() {} //This zero initialises the dimensions
-    RowMajorIndexing(const Coords& d) { resize(d); }
+
+    Addressing(): _dimensions() {} //This zero initialises the dimensions
+    Addressing(const Coords& d) { resize(d); }
     
     auto begin() const { return Base::_store.begin(); }
     auto begin(){ return Base::_store.begin(); }
@@ -225,18 +235,24 @@ namespace sym {
     //These accessors need to use the -> decltype form, as they return
     //ArrayAccessors by value, unless D=1, then we return array
     //elements by (possibly const) reference. 
-    auto operator[](const size_t& c) -> decltype(ArrayAccessor<D, RowMajorIndexing>(*this)[c]) {
-      return ArrayAccessor<D, RowMajorIndexing>(*this)[c];
+    auto operator[](const size_t& c) -> decltype(ArrayAccessor<D, Addressing>(*this)[c]) {
+      return ArrayAccessor<D, Addressing>(*this)[c];
     }
 
-    auto operator[](const size_t& c) const -> decltype(ArrayAccessor<D, const RowMajorIndexing>(*this)[c]) {
-      return ArrayAccessor<D, const RowMajorIndexing>(*this)[c];
+    auto operator[](const size_t& c) const -> decltype(ArrayAccessor<D, const Addressing>(*this)[c]) {
+      return ArrayAccessor<D, const Addressing>(*this)[c];
     }
   };
 
-  template<class T, class Addressing = RowMajorIndexing<T, -1u, -1u> >
-  class Array : public Addressing {
+  template<class T, class Addressing_t = RowMajorAddressing<-1u, -1u> >
+  class Array : public Addressing<T, Addressing_t> {
   public:
-    using Addressing::Addressing;
+    typedef Addressing<T, Addressing_t> Base;
+    using Base::Base;
+
+    template<class ...Ts>
+    auto Create(Ts&&...args) {
+      return Array(args...);
+    }
   };
 }

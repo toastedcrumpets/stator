@@ -23,11 +23,11 @@
 #include <stator/symbolic/runtime.hpp>
 
 namespace sym {
-  typedef Array<Expr, RowMajorIndexing<Expr, -1u, -1u>> ArrayRT;
+  typedef Array<Expr, RowMajorAddressing<-1u, -1u>> ArrayRT;
 
   template<>
-  class Array<Expr, RowMajorIndexing<Expr, -1u, -1u>> : public RowMajorIndexing<Expr, -1u, -1u>, public RTBaseHelper<ArrayRT> {
-    typedef RowMajorIndexing<Expr, -1u, -1u> Base;
+  class Array<Expr, RowMajorAddressing<-1u, -1u>> : public Addressing<Expr, RowMajorAddressing<-1u, -1u>>, public RTBaseHelper<ArrayRT> {
+    typedef Addressing<Expr, RowMajorAddressing<-1u, -1u>> Base;
     
     using Base::Base;
 

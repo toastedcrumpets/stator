@@ -33,25 +33,26 @@ namespace sym {
 
     typedef std::shared_ptr<Array> ArrayPtr;
   public:
-    static auto create() {
-      return ArrayPtr(new Array());
+    template<typename ...Args>
+    static auto create(Args&&... args) {
+      return ArrayPtr(new Array(args...));
     }
   };
-
+  
   namespace detail {
     template<> struct Type_index<ArrayRT> { static const int value = 15; };
   }
   
-  template<typename Var, typename ...Args>
-  auto derivative(const Array<Args...>& in, const Var& x) {
-    auto out_ptr = ArrayRT::create();
-    auto& out = *out_ptr;
-    out.resize(in.size());
-    for (size_t idx(0); idx < in.size(); ++idx)
-      out[idx] = derivative(in[idx], x);
-    return out;
-  }
-  
+//  template<typename Var, typename ...Args>
+//  auto derivative(const Array<Args...>& in, const Var& x) {
+//    auto out_ptr = ArrayRT::create();
+//    auto& out = *out_ptr;
+//    out.resize(in.size());
+//    for (size_t idx(0); idx < in.size(); ++idx)
+//      out[idx] = derivative(in[idx], x);
+//    return out;
+//  }
+//  
 //  auto operator+(const List& l, const List& r) {
 //    if (l.size() != r.size())
 //      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;

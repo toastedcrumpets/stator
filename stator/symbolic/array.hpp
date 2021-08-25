@@ -70,8 +70,16 @@ namespace sym {
     
     Addressing(): _dimension(0) {}
 
-    Addressing(const size_t d) { resize(d); }
+    Addressing(const Coords d) { resize(d); }
 
+    Addressing(std::initializer_list<T> vals)
+    {
+      Base::_store = Base::Store(vals);
+      _dimension = Base::_store.size();
+    }
+
+    Coords getDimensions() const { return _dimension; }
+    
     const auto& operator[](const Coords& d) const {
       return Base::_store[d];
     }
@@ -113,11 +121,19 @@ namespace sym {
 
     Addressing(): _dimensions() {} //This zero initialises the dimensions
     Addressing(const Coords& d) { resize(d); }
+
+    Addressing(const Coords& d, std::initializer_list<T> vals)
+    {
+      resize(d);
+      Base::_store = typename Base::Store(vals);
+    }
     
     auto begin() const { return Base::_store.begin(); }
     auto begin(){ return Base::_store.begin(); }
     auto end() const { return Base::_store.end(); }
     auto end() { return Base::_store.end(); }
+
+    Coords getDimensions() const { return _dimensions; }
 
     size_t coords_to_index(const Coords& d) const {
       size_t address = 0;
@@ -250,9 +266,46 @@ namespace sym {
     typedef Addressing<T, Addressing_t> Base;
     using Base::Base;
 
-    template<class ...Ts>
-    auto Create(Ts&&...args) {
+    template<class ...Args>
+    auto Create(Args&&...args) {
       return Array(args...);
     }
   };
+
+  template<class Config = DefaultReprConfig, typename ...Args>
+  inline std::string repr(const Array<Args...>& f)
+  {
+    std::string out = std::string((Config::Latex_output) ? "\\left[" : "[");
+    const std::string end = std::string((Config::Latex_output) ? "\\right]" : "]");
+    if (f.empty())
+      return out+end;
+    
+    for (const auto& term : f)
+      out += repr<Config>(term) + ", ";
+    
+    return out.substr(0, out.size() - 2) + end;
+  }
+
+  namespace detail {
+    template<class T>
+    auto& unwrap(std::shared_ptr<T> ptr) {
+      return *ptr;
+    }
+
+    template<class T>
+    auto& unwrap(T& ptr) {
+      return ptr;
+    }
+  }
+    
+  template<typename Var, typename T, typename ...Args>
+  auto derivative(const Array<T, Args...>& in, const Var& x) {
+    auto out_ptr = Array<decltype(store(derivative(in[0], x))), Args...>::create();
+    auto& out = detail::unwrap(out_ptr);
+    out.resize(in.getDimensions());
+    for (size_t idx(0); idx < in.size(); ++idx)
+      out[idx] = derivative(in[idx], x);
+    return out;
+  }
+
 }

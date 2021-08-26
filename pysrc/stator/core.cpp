@@ -15,18 +15,18 @@ struct ToPythonVisitor : public sym::detail::VisitorHelper<ToPythonVisitor, py::
     return py::cast(sym::Expr(v));
   }
 
-  py::object apply(const sym::List& v) {
+  py::object apply(const sym::ArrayRT& v) {
     py::list out;
     for (const auto& itm : v)
       out.append(to_python(itm));
-    return out;
+    return std::move(out);
   }
 
   py::object apply(const sym::Dict& v) {
     py::dict out;
     for (const auto& itm : v)
       out[to_python(itm.first)] = to_python(itm.second);
-    return out;
+    return std::move(out);
   }
   
   py::object apply(const double& v) {
@@ -54,7 +54,7 @@ sym::Expr make_Expr(const py::dict& d) {
 }
 
 sym::Expr make_Expr(const py::list& l) {
-  auto out_ptr = sym::List::create();
+  auto out_ptr = sym::ArrayRT::create();
   auto& out = *out_ptr;
   for (const auto& item : l)
     out.push_back(py::cast<sym::Expr>(item));

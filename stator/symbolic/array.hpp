@@ -103,6 +103,18 @@ namespace sym {
 	_dimension = d;
       }
     }
+
+    void push_back(const T& val) {
+      if constexpr (StoreSize == -1u) {
+	  ++_dimension;
+	  Base::_store.push_back(val);
+      } else {
+	if ((_dimension+1) > Base::_store.size())
+	  stator_throw() << "Fixed storage is too small!";
+	Base::_store[_dimension] = val;
+	++_dimension;
+      }
+    }
     
     size_t size() const { return _dimension; }
     bool empty() const { return _dimension == 0; }
@@ -173,6 +185,24 @@ namespace sym {
       return s;
     }
 
+    void push_back(const T& val) {
+      if (_dimensions.size() == 0)
+	_dimensions.resize(1);
+      
+      if (_dimensions.size() != 1)
+	stator_throw() << "Cannot push_back to non-linear arrays yet";
+      
+      if constexpr (StoreSize == -1u) {
+	  ++_dimensions[0];
+	  Base::_store.push_back(val);
+      } else {
+	if ((_dimensions[0]+1) > Base::_store.size())
+	  stator_throw() << "Fixed storage is too small!";
+	Base::_store[_dimensions[0]] = val;
+	++(_dimensions[0]);
+      }
+    }
+    
     template<size_t Dim, class Array>
     struct ArrayAccessor {
       Array& _array;
@@ -300,12 +330,125 @@ namespace sym {
     
   template<typename Var, typename T, typename ...Args>
   auto derivative(const Array<T, Args...>& in, const Var& x) {
-    auto out_ptr = Array<decltype(store(derivative(in[0], x))), Args...>::create();
+    auto out_ptr = Array<decltype(store(derivative(*(in.begin()), x))), Args...>::create();
     auto& out = detail::unwrap(out_ptr);
     out.resize(in.getDimensions());
-    for (size_t idx(0); idx < in.size(); ++idx)
-      out[idx] = derivative(in[idx], x);
-    return out;
+
+    auto outp = out.begin();
+    auto inp = in.begin();
+    while (outp != out.end()) {
+      *outp = derivative(*inp, x);
+      ++outp; ++inp;
+    }
+    return out_ptr;
   }
 
+  template<typename T1, typename ...Args1, typename ...Args2>
+  auto operator+(const Array<T1, Args1...>& l, const Array<Args2...>& r) {
+    if (l.getDimensions() != r.getDimensions())
+      stator_throw() << "Mismatched Array dimensions for: \n" << l << "\n and\n" << r;
+    
+    auto out_ptr = Array<decltype(store((*(l.begin()))+(*(r.begin())))), Args1...>::create();
+    auto& out = detail::unwrap(out_ptr);
+    
+    out.resize(l.getDimensions());
+    
+    auto outp = out.begin();
+    auto lp = l.begin();
+    auto rp = r.begin();
+    while (outp != out.end()) {
+      *outp = *lp + *rp;
+      ++outp; ++lp; ++rp;
+    }
+    return out_ptr;
+  }
+
+//  auto operator-(const List& l, const List& r) {
+//    if (l.size() != r.size())
+//      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
+//    
+//    auto out = List::create();
+//    out->resize(l.size());
+//    
+//    for (size_t idx(0); idx < l.size(); ++idx)
+//      (*out)[idx] = l[idx] - r[idx];
+//    
+//    return out;
+//  }
+//
+//  auto operator*(const List& l, const List& r) {
+//    if (l.size() != r.size())
+//      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
+//    
+//    auto out = List::create();
+//    out->resize(l.size());
+//    
+//    for (size_t idx(0); idx < l.size(); ++idx)
+//      (*out)[idx] = l[idx] * r[idx];
+//    
+//    return out;
+//  }
+//
+//  auto operator/(const List& l, const List& r) {
+//    if (l.size() != r.size())
+//      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
+//    
+//    auto out = List::create();
+//    out->resize(l.size());
+//    
+//    for (size_t idx(0); idx < l.size(); ++idx)
+//      (*out)[idx] = l[idx] / r[idx];
+//    
+//    return out;
+//  }
+//  
+  template<typename T, typename ...Args>
+  auto simplify(const Array<T, Args...>& in) {
+    auto out_ptr = Array<decltype(store(simplify(*(in.begin())))), Args...>::create();
+    auto& out = detail::unwrap(out_ptr);
+    out.resize(in.getDimensions());
+    
+    auto outp = out.begin();
+    auto inp = in.begin();
+    while (outp != out.end()) {
+      *outp = simplify(*inp);
+      ++outp; ++inp;
+    }
+    return out_ptr;
+  }
+//
+//  std::pair<int, int> BP(const List& v)
+//  { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
+//
+//  
+//  template<class Config = DefaultReprConfig>
+//  inline std::string repr(const List& f)
+//  {
+//    std::string out = std::string((Config::Latex_output) ? "\\left[" : "[");
+//    const std::string end = std::string((Config::Latex_output) ? "\\right]" : "]");
+//    if (f.empty())
+//      return out+end;
+//    
+//    for (const auto& term : f)
+//      out += repr<Config>(term) + ", ";
+//    
+//    return out.substr(0, out.size() - 2) + end;
+//  }
+}
+
+namespace std
+{
+  
+  template<class ...Args> struct hash<sym::Array<Args...>>
+  {
+    std::size_t operator()(sym::Array<Args...> const& v) const noexcept
+    {
+      std::size_t seed = 15;
+      for (const auto& item : v) {
+	std::hash<typename std::decay<decltype(item)>::type> h;
+	stator::hash_combine(seed, h(item));
+      }
+      return seed;
+    }
+  };
 }

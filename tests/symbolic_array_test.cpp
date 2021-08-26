@@ -102,8 +102,8 @@ UNIT_TEST(symbolic_array_staticD_staticStore) {
   UNIT_TEST_CHECK_EQUAL(B[1][2], 6);
 }
 
+
 #include <stator/symbolic/runtime.hpp>
-#include <stator/symbolic/array_rt.hpp>
 
 UNIT_TEST( symbolic_array_RTbasic )
 {
@@ -120,3 +120,13 @@ UNIT_TEST( symbolic_array_RTbasic )
 }
 
 
+//UNIT_TEST( symbolic_list_basic )
+//{
+//  auto x_ptr = VarRT::create("x");
+//  auto& x = *x_ptr;
+//  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), Expr(x=2)), Expr("[1,2,y]"));
+//  UNIT_TEST_CHECK_EQUAL(derivative(Expr("[1, x, y]"), x), Expr("[0,1,0]"));
+//  UNIT_TEST_CHECK_EQUAL(simplify(Expr("[1, 1, 1]")+Expr("[0, 1, 2]")), Expr("[1,2,3]"));
+//  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), Expr("{x:2, y:3}")), Expr("[1,2,3]"));
+//  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), v), Expr("[1,2,3]"));
+//}

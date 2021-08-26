@@ -24,7 +24,7 @@
 #include <stator/unit_test.hpp>
 
 static constexpr char x_str[] = "x";
-static constexpr char y_str[] = "y";
+//static constexpr char y_str[] = "y";
 
 
 UNIT_TEST( symbolic_interval_basic ) {
@@ -51,10 +51,10 @@ auto root_find(const F& f, const X& x, const sym::interval<double>& range) {
   return sym::interval<double>(0.0, 0.0);
 }
 
-UNIT_TEST( symbolic_interval_root ) {
-  sym::Var<x_str> x;
-
-  auto f = x * x - 2.0 * x + 1.0;
-
-  auto res = root_find(f, x, sym::interval<double>(0.0, 0.0));
-}
+//UNIT_TEST( symbolic_interval_root ) {
+//  sym::Var<x_str> x;
+//
+//  auto f = x * x - 2.0 * x + 1.0;
+//
+//  auto res = root_find(f, x, sym::interval<double>(0.0, 0.0));
+//}

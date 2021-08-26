@@ -235,9 +235,6 @@ UNIT_TEST( symbolic_parser_parsing_errors )
 UNIT_TEST( symbolic_parser_lists )
 {
   //Dogfood a expression back into itself
-  auto a = Expr("[1, 2, 3]");
-  std::cerr << "list is " << repr<stator::ReprConfig<stator::Force_parenthesis> >(a) << std::endl;
-
   expr_string_expr_conversion_check("[1, 2, 3]");
 }
 

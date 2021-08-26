@@ -79,9 +79,10 @@ namespace sym {
   template<class T>  class ConstantRT;
   template<> struct Var<nullptr>;
   typedef Var<nullptr> VarRT;
-  class List;
+  template<> class Array<Expr, RowMajorAddressing<-1u, -1u>>;
+  typedef Array<Expr, RowMajorAddressing<-1u, -1u>> ArrayRT;
   class Dict;
-
+  
   namespace detail {
     template<class RetType> struct VisitorInterface;
   }
@@ -159,7 +160,7 @@ namespace sym {
     inline
     Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
 
-    explicit Expr(const List&);
+    explicit Expr(const ArrayRT&);
     explicit Expr(const Dict&);
 
     /*! \brief Expression comparison operator.
@@ -222,7 +223,7 @@ namespace sym {
       virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Array, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& ) = 0;
-      virtual RetType visit(const List& ) = 0;
+      virtual RetType visit(const ArrayRT& ) = 0;
       virtual RetType visit(const Dict& ) = 0;
       virtual RetType visit(const UnaryOp<Expr, detail::Negate>& ) = 0;
     };
@@ -266,7 +267,7 @@ namespace sym {
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual RetType visit(const List& x)
+      inline virtual RetType visit(const ArrayRT& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const Dict& x)
       { return static_cast<Derived*>(this)->apply(x); }
@@ -357,7 +358,7 @@ namespace std
 
 #include <stator/symbolic/constants_rt.hpp>
 #include <stator/symbolic/unary_ops_rt.hpp>
-#include <stator/symbolic/list_rt.hpp>
+#include <stator/symbolic/array_rt.hpp>
 #include <stator/symbolic/dict_rt.hpp>
 
 namespace sym {
@@ -380,7 +381,7 @@ namespace sym {
   
   inline Expr::Expr(const VarRT& v) : Base(v.shared_from_this()) {}
 
-  Expr::Expr(const List& v) : Base(v.shared_from_this()) {}
+  Expr::Expr(const ArrayRT& v) : Base(v.shared_from_this()) {}
   Expr::Expr(const Dict& v) : Base(v.shared_from_this()) {}
   
   template<class T>
@@ -440,7 +441,7 @@ namespace sym {
 	return Expr();
       }
 
-      Expr apply(const List& v) {
+      Expr apply(const ArrayRT& v) {
 	return simplify(v);
       }
 
@@ -499,7 +500,7 @@ namespace sym {
       }
 
       template<class Op>
-      Expr dd_visit(const List& l, const List& r, Op) {
+      Expr dd_visit(const ArrayRT& l, const ArrayRT& r, Op) {
 	return Expr(simplify(Op::apply(l, r)));
       }
       
@@ -581,24 +582,36 @@ namespace sym {
       }
 
       //Variable matching
-      Expr apply(const List& v) {
-	auto ret_ptr = List::create();
+      Expr apply(const ArrayRT& v) {
+	auto ret_ptr = ArrayRT::create();
 	auto& ret = *ret_ptr;
-	
 	bool _replaced = false; //We only start regenerating the list when needed
-	for (size_t i(0); i < v.size(); ++i) {
-	  Expr t = v[i]->visit(*this);
+
+	auto iptr = v.begin();
+	auto jptr = ret.begin();
+	
+	while (iptr != v.end()) {
+	  Expr t = (*iptr)->visit(*this);
 	  
 	  if (bool(t) && (!_replaced)) {
 	    //We're starting replacements, so copy everything skipped over so far
-	    ret.resize(v.size());
-	    for (size_t j(0); j < i; ++j)
-	      ret[j] = v[j];
+	    ret.resize(v.getDimensions());
+	    jptr = ret.begin();
+	    auto iiptr = v.begin();
+	    while (iiptr != iptr) {
+	      *jptr = *iiptr;
+	      ++iiptr; ++jptr;
+	    }
 	    _replaced = true;
 	  }
 
-	  if (_replaced) //continue the copy where required
-	    ret[i] = (t) ? t : v[i];
+	  if (_replaced) {
+	    //continue the copy where required
+	    *jptr = (t) ? t : *iptr;
+	    ++jptr;
+	  }
+
+	  ++iptr;
 	}
 	
 	return (_replaced) ? ret_ptr : Expr();
@@ -649,25 +662,36 @@ namespace sym {
       }
 
       //Variable matching
-      Expr apply(const List& v) {
-	auto ret_ptr = List::create();
+      Expr apply(const ArrayRT& v) {
+	auto ret_ptr = ArrayRT::create();
 	auto& ret = *ret_ptr;
 	
 	bool _replaced = false; //We only start regenerating the list when needed
-	for (size_t i(0); i < v.size(); ++i) {
-	  Expr t = v[i]->visit(*this);
+	auto iptr = v.begin();
+	auto jptr = ret.begin();
+	
+	while (iptr != v.end()) {
+	  Expr t = (*iptr)->visit(*this);
 	  
 	  if (bool(t) && ! _replaced) {
 	    //We're starting replacements, so copy everything skipped over so far
-	    ret.resize(v.size());
-	    for (size_t j(0); j < i; ++j)
-	      ret[j] = v[j];
+	    ret.resize(v.getDimensions());
+	    jptr = ret.begin();
+	    auto iiptr = v.begin();
+	    while (iiptr != iptr) {
+	      *jptr = *iiptr;
+	      ++iiptr; ++jptr;
+	    }
 	    _replaced = true;
 	  }
 
-	  if (_replaced)
+	  if (_replaced) {
 	    //continue the copy where required
-	    ret[i] = (t) ? t : v[i];
+	    *jptr = (t) ? t : *iptr;
+	    ++jptr;
+	  }
+
+	  ++iptr;
 	}
 	
 	return (_replaced) ? ret_ptr : Expr();
@@ -855,7 +879,7 @@ namespace sym {
     case detail::Type_index<BinaryOp<Expr, detail::Equality, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Equality, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Array, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Array, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Units, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Units, Expr>&>(*this));
-    case detail::Type_index<List>::value:                                   return c.visit(static_cast<const List&>(*this));
+    case detail::Type_index<ArrayRT>::value:                                return c.visit(static_cast<const ArrayRT&>(*this));
     case detail::Type_index<Dict>::value:                                   return c.visit(static_cast<const Dict&>(*this));
     case detail::Type_index<UnaryOp<Expr, detail::Negate>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Negate>&>(*this));
     default: stator_throw() << "Unhandled type index (" << _type_idx << ") for the visitor";

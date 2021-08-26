@@ -112,6 +112,7 @@ namespace sym {
 #include <stator/symbolic/polynomial.hpp>
 #include <stator/symbolic/simplify.hpp>
 #include <stator/symbolic/integrate.hpp>
+#include <stator/symbolic/array.hpp>
 #include <stator/symbolic/taylor.hpp>
 #include <stator/symbolic/units.hpp>
 

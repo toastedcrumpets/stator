@@ -62,13 +62,13 @@ bool compare_expression(const T1& f, const T2& g) {
   return f_str == g_str;
 }
 
-static const char y_str[] = "y";
+//static const char y_str[] = "y";
 
 
 UNIT_TEST( poly_taylor )
 { 
   using namespace sym;
-  Var<y_str> y;
+//  Var<y_str> y;
 
 //  UNIT_TEST_CHECK(compare_expression(taylor_series<3>(y*y*y, Null(), Var<>()), simplify(y*y*y)));
 //  

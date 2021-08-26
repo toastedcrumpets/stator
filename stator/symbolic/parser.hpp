@@ -113,13 +113,13 @@ namespace sym {
 	//parenthesis should be handled by the previous entry.
 	_right_operators[")"].reset(new HaltToken);
 
-	//List construction token (i.e. [1,2, x + y])
-	_left_operators["["].reset(new ListToken);
+	//Array construction token (i.e. [1,2, x + y])
+	_left_operators["["].reset(new ArrayToken);
 
 	//To allow commas to delimit statements/expressions i.e. in a list or dictionary.
 	_right_operators[","].reset(new HaltToken); 
 	
-	//List access token (i.e. x[1])
+	//Array access token (i.e. x[1])
 	_right_operators["["].reset(new WrappedBinaryOpToken<detail::Array>("]"));
 
 	//Halt token for list access AND list construction
@@ -301,9 +301,9 @@ namespace sym {
 	}
       };
 
-      struct ListToken : public LeftOperatorBase {
+      struct ArrayToken : public LeftOperatorBase {
 	Expr apply(ExprTokenizer& tk) const {
-	  auto a = List::create();
+	  auto a = ArrayRT::create();
 
 	  if (tk.next() == "]") {
 	    tk.consume();

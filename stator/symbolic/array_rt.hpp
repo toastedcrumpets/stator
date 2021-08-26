@@ -23,8 +23,6 @@
 #include <stator/symbolic/runtime.hpp>
 
 namespace sym {
-  typedef Array<Expr, RowMajorAddressing<-1u, -1u>> ArrayRT;
-
   template<>
   class Array<Expr, RowMajorAddressing<-1u, -1u>> : public Addressing<Expr, RowMajorAddressing<-1u, -1u>>, public RTBaseHelper<ArrayRT> {
     typedef Addressing<Expr, RowMajorAddressing<-1u, -1u>> Base;
@@ -43,28 +41,6 @@ namespace sym {
     template<> struct Type_index<ArrayRT> { static const int value = 15; };
   }
   
-//  template<typename Var, typename ...Args>
-//  auto derivative(const Array<Args...>& in, const Var& x) {
-//    auto out_ptr = ArrayRT::create();
-//    auto& out = *out_ptr;
-//    out.resize(in.size());
-//    for (size_t idx(0); idx < in.size(); ++idx)
-//      out[idx] = derivative(in[idx], x);
-//    return out;
-//  }
-//  
-//  auto operator+(const List& l, const List& r) {
-//    if (l.size() != r.size())
-//      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
-//    
-//    auto out = List::create();
-//    out->resize(l.size());
-//    
-//    for (size_t idx(0); idx < l.size(); ++idx)
-//      (*out)[idx] = l[idx] + r[idx];
-//    
-//    return out;
-//  }
 //
 //  auto operator-(const List& l, const List& r) {
 //    if (l.size() != r.size())

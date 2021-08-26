@@ -128,7 +128,6 @@ void compare_roots(T1 roots, T2 actual_roots, Func f){
   }
 }
 
-static constexpr char x_str[] = "x";
 static constexpr char y_str[] = "y";
 
 UNIT_TEST( poly_variables )

@@ -216,14 +216,6 @@ UNIT_TEST( symbolic_runtime_derivative )
   UNIT_TEST_CHECK_EQUAL(simplify(derivative(Expr("x*exp(x)"), x)), Expr("exp(x)+x*exp(x)"));
 }
 
-UNIT_TEST( symbolic_list_basic )
-{
-  auto x_ptr = VarRT::create("x");
-  auto& x = *x_ptr;
-  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), Expr(x=2)), Expr("[1,2,y]"));
-  UNIT_TEST_CHECK_EQUAL(derivative(Expr("[1, x, y]"), x), Expr("[0,1,0]"));
-  UNIT_TEST_CHECK_EQUAL(simplify(Expr("[1, 1, 1]")+Expr("[0, 1, 2]")), Expr("[1,2,3]"));
-}
 
 UNIT_TEST( symbolic_dict_basic )
 {
@@ -238,8 +230,6 @@ UNIT_TEST( symbolic_dict_basic )
   v[y] = Expr(3);
   UNIT_TEST_CHECK_EQUAL(sub(Expr("x"), v), Expr("2"));
   UNIT_TEST_CHECK_EQUAL(sub(Expr("y"), v), Expr("3"));
-  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), Expr("{x:2, y:3}")), Expr("[1,2,3]"));
-  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), v), Expr("[1,2,3]"));
 }
 
 UNIT_TEST( symbolic_sub_general )

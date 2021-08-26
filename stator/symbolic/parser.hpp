@@ -120,7 +120,7 @@ namespace sym {
 	_right_operators[","].reset(new HaltToken); 
 	
 	//Array access token (i.e. x[1])
-	_right_operators["["].reset(new WrappedBinaryOpToken<detail::Array>("]"));
+	_right_operators["["].reset(new WrappedBinaryOpToken<detail::ArrayAccess>("]"));
 
 	//Halt token for list access AND list construction
 	_right_operators["]"].reset(new HaltToken);

@@ -175,7 +175,7 @@ namespace sym {
       static constexpr int type_index = 13;
     };
 
-    struct Array {
+    struct ArrayAccess {
       static constexpr int leftBindingPower = 50;
       static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = false;
@@ -192,19 +192,19 @@ namespace sym {
       typedef NoIdentity left_zero;
       template<class L, class R>
       static auto apply(const L& l, const R& r) {
-	return BinaryOp<decltype(store(l)), detail::Array, decltype(store(r))>::create(l, r);
+	return BinaryOp<decltype(store(l)), detail::ArrayAccess, decltype(store(r))>::create(l, r);
       }
       static constexpr int type_index = 14;
     };
   }
 
-  template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add,      RHS>;
-  template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, detail::Subtract, RHS>;    
-  template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, detail::Multiply, RHS>;
-  template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, detail::Divide,   RHS>;
-  template<class LHS, class RHS> using PowerOp    = BinaryOp<LHS, detail::Power,    RHS>;
-  template<class LHS, class RHS> using EqualityOp = BinaryOp<LHS, detail::Equality, RHS>;
-  template<class LHS, class RHS> using ArrayOp    = BinaryOp<LHS, detail::Array,    RHS>;
+  template<class LHS, class RHS> using AddOp      = BinaryOp<LHS, detail::Add,         RHS>;
+  template<class LHS, class RHS> using SubtractOp = BinaryOp<LHS, detail::Subtract,    RHS>;    
+  template<class LHS, class RHS> using MultiplyOp = BinaryOp<LHS, detail::Multiply,    RHS>;
+  template<class LHS, class RHS> using DivideOp   = BinaryOp<LHS, detail::Divide,      RHS>;
+  template<class LHS, class RHS> using PowerOp    = BinaryOp<LHS, detail::Power,       RHS>;
+  template<class LHS, class RHS> using EqualityOp = BinaryOp<LHS, detail::Equality,    RHS>;
+  template<class LHS, class RHS> using ArrayOp    = BinaryOp<LHS, detail::ArrayAccess, RHS>;
 
   template <class Op, class OverOp>
   struct left_distributive : std::false_type {};

@@ -297,8 +297,8 @@ namespace sym {
     using Base::Base;
 
     template<class ...Args>
-    auto Create(Args&&...args) {
-      return Array(args...);
+    static auto create(Args&&...args) {
+      return std::move(Array(args...));
     }
   };
 
@@ -343,65 +343,48 @@ namespace sym {
     return out_ptr;
   }
 
-  template<typename T1, typename ...Args1, typename ...Args2>
-  auto operator+(const Array<T1, Args1...>& l, const Array<Args2...>& r) {
-    if (l.getDimensions() != r.getDimensions())
-      stator_throw() << "Mismatched Array dimensions for: \n" << l << "\n and\n" << r;
+  namespace detail {
+    template<typename T1, typename... Args1, typename... Args2, typename F>
+    auto elementwiseop(const Array<T1, Args1...>& l, const Array<Args2...>& r, F operation) {
+      if (l.getDimensions() != r.getDimensions())
+	stator_throw() << "Mismatched Array dimensions for: \n" << l << "\n and\n" << r;
     
-    auto out_ptr = Array<decltype(store((*(l.begin()))+(*(r.begin())))), Args1...>::create();
-    auto& out = detail::unwrap(out_ptr);
+      auto out_ptr = Array<decltype(store(operation(*(l.begin()),*(r.begin())))), Args1...>::create();
+      auto& out = detail::unwrap(out_ptr);
     
-    out.resize(l.getDimensions());
+      out.resize(l.getDimensions());
     
-    auto outp = out.begin();
-    auto lp = l.begin();
-    auto rp = r.begin();
-    while (outp != out.end()) {
-      *outp = *lp + *rp;
-      ++outp; ++lp; ++rp;
+      auto outp = out.begin();
+      auto lp = l.begin();
+      auto rp = r.begin();
+      while (outp != out.end()) {
+	*outp = operation(*lp,*rp);
+	++outp; ++lp; ++rp;
+      }
+      return out_ptr;
     }
-    return out_ptr;
+  }
+  
+  template<typename T1, typename ...Args1, typename T2, typename ...Args2>
+  auto operator+(const Array<Args1...>& l, const Array<Args2...>& r) {
+    return detail::elementwiseop(l, r, [](const T1& l, const T2& r){ return l + r; });
   }
 
-//  auto operator-(const List& l, const List& r) {
-//    if (l.size() != r.size())
-//      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
-//    
-//    auto out = List::create();
-//    out->resize(l.size());
-//    
-//    for (size_t idx(0); idx < l.size(); ++idx)
-//      (*out)[idx] = l[idx] - r[idx];
-//    
-//    return out;
-//  }
-//
-//  auto operator*(const List& l, const List& r) {
-//    if (l.size() != r.size())
-//      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
-//    
-//    auto out = List::create();
-//    out->resize(l.size());
-//    
-//    for (size_t idx(0); idx < l.size(); ++idx)
-//      (*out)[idx] = l[idx] * r[idx];
-//    
-//    return out;
-//  }
-//
-//  auto operator/(const List& l, const List& r) {
-//    if (l.size() != r.size())
-//      stator_throw() << "Mismatched list size for: \n" << l << "\n and\n" << r;
-//    
-//    auto out = List::create();
-//    out->resize(l.size());
-//    
-//    for (size_t idx(0); idx < l.size(); ++idx)
-//      (*out)[idx] = l[idx] / r[idx];
-//    
-//    return out;
-//  }
-//  
+  template<typename T1, typename ...Args1, typename T2, typename ...Args2>
+  auto operator-(const Array<Args1...>& l, const Array<Args2...>& r) {
+    return detail::elementwiseop(l, r, [](const T1& l, const T2& r){ return l - r; });
+  }
+
+  template<typename T1, typename ...Args1, typename T2, typename ...Args2>
+  auto operator*(const Array<Args1...>& l, const Array<Args2...>& r) {
+    return detail::elementwiseop(l, r, [](const T1& l, const T2& r){ return l * r; });
+  }
+
+  template<typename T1, typename ...Args1, typename T2, typename ...Args2>
+  auto operator/(const Array<Args1...>& l, const Array<Args2...>& r) {
+    return detail::elementwiseop(l, r, [](const T1& l, const T2& r){ return l / r; });
+  }
+  
   template<typename T, typename ...Args>
   auto simplify(const Array<T, Args...>& in) {
     auto out_ptr = Array<decltype(store(simplify(*(in.begin())))), Args...>::create();
@@ -416,24 +399,6 @@ namespace sym {
     }
     return out_ptr;
   }
-//
-//  std::pair<int, int> BP(const List& v)
-//  { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
-//
-//  
-//  template<class Config = DefaultReprConfig>
-//  inline std::string repr(const List& f)
-//  {
-//    std::string out = std::string((Config::Latex_output) ? "\\left[" : "[");
-//    const std::string end = std::string((Config::Latex_output) ? "\\right]" : "]");
-//    if (f.empty())
-//      return out+end;
-//    
-//    for (const auto& term : f)
-//      out += repr<Config>(term) + ", ";
-//    
-//    return out.substr(0, out.size() - 2) + end;
-//  }
 }
 
 namespace std

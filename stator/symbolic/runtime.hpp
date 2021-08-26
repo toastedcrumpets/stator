@@ -178,7 +178,13 @@ namespace sym {
     bool operator!=(const Expr& o) const { return !(*this == o); }
     
     explicit operator bool() const { return Base::operator bool(); }
-        
+
+    template<class T>
+    Expr& operator=(const T& v) {
+      Base::operator=(Expr(v));
+      return *this;
+    }
+    
     template<class T> const T& as() const;
   };
 }
@@ -221,7 +227,7 @@ namespace sym {
       virtual RetType visit(const BinaryOp<Expr, detail::Divide, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Power, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& ) = 0;
-      virtual RetType visit(const BinaryOp<Expr, detail::Array, Expr>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::ArrayAccess, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& ) = 0;
       virtual RetType visit(const ArrayRT& ) = 0;
       virtual RetType visit(const Dict& ) = 0;
@@ -263,7 +269,7 @@ namespace sym {
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual RetType visit(const BinaryOp<Expr, detail::Array, Expr>& x)
+      inline virtual RetType visit(const BinaryOp<Expr, detail::ArrayAccess, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
@@ -841,7 +847,7 @@ namespace sym {
       Expr apply(const BinaryOp<Expr, detail::Equality, Expr>& op)
       { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
 
-      Expr apply(const BinaryOp<Expr, detail::Array, Expr>& op)
+      Expr apply(const BinaryOp<Expr, detail::ArrayAccess, Expr>& op)
       { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
 
       Expr apply(const BinaryOp<Expr, detail::Units, Expr>& op)
@@ -877,7 +883,7 @@ namespace sym {
     case detail::Type_index<BinaryOp<Expr, detail::Divide, Expr>>::value:   return c.visit(static_cast<const BinaryOp<Expr, detail::Divide, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Equality, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Equality, Expr>&>(*this));
-    case detail::Type_index<BinaryOp<Expr, detail::Array, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Array, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::ArrayAccess, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::ArrayAccess, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Units, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Units, Expr>&>(*this));
     case detail::Type_index<ArrayRT>::value:                                return c.visit(static_cast<const ArrayRT&>(*this));
     case detail::Type_index<Dict>::value:                                   return c.visit(static_cast<const Dict&>(*this));

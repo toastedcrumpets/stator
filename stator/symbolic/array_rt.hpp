@@ -24,8 +24,8 @@
 
 namespace sym {
   template<>
-  class Array<Expr, RowMajorAddressing<-1u, -1u>> : public Addressing<Expr, RowMajorAddressing<-1u, -1u>>, public RTBaseHelper<ArrayRT> {
-    typedef Addressing<Expr, RowMajorAddressing<-1u, -1u>> Base;
+  class Array<Expr, LinearAddressing<-1u>> : public Addressing<Expr, LinearAddressing<-1u>>, public RTBaseHelper<ArrayRT> {
+    typedef Addressing<Expr, LinearAddressing<-1u>> Base;
     
     using Base::Base;
 

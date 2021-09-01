@@ -80,7 +80,7 @@ namespace sym {
   template<> struct Var<nullptr>;
   typedef Var<nullptr> VarRT;
   template<> class Array<Expr, RowMajorAddressing<-1u, -1u>>;
-  typedef Array<Expr, RowMajorAddressing<-1u, -1u>> ArrayRT;
+
   class Dict;
   
   namespace detail {
@@ -162,6 +162,8 @@ namespace sym {
 
     explicit Expr(const ArrayRT&);
     explicit Expr(const Dict&);
+
+    Expr operator[](const Expr& rhs) const;
 
     /*! \brief Expression comparison operator.
       
@@ -408,7 +410,12 @@ namespace sym {
 
     return ptr->get();
   }
-  
+
+  Expr Expr::operator[](const Expr& rhs) const
+  {
+      return store(ArrayOp<decltype(store(*this)), decltype(store(rhs))>::create(*this, rhs));
+  }
+
   namespace detail {
     template<typename Visitor, typename LHS_t, typename Op>
     struct DoubleDispatch2: public VisitorHelper<DoubleDispatch2<Visitor, LHS_t, Op> > {

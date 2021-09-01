@@ -192,7 +192,7 @@ namespace sym {
       typedef NoIdentity left_zero;
       template<class L, class R>
       static auto apply(const L& l, const R& r) {
-	return BinaryOp<decltype(store(l)), detail::ArrayAccess, decltype(store(r))>::create(l, r);
+        return l[r];
       }
       static constexpr int type_index = 14;
     };

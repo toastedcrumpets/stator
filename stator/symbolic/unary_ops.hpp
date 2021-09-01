@@ -23,7 +23,7 @@ namespace sym {
   /*! \brief Symbolic representation of a unary operator (i.e., sin(x)).
    */
   template<class Arg, typename Op>
-  struct UnaryOp: SymbolicOperator {
+  struct UnaryOp: SymbolicOperator<UnaryOp<Arg, Op>> {
   protected:
      UnaryOp(const Arg& a): _arg(a) {}    
   public:

@@ -308,7 +308,7 @@ namespace sym {
     }
   };
 
-  class Expr;
+  struct Expr;
   template<> class Array<Expr, LinearAddressing<-1u>>;
   typedef Array<Expr, LinearAddressing<-1u>> ArrayRT;
 
@@ -434,7 +434,7 @@ namespace sym {
   }
 
   template<typename T, typename ...Args>
-  auto simplifyX(const Array<T, Args...>& in) {
+  auto simplify(const Array<T, Args...>& in) {
     auto out_ptr = Array<decltype(store(simplify(*(in.begin())))), Args...>::create();
     auto& out = detail::unwrap(out_ptr);
     out.resize(in.getDimensions());

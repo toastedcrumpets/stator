@@ -72,7 +72,7 @@ namespace sym {
     Polynomial.
   */ 
   template<size_t Order, class Coeff_t, class PolyVar>
-  class Polynomial : public std::array<Coeff_t, Order+1>, SymbolicOperator
+  class Polynomial : public std::array<Coeff_t, Order+1>, SymbolicOperator<Polynomial<Order, Coeff_t, PolyVar>>
   {
     typedef std::array<Coeff_t, Order+1> Base;
 

@@ -50,7 +50,11 @@ namespace sym {
       Inheriting from this will enable symbolic operators (and
       construction of expressions) for that class.
   */
-  struct SymbolicOperator {
+  struct SymbolicOperatorBase {};
+
+  template<class Derived>
+  struct SymbolicOperator : public SymbolicOperatorBase {
+    template<class RHS> auto operator[](const RHS & rhs) const;
   };
 
   /*! \brief A test if a class is symbolic. 
@@ -60,11 +64,11 @@ namespace sym {
    */
   template<class T>
   struct IsSymbolic {
-    static constexpr bool value = std::is_base_of<SymbolicOperator, T>::value;
+    static constexpr bool value = std::is_base_of<SymbolicOperatorBase, T>::value;
   };
 
   template<class T>
-  constexpr bool is_symbolic(const T&) { return std::is_base_of<SymbolicOperator, T>::value; }
+  constexpr bool is_symbolic(const T&) { return std::is_base_of<SymbolicOperatorBase, T>::value; }
   
   /*! \brief Template argument for dynamic/run-time types, as well as
       their base class.

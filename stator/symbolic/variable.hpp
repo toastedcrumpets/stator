@@ -15,7 +15,7 @@ namespace sym {
     This class is used to denote a variable.
   */
   template<conststr name = default_var_name, typename ...Args>
-  struct Var : SymbolicOperator, VarBase {
+  struct Var : SymbolicOperator<Var<name, Args...>>, VarBase {
     template<class Arg>
     auto operator=(const Arg& a) const {
       return equality(*this, a);

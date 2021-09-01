@@ -94,7 +94,7 @@ namespace sym {
       can be held by \ref Expr. Most actual functionality is
       implemented using the \ref VisitorInterface via \ref visit.
   */
-  class RTBase : public SymbolicOperator, public std::enable_shared_from_this<RTBase> {
+  class RTBase : public std::enable_shared_from_this<RTBase> {
   public:
     inline RTBase(int idx): _type_idx(idx) {}
     
@@ -128,7 +128,7 @@ namespace sym {
     formula strings) into runtime forms. It also inherits from
     SymbolicOperator and can be used in compile-time expressions.
   */
-  struct Expr : public shared_ptr<const RTBase>, public SymbolicOperator {
+  struct Expr : public shared_ptr<const RTBase>, public SymbolicOperator<Expr> {
     typedef shared_ptr<const RTBase> Base;
 
     inline Expr() {}
@@ -162,8 +162,6 @@ namespace sym {
 
     explicit Expr(const ArrayRT&);
     explicit Expr(const Dict&);
-
-    Expr operator[](const Expr& rhs) const;
 
     /*! \brief Expression comparison operator.
       
@@ -306,7 +304,7 @@ namespace sym {
     common boilerplate code for runtime symbolic types.
   */
   template<class Derived>
-  class RTBaseHelper : public RTBase {
+  class RTBaseHelper : public RTBase, public SymbolicOperator<Derived> {
   public:
     RTBaseHelper(): RTBase(detail::Type_index<Derived>::value) {}
         
@@ -411,11 +409,6 @@ namespace sym {
     return ptr->get();
   }
 
-  Expr Expr::operator[](const Expr& rhs) const
-  {
-      return store(ArrayOp<decltype(store(*this)), decltype(store(rhs))>::create(*this, rhs));
-  }
-
   namespace detail {
     template<typename Visitor, typename LHS_t, typename Op>
     struct DoubleDispatch2: public VisitorHelper<DoubleDispatch2<Visitor, LHS_t, Op> > {
@@ -502,19 +495,20 @@ namespace sym {
       
       template<class T1, class T2, class Op>
       Expr dd_visit(const T1& l, const T2& r, Op) {
-	if (IsSymbolic<decltype(store(Op::apply(l, r)))>::value)
-	  return Expr();
-	return Expr(store(Op::apply(l, r)));
+	      if (IsSymbolic<decltype(store(Op::apply(l, r)))>::value)
+	        return Expr();
+	      return Expr(store(Op::apply(l, r)));
       }
 
-      template<class Op>
-      Expr dd_visit(const Dict& l, const Dict& r, Op) {
-	return Expr(simplify(Op::apply(l, r)));
+      template<class T1, class T2>
+      Expr dd_visit(const T1& l, const T2& r, detail::ArrayAccess) {
+        stator_throw() << "No valid array operation here!";
       }
 
-      template<class Op>
-      Expr dd_visit(const ArrayRT& l, const ArrayRT& r, Op) {
-	return Expr(simplify(Op::apply(l, r)));
+      Expr dd_visit(const ArrayRT& l, const double& r, detail::ArrayAccess) {
+	      if (IsSymbolic<decltype(store(detail::ArrayAccess::apply(l, r)))>::value)
+	        return Expr();
+	      return Expr(store(detail::ArrayAccess::apply(l, r)));
       }
       
       //Direct evaluation of doubles

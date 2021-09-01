@@ -23,7 +23,7 @@ namespace sym {
   /*! \brief Symbolic representation of a binary symbolic operation. 
    */
   template<class LHS, typename Op, class RHS>
-  struct BinaryOp: SymbolicOperator {
+  struct BinaryOp: SymbolicOperator<BinaryOp<LHS, Op, RHS>> {
   protected:
     BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
   public:
@@ -191,7 +191,7 @@ namespace sym {
       typedef NoIdentity right_zero;
       typedef NoIdentity left_zero;
       template<class L, class R>
-      static auto apply(const L& l, const R& r) {
+      static auto apply(const L& l, const R& r) -> decltype(store(l[r])) {
         return l[r];
       }
       static constexpr int type_index = 14;
@@ -266,6 +266,12 @@ namespace sym {
   auto pow(const LHS& l, const RHS& r) {
     return store(PowerOp<decltype(store(l)), decltype(store(r))>::create(l, r));
   }
+
+ template<class Derived>
+ template<class RHS> 
+ auto SymbolicOperator<Derived>::operator[](const RHS & rhs) const {
+  return store(ArrayOp<decltype(store(static_cast<const Derived&>(*this))), decltype(store(rhs))>::create(static_cast<const Derived&>(*this), rhs));
+ }
 
   template<class LHS, class RHS,
 	   typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value), bool>::type = true>

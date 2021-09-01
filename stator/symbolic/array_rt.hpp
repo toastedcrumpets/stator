@@ -25,14 +25,23 @@
 namespace sym {
   template<>
   class Array<Expr, LinearAddressing<-1u>> : public RTBaseHelper<ArrayRT>, public Addressing<Expr, LinearAddressing<-1u>>  {
+    private:
     typedef Addressing<Expr, LinearAddressing<-1u>> Base;
     
-    using Base::Base;
+    Array(): Base(0) {}
+
+    Array(const Base::Coords d):Base(d) {}
+
+    Array(const std::initializer_list<Expr>& vals): Base(vals) {}
+
     typedef std::shared_ptr<Array> ArrayPtr;
   public:
-    template<typename ...Args>
-    static auto create(Args&&... args) {
-      return ArrayPtr(new Array(args...));
+    static auto create(Base::Coords d = 0) {
+      return ArrayPtr(new Array(d));
+    }
+
+    static auto create(const std::initializer_list<Expr>& vals) {
+      return ArrayPtr(new Array(vals));
     }
 
     //We need to force the use of the Addressing operator[], not the RTBaseHelper::operator[]

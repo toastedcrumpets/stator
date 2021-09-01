@@ -72,9 +72,9 @@ namespace sym {
 
     Addressing(const Coords d) { resize(d); }
 
-    Addressing(std::initializer_list<T> vals)
+    Addressing(const std::initializer_list<T>& vals)
     {
-      Base::_store = Base::Store(vals);
+      Base::_store = typename Base::Store(vals);
       _dimension = Base::_store.size();
     }
 

@@ -293,7 +293,7 @@ namespace sym {
       ComparisonVisitor(const LHS& l): _l(l) {}
       
       template<class RHS> bool apply(const RHS& r) {
-	return _l == r;
+	      return _l == r;
       }
 
       const LHS& _l;

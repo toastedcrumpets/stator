@@ -46,6 +46,16 @@ namespace sym {
 
     //We need to force the use of the Addressing operator[], not the RTBaseHelper::operator[]
     using Base::operator[];
+
+   template<class... Args>
+   bool operator==(const Array<Args...>& o) const {
+     //Shortcut comparison before proceeding with item by item
+      return (this == &o) || (Base::_store == o._store);
+    }
+
+   template<class RHS> bool operator==(const RHS& r) const {
+     return false;
+   }
   };
   
   namespace detail {

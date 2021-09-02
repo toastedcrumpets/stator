@@ -149,23 +149,24 @@ UNIT_TEST(symbolic_array_runtime) {
   }
   
   sym::Expr B = simplify(A + A);
-  UNIT_TEST_CHECK_EQUAL(B.as<sym::ArrayRT>()[0].as<double>(), 2 * 1);
-  UNIT_TEST_CHECK_EQUAL(B.as<sym::ArrayRT>()[1].as<double>(), 2 * 2);
-  UNIT_TEST_CHECK_EQUAL(B.as<sym::ArrayRT>()[2].as<double>(), 2 * 3);
-  UNIT_TEST_CHECK_EQUAL(B.as<sym::ArrayRT>()[3].as<double>(), 2 * 4);
-  UNIT_TEST_CHECK_EQUAL(B.as<sym::ArrayRT>()[4].as<double>(), 2 * 5);
-  UNIT_TEST_CHECK_EQUAL(B.as<sym::ArrayRT>()[5].as<double>(), 2 * 6);
+  const sym::ArrayRT& Br = B.as<sym::ArrayRT>();
+  UNIT_TEST_CHECK_EQUAL(Br[0].as<double>(), 2 * 1);
+  UNIT_TEST_CHECK_EQUAL(Br[1].as<double>(), 2 * 2);
+  UNIT_TEST_CHECK_EQUAL(Br[2].as<double>(), 2 * 3);
+  UNIT_TEST_CHECK_EQUAL(Br[3].as<double>(), 2 * 4);
+  UNIT_TEST_CHECK_EQUAL(Br[4].as<double>(), 2 * 5);
+  UNIT_TEST_CHECK_EQUAL(Br[5].as<double>(), 2 * 6);
 
-  /*{
-    auto C_ptr = B - A;
-    auto& C = sym::detail::unwrap(C_ptr);
-    UNIT_TEST_CHECK_EQUAL(C[0], 1);
-    UNIT_TEST_CHECK_EQUAL(C[1], 2);
-    UNIT_TEST_CHECK_EQUAL(C[2], 3);
-    UNIT_TEST_CHECK_EQUAL(C[3], 4);
-    UNIT_TEST_CHECK_EQUAL(C[4], 5);
-    UNIT_TEST_CHECK_EQUAL(C[5], 6);
-  }*/
+  {
+    sym::Expr C_expr = simplify(B - A);
+    const auto& C = C_expr.as<sym::ArrayRT>();
+    UNIT_TEST_CHECK_EQUAL(C[0].as<double>(), 1);
+    UNIT_TEST_CHECK_EQUAL(C[1].as<double>(), 2);
+    UNIT_TEST_CHECK_EQUAL(C[2].as<double>(), 3);
+    UNIT_TEST_CHECK_EQUAL(C[3].as<double>(), 4);
+    UNIT_TEST_CHECK_EQUAL(C[4].as<double>(), 5);
+    UNIT_TEST_CHECK_EQUAL(C[5].as<double>(), 6);
+  }
 
   auto x_ptr = sym::VarRT::create("x");
   auto& x = *x_ptr;
@@ -180,15 +181,3 @@ UNIT_TEST(symbolic_array_runtime) {
   UNIT_TEST_CHECK_EQUAL(sym::sub(sym::ArrayRT::create({sym::Expr(1), x, y}), sym::Expr(x=2)), sym::Expr("[1,2,y]"));
   UNIT_TEST_CHECK_EQUAL(sym::simplify(sym::Expr("[1, 1, 1]")+sym::Expr("[0, 1, 2]")), sym::Expr("[1,2,3]"));
 }
-
-
-//UNIT_TEST( symbolic_list_basic )
-//{
-//  auto x_ptr = VarRT::create("x");
-//  auto& x = *x_ptr;
-//  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), Expr(x=2)), Expr("[1,2,y]"));
-//  UNIT_TEST_CHECK_EQUAL(derivative(Expr("[1, x, y]"), x), Expr("[0,1,0]"));
-//  UNIT_TEST_CHECK_EQUAL(simplify(Expr("[1, 1, 1]")+Expr("[0, 1, 2]")), Expr("[1,2,3]"));
-//  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), Expr("{x:2, y:3}")), Expr("[1,2,3]"));
-//  UNIT_TEST_CHECK_EQUAL(sub(Expr("[1, x, y]"), v), Expr("[1,2,3]"));
-//}

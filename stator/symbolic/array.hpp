@@ -302,6 +302,17 @@ namespace sym {
     typedef Addressing<T, Addressing_t> Base;
     using Base::Base;
 
+   template<class... Args>
+   bool operator==(const Array<Args...>& o) const {
+     //Shortcut comparison before proceeding with item by item
+      return (this == &o) || (Base::_store == o._store);
+    }
+
+    template<class RHS> bool operator==(const RHS& r) const {
+     return false;
+    }
+
+
     template<class ...Args>
     static auto create(Args&&...args) {
       return std::move(Array(args...));

@@ -458,6 +458,11 @@ namespace sym {
     }
     return out_ptr;
   }
+
+  template<class ...Args>
+  std::pair<int, int> BP(const Array<Args...>& v)
+  { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
+
 }
 
 namespace std

@@ -500,6 +500,16 @@ namespace sym {
 	      return Expr(store(Op::apply(l, r)));
       }
 
+      template<class Op, typename = typename std::enable_if<!std::is_same<Op, detail::ArrayAccess>::value>::type>
+      Expr dd_visit(const ArrayRT& l, const ArrayRT& r, Op) {
+        //First carry out the operation, but preserve the type information
+        auto res_ptr = Op::apply(l, r);
+        //Then apply the ArrayRT simplify to continue the simplification/computation of arguments
+        Expr res2 = simplify(*res_ptr);
+        //Then return the general expression
+	      return res2;
+      }
+
       template<class T1, class T2>
       Expr dd_visit(const T1& l, const T2& r, detail::ArrayAccess) {
         stator_throw() << "No valid array operation here!";

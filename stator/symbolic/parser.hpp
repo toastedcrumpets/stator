@@ -330,7 +330,7 @@ namespace sym {
 
       struct DictToken : public LeftOperatorBase {
 	Expr apply(ExprTokenizer& tk) const {
-	  auto a_ptr = Dict::create();
+	  auto a_ptr = DictRT::create();
 	  auto& a = *a_ptr;
 	  
 	  if (tk.next() == "}") {

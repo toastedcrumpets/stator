@@ -178,6 +178,9 @@ UNIT_TEST(symbolic_array_runtime) {
 
   UNIT_TEST_CHECK_EQUAL(sym::repr(test_array), "[1, x, y]");
   UNIT_TEST_CHECK_EQUAL(sym::repr(derivative(test_array, x)), "[0, 1, 0]");
-  UNIT_TEST_CHECK_EQUAL(sym::sub(sym::ArrayRT::create({sym::Expr(1), x, y}), sym::Expr(x=2)), sym::Expr("[1,2,y]"));
+  auto f = sym::sub(sym::ArrayRT::create({sym::Expr(1), x, y}), sym::Expr(x=2));
+  auto result = sym::Expr("[1, 2, y]");
+  f == result;
+  UNIT_TEST_CHECK_EQUAL(f, result);
   UNIT_TEST_CHECK_EQUAL(sym::simplify(sym::Expr("[1, 1, 1]")+sym::Expr("[0, 1, 2]")), sym::Expr("[1,2,3]"));
 }

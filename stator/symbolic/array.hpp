@@ -94,6 +94,11 @@ namespace sym {
       return Base::_store[d];
     }
 
+    template<class...Args>
+    bool operator==(const Addressing<Args...>& ad) const {
+      return (ad.getDimensions() == getDimensions()) && (ad._store == Base::_store);
+    }
+
     auto begin() const { return Base::_store.begin(); }
     auto begin(){ return Base::_store.begin(); }
     auto end() const { return Base::_store.end(); }
@@ -167,6 +172,11 @@ namespace sym {
     }
     auto&       operator[](const Coords& d) {
       return Base::_store[coords_to_index(d)];
+    }
+    
+    template<class...Args>
+    bool operator==(const Addressing<Args...>& ad) const {
+      return (ad.getDimensions() == getDimensions()) && (ad._store == Base::_store);
     }
     
     void resize(const Coords& d) {
@@ -301,17 +311,6 @@ namespace sym {
   public:
     typedef Addressing<T, Addressing_t> Base;
     using Base::Base;
-
-   template<class... Args>
-   bool operator==(const Array<Args...>& o) const {
-     //Shortcut comparison before proceeding with item by item
-      return (this == &o) || (Base::_store == o._store);
-    }
-
-    template<class RHS> bool operator==(const RHS& r) const {
-     return false;
-    }
-
 
     template<class ...Args>
     static auto create(Args&&...args) {

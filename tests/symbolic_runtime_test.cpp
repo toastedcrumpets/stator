@@ -219,7 +219,7 @@ UNIT_TEST( symbolic_runtime_derivative )
 
 UNIT_TEST( symbolic_dict_basic )
 {
-  auto v_ptr = Dict::create();
+  auto v_ptr = DictRT::create();
   auto& v = *v_ptr;
 
   auto x_ptr = VarRT::create("x");

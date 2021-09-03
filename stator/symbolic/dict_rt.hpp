@@ -19,66 +19,34 @@
 
 #pragma once
 
+#include <stator/symbolic/array.hpp>
+#include <stator/symbolic/runtime.hpp>
+
 namespace sym {
-  class Dict;
-  typedef std::shared_ptr<Dict> DictPtr;
-  
-  class Dict: public RTBaseHelper<Dict> {
-    typedef std::unordered_map<Expr, Expr> Store;
+  template<>
+  class Dict<Expr, Expr>: public RTBaseHelper<DictRT>, public DictBase<Expr, Expr> {
+      typedef DictBase<Expr, Expr> Base;
 
-    Dict() {}
-    Dict(const Dict& l) = default;
-  public:
-    static auto create() {
-      return DictPtr(new Dict());
-    }
-    
-    typedef Store::key_type key_type;
-    typedef Store::value_type value_type;
-    typedef Store::reference reference;
-    typedef Store::const_reference const_reference;
-    typedef typename Store::iterator iterator;
-    typedef typename Store::const_iterator const_iterator;
+      Dict() {}
 
-    iterator begin() {return _store.begin();}
-    const_iterator begin() const {return _store.begin();}
-    const_iterator cbegin() const {return _store.cbegin();}
-    iterator end() {return _store.end();}
-    const_iterator end() const {return _store.end();}
-    const_iterator cend() const {return _store.cend();}
+      public:
 
-    iterator find( const key_type& key ) { return _store.find(key); }
-    const_iterator find( const key_type& key ) const { return _store.find(key); }
+      typedef std::shared_ptr<Dict> DictPtr;
 
-    Expr& operator[](const key_type& k) { return _store[k]; }
-    Expr& at(const key_type& k) { return _store.at(k); }
-    const Expr& at(const key_type& k) const { return _store.at(k); }
+      static auto create() {
+        return DictPtr(new Dict());
+      }
 
-    Store::size_type size() const noexcept { return _store.size(); } 
-    bool empty() const noexcept { return _store.empty(); }
-
-    bool operator==(const Dict& o) const {
-      //Shortcut comparison before proceeding with item by item
-      return (this == &o) || (_store == o._store);
-    }
-
-    template<class RHS>
-    constexpr bool operator==(const RHS&) const {
-      return false;
-    }
-    
-    std::pair<iterator,bool> insert( const value_type& value ) {
-      return _store.insert(value);
-    }
-    
-    std::pair<iterator,bool> insert( value_type&& value ) {
-      return _store.insert(std::move(value));
-    }
-    
-  private:
-    Store _store;
+      using Base::operator==;
   };
 
+  typedef Dict<Expr, Expr> DictRT;
+
+  namespace detail {
+    template<> struct Type_index<DictRT> { static const int value = 16; };
+  }
+
+/*
   auto operator+(const Dict& l, const Dict& r)  {
     auto out_ptr = Dict::create();
     auto& out = *out_ptr;
@@ -185,4 +153,5 @@ namespace std
       return seed;
     }
   };
+  */
 }

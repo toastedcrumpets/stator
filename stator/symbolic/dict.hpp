@@ -29,10 +29,6 @@ namespace sym {
     DictBase() {}
     DictBase(const DictBase& l) = default;
     
-    typedef typename Store::key_type key_type;
-    typedef typename Store::value_type value_type;
-    typedef typename Store::reference reference;
-    typedef typename Store::const_reference const_reference;
     typedef typename Store::iterator iterator;
     typedef typename Store::const_iterator const_iterator;
 
@@ -43,12 +39,12 @@ namespace sym {
     const_iterator end() const {return _store.end();}
     const_iterator cend() const {return _store.cend();}
 
-    iterator find( const key_type& key ) { return _store.find(key); }
-    const_iterator find( const key_type& key ) const { return _store.find(key); }
+    iterator find( const Key& key ) { return _store.find(key); }
+    const_iterator find( const Key& key ) const { return _store.find(key); }
 
-    reference& operator[](const key_type& k) { return _store[k]; }
-    reference& at(const key_type& k) { return _store.at(k); }
-    const const_reference& at(const key_type& k) const { return _store.at(k); }
+    Value& operator[](const Key& k) { return _store[k]; }
+    Value& at(const Key& k) { return _store.at(k); }
+    const Value& at(const Key& k) const { return _store.at(k); }
 
     typename Store::size_type size() const noexcept { return _store.size(); } 
     bool empty() const noexcept { return _store.empty(); }
@@ -64,11 +60,11 @@ namespace sym {
       return false;
     }
     
-    std::pair<iterator,bool> insert( const value_type& value ) {
+    std::pair<iterator,bool> insert( const typename Store::value_type& value ) {
       return _store.insert(value);
     }
     
-    std::pair<iterator,bool> insert(value_type&& value ) {
+    std::pair<iterator,bool> insert(typename Store::value_type&& value ) {
       return _store.insert(std::move(value));
     }
     
@@ -86,4 +82,20 @@ namespace sym {
   struct Expr;
   template<> class Dict<Expr, Expr>;
   typedef Dict<Expr, Expr> DictRT;
+}
+
+namespace std
+{
+  template<class Key, class Value> struct hash<sym::Dict<Key, Value>>
+  {
+    std::size_t operator()(sym::Dict<Key, Value> const& v) const noexcept
+    {
+      std::size_t seed = 16;
+      for (const auto& item : v) {
+	stator::hash_combine(seed, std::hash<typename std::decay<decltype(item.first)>::type>{}(item.first));
+	stator::hash_combine(seed, std::hash<typename std::decay<decltype(item.second)>::type>{}(item.second));
+      }
+      return seed;
+    }
+  };
 }

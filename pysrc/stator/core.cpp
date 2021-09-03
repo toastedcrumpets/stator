@@ -22,7 +22,7 @@ struct ToPythonVisitor : public sym::detail::VisitorHelper<ToPythonVisitor, py::
     return std::move(out);
   }
 
-  py::object apply(const sym::Dict& v) {
+  py::object apply(const sym::DictRT& v) {
     py::dict out;
     for (const auto& itm : v)
       out[to_python(itm.first)] = to_python(itm.second);
@@ -43,7 +43,7 @@ py::object to_python(const sym::Expr& b) {
 }
 
 sym::Expr make_Expr(const py::dict& d) {
-  auto out_ptr = sym::Dict::create();
+  auto out_ptr = sym::DictRT::create();
   auto& out = *out_ptr;
   for (const auto& item : d) {
     sym::Expr key = py::cast<sym::Expr>(item.first);

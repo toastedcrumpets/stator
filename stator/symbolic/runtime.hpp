@@ -79,10 +79,7 @@ namespace sym {
   template<class T>  class ConstantRT;
   template<> struct Var<nullptr>;
   typedef Var<nullptr> VarRT;
-  template<> class Array<Expr, RowMajorAddressing<-1u, -1u>>;
-
-  class Dict;
-  
+ 
   namespace detail {
     template<class RetType> struct VisitorInterface;
   }
@@ -161,7 +158,7 @@ namespace sym {
     Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
 
     explicit Expr(const ArrayRT&);
-    explicit Expr(const Dict&);
+    explicit Expr(const DictRT&);
 
     /*! \brief Expression comparison operator.
       
@@ -230,7 +227,7 @@ namespace sym {
       virtual RetType visit(const BinaryOp<Expr, detail::ArrayAccess, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& ) = 0;
       virtual RetType visit(const ArrayRT& ) = 0;
-      virtual RetType visit(const Dict& ) = 0;
+      virtual RetType visit(const DictRT& ) = 0;
       virtual RetType visit(const UnaryOp<Expr, detail::Negate>& ) = 0;
     };
     
@@ -275,7 +272,7 @@ namespace sym {
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const ArrayRT& x)
       { return static_cast<Derived*>(this)->apply(x); }
-      inline virtual RetType visit(const Dict& x)
+      inline virtual RetType visit(const DictRT& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const UnaryOp<Expr, detail::Negate>& x)
       { return static_cast<Derived*>(this)->apply(x); }
@@ -388,7 +385,7 @@ namespace sym {
   inline Expr::Expr(const VarRT& v) : Base(v.shared_from_this()) {}
 
   Expr::Expr(const ArrayRT& v) : Base(v.shared_from_this()) {}
-  Expr::Expr(const Dict& v) : Base(v.shared_from_this()) {}
+  Expr::Expr(const DictRT& v) : Base(v.shared_from_this()) {}
   
   template<class T>
   const T& Expr::as() const {
@@ -451,7 +448,7 @@ namespace sym {
 	return simplify(v);
       }
 
-      Expr apply(const Dict& v) {
+      Expr apply(const DictRT& v) {
 	return simplify(v);
       }
       
@@ -658,7 +655,7 @@ namespace sym {
   
   namespace detail {
     struct SubstituteDictRT : VisitorHelper<SubstituteDictRT> {
-      SubstituteDictRT(const Dict& replacement):
+      SubstituteDictRT(const DictRT& replacement):
 	_replacement(replacement)
       {}
       
@@ -731,7 +728,7 @@ namespace sym {
 	  return Expr();
       }
       
-      const Dict&  _replacement;
+      const DictRT&  _replacement;
     };
 
   }
@@ -744,7 +741,7 @@ namespace sym {
     return (result) ?  result : f;
   }
   
-  Expr sub(const Expr& f, const Dict& rep) {
+  Expr sub(const Expr& f, const DictRT& rep) {
     detail::SubstituteDictRT visitor(rep);
     Expr result = f->visit(visitor);
     return (result) ?  result : f;
@@ -761,7 +758,7 @@ namespace sym {
 	stator_throw() << "No substitution process available for " << v << "\n Needs to be a Equality or a Dict.";
       }
 
-      Expr apply(const Dict& d) {
+      Expr apply(const DictRT& d) {
 	return sub(_f, d);
       }
 
@@ -897,7 +894,7 @@ namespace sym {
     case detail::Type_index<BinaryOp<Expr, detail::ArrayAccess, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::ArrayAccess, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Units, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Units, Expr>&>(*this));
     case detail::Type_index<ArrayRT>::value:                                return c.visit(static_cast<const ArrayRT&>(*this));
-    case detail::Type_index<Dict>::value:                                   return c.visit(static_cast<const Dict&>(*this));
+    case detail::Type_index<DictRT>::value:                                   return c.visit(static_cast<const DictRT&>(*this));
     case detail::Type_index<UnaryOp<Expr, detail::Negate>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Negate>&>(*this));
     default: stator_throw() << "Unhandled type index (" << _type_idx << ") for the visitor";
     }

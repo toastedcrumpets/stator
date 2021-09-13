@@ -34,12 +34,9 @@ namespace sym {
       return _val == o._val;
     }
 
-    template<class RHS>
+    template<class RHS, typename = typename std::enable_if<detail::IsConstant<RHS>::value>::type>
     bool operator==(const RHS& o) const {
-      if constexpr(detail::IsConstant<RHS>::value)
-	 return _val == o;
-      else
-	 return false;
+	    return _val == o;
     }
     
     const T& get() const { return _val; }

@@ -52,11 +52,6 @@ namespace sym {
       return (this == &o) || (_name == o._name);
     }
 
-    template<class RHS>
-    constexpr bool operator==(const RHS&) const {
-      return false;
-    }
-
     template<class Arg>
     auto operator=(const Arg& a) const {
       Expr lhs = Expr(*this);

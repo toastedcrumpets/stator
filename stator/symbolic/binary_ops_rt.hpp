@@ -38,11 +38,6 @@ namespace sym {
       //Shortcut comparison before proceeding with item by item
       return (this == &o) || ((_l == o._l) && (_r == o._r));
     }
-
-    template<class RHS>
-    constexpr bool operator==(const RHS&) const {
-      return false;
-    }
     
     Expr getLHS() const {
       return _l;

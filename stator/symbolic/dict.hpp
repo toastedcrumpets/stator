@@ -54,11 +54,6 @@ namespace sym {
       //Shortcut comparison before proceeding with item by item
       return (this == &o) || (_store == o._store);
     }
-
-    template<class RHS>
-    constexpr bool operator==(const RHS&) const {
-      return false;
-    }
     
     std::pair<iterator,bool> insert( const typename Store::value_type& value ) {
       return _store.insert(value);

@@ -290,12 +290,20 @@ namespace sym {
     template<class LHS>
     struct ComparisonVisitor : public sym::detail::VisitorHelper<ComparisonVisitor<LHS>, bool> {
       ComparisonVisitor(const LHS& l): _l(l) {}
-      
-      template<class RHS> bool apply(const RHS& r) {
-	      return _l == r;
-      }
 
       const LHS& _l;
+      
+      template<class RHS> auto apply(const RHS& r) {
+        return compare_impl(r, detail::select_overload{});
+      }
+
+      template<class RHS> auto compare_impl(const RHS& r, detail::choice<0>) -> decltype(_l == r) {
+        return _l == r;
+      }
+
+      template<class RHS> bool compare_impl(const RHS&, detail::choice<1>) {
+        return false;
+      }
     };
   }
   

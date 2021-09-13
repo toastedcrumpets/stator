@@ -48,11 +48,6 @@ namespace sym {
     using Base::operator[];
     using Base::operator==;
 
-    template<class RHS>
-    bool operator==(const RHS& ad) const {
-      return false;
-    }
-
     template<class...Args>
     bool operator==(const Array<Args...>& ad) const {
       return (ad.getDimensions() == getDimensions()) && (ad._store == Base::_store);

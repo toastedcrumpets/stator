@@ -3,3 +3,7 @@
 build/
 .vscode
 __pycache__
+.eggs
+.pytest_cache
+*.so
+*.egg-info

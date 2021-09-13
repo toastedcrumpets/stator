@@ -143,7 +143,10 @@ UNIT_TEST( symbolic_comparison_operator )
   UNIT_TEST_CHECK_EQUAL(Expr(2.0), Expr(2.0));
   UNIT_TEST_CHECK_EQUAL(Expr(2), Expr(2.0));
   UNIT_TEST_CHECK_EQUAL(Expr(2.0), Expr(2));
-  UNIT_TEST_CHECK_EQUAL(Expr(x), Expr(x));  
+  UNIT_TEST_CHECK_EQUAL(Expr(x), Expr(x));
+  auto x_ptr = VarRT::create("x");
+  auto x2_ptr = VarRT::create("x");
+  UNIT_TEST_CHECK_EQUAL(*x_ptr, *x2_ptr);
   UNIT_TEST_CHECK_EQUAL(Expr(Expr(x)*Expr(x)), Expr(Expr(x)*Expr(x)));  
   UNIT_TEST_CHECK_EQUAL(Expr(Expr(2.0)+Expr(1.0)), Expr(Expr(2.0)+Expr(1.0)));
   UNIT_TEST_CHECK_EQUAL(Expr(sin(x)), Expr(sin(x)));
@@ -222,14 +225,28 @@ UNIT_TEST( symbolic_dict_basic )
   auto v_ptr = DictRT::create();
   auto& v = *v_ptr;
 
-  auto x_ptr = VarRT::create("x");
-  auto y_ptr = VarRT::create("y");
-  auto& x = *x_ptr;
-  auto& y = *y_ptr;
-  v[x] = Expr(2);
-  v[y] = Expr(3);
-  UNIT_TEST_CHECK_EQUAL(sub(Expr("x"), v), Expr("2"));
-  UNIT_TEST_CHECK_EQUAL(sub(Expr("y"), v), Expr("3"));
+  {
+    auto x_ptr = VarRT::create("x");
+    auto y_ptr = VarRT::create("y");
+    auto& x = *x_ptr;
+    auto& y = *y_ptr;
+    v[x] = Expr(2);
+    v[y] = Expr(3);
+    UNIT_TEST_CHECK_EQUAL(sub(Expr("x"), v), Expr("2"));
+    UNIT_TEST_CHECK_EQUAL(sub(Expr("y"), v), Expr("3"));
+  }
+
+  {
+    auto q_ptr = DictRT::create();
+    auto& q = *q_ptr;
+    auto x_ptr = VarRT::create("x");
+    auto y_ptr = VarRT::create("y");
+    auto& x = *x_ptr;
+    auto& y = *y_ptr;
+    q[x] = Expr(2);
+    q[y] = Expr(3);
+    UNIT_TEST_CHECK_EQUAL(v, q);
+  }
 }
 
 UNIT_TEST( symbolic_sub_general )

@@ -54,7 +54,7 @@ namespace sym {
 
   template<class Derived>
   struct SymbolicOperator : public SymbolicOperatorBase {
-    template<class RHS> auto operator[](const RHS & rhs) const;
+    //template<class RHS> auto operator[](const RHS & rhs) const;
   };
 
   /*! \brief A test if a class is symbolic. 
@@ -103,6 +103,15 @@ namespace sym {
     struct Type_index {
       static_assert(sizeof(T) == -1, "Missing index for runtime type");
     };
+    template<class T>
+    auto& unwrap(std::shared_ptr<T> ptr) {
+      return *ptr;
+    }
+
+    template<class T>
+    auto& unwrap(T& ptr) {
+      return ptr;
+    }    
   }
 }
 

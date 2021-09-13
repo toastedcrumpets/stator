@@ -267,12 +267,13 @@ namespace sym {
     return store(PowerOp<decltype(store(l)), decltype(store(r))>::create(l, r));
   }
 
+/*
  template<class Derived>
  template<class RHS> 
  auto SymbolicOperator<Derived>::operator[](const RHS & rhs) const {
   return store(ArrayOp<decltype(store(static_cast<const Derived&>(*this))), decltype(store(rhs))>::create(static_cast<const Derived&>(*this), rhs));
  }
-
+*/
   template<class LHS, class RHS,
 	   typename std::enable_if<(std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value), bool>::type = true>
   auto pow(const LHS& l, const RHS& r) { return std::pow(l, r); }

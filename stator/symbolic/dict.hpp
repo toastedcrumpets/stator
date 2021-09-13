@@ -82,7 +82,32 @@ namespace sym {
   struct Expr;
   template<> class Dict<Expr, Expr>;
   typedef Dict<Expr, Expr> DictRT;
+
+  template<typename Key, typename Value>
+  auto simplify(const Dict<Key, Value>& in) {
+    auto out_ptr = Dict<decltype(store(simplify(in.begin()->first))), decltype(store(simplify(in.begin()->second)))>::create();
+    auto& out = sym::detail::unwrap(out_ptr);
+    
+    for (const auto& p : in)
+      out[p.first] = simplify(p.second);
+    return out_ptr;
+  }
+
+  template<class Config = DefaultReprConfig, typename ...Args>
+  inline std::string repr(const Dict<Args...>& f)
+  {
+    std::string out = std::string((Config::Latex_output) ? "\\left\\{" : "{");
+    const std::string end = std::string((Config::Latex_output) ? "\\right\\}" : "}");
+    if (f.empty())
+      return out+end;
+    
+    for (const auto& term : f)
+      out += repr<Config>(term.first) + ":" +  repr<Config>(term.second) + ", " ;
+    
+    return out.substr(0, out.size() - 2) + end;
+  }
 }
+
 
 namespace std
 {

@@ -176,6 +176,8 @@ namespace sym {
     
     explicit operator bool() const { return Base::operator bool(); }
 
+    template<class RHS> Expr operator[](const RHS & rhs) const;
+
     template<class T>
     Expr& operator=(const T& v) {
       Base::operator=(Expr(v));
@@ -396,6 +398,10 @@ namespace sym {
     return *ptr;
   }
 
+  template<class RHS> 
+  Expr Expr::operator[](const RHS & rhs) const {
+    return ArrayOp<Expr, Expr>::create(*this, Expr(rhs));
+  }
   
   template<>
   const double& Expr::as<double>() const {

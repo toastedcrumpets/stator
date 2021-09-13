@@ -335,19 +335,7 @@ namespace sym {
     
     return out.substr(0, out.size() - 2) + end;
   }
-
-  namespace detail {
-    template<class T>
-    auto& unwrap(std::shared_ptr<T> ptr) {
-      return *ptr;
-    }
-
-    template<class T>
-    auto& unwrap(T& ptr) {
-      return ptr;
-    }
-  }
-    
+        
   template<typename Var, typename T, typename ...Args>
   auto derivative(const Array<T, Args...>& in, const Var& x) {
     auto out_ptr = Array<decltype(store(derivative(*(in.begin()), x))), Args...>::create();

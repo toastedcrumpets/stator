@@ -306,10 +306,15 @@ namespace sym {
     }
   };
 
+  namespace detail {
+    struct ArrayBase {};
+  }
+
   template<class T, class Addressing_t = RowMajorAddressing<-1u, -1u> >
-  class Array : public Addressing<T, Addressing_t> {
+  class Array : public Addressing<T, Addressing_t>, public detail::ArrayBase {
   public:
     typedef Addressing<T, Addressing_t> Base;
+    typedef T Value;
     using Base::Base;
 
     template<class ...Args>
@@ -353,9 +358,9 @@ namespace sym {
 
   namespace detail {
     template<typename T1, typename... Args1, typename... Args2, typename F>
-    auto elementwiseop(const Array<T1, Args1...>& l, const Array<Args2...>& r, F operation) {
+    auto elementwiseopLR(const Array<T1, Args1...>& l, const Array<Args2...>& r, F operation) {
       if (l.getDimensions() != r.getDimensions())
-	stator_throw() << "Mismatched Array dimensions";
+	      stator_throw() << "Mismatched Array dimensions";
     
       auto out_ptr = Array<decltype(store(operation(*(l.begin()),*(r.begin())))), Args1...>::create();
       auto& out = detail::unwrap(out_ptr);
@@ -373,7 +378,7 @@ namespace sym {
     }
 
     template<typename T1, typename... Args1, typename Alt, typename F>
-    auto elementwiseop2(const Array<T1, Args1...>& l, const Alt& r, F operation) {
+    auto elementwiseopL(const Array<T1, Args1...>& l, const Alt& r, F operation) {
       auto out_ptr = Array<decltype(store(operation(*(l.begin()),r))), Args1...>::create();
       auto& out = detail::unwrap(out_ptr);
     
@@ -387,48 +392,76 @@ namespace sym {
       }
       return out_ptr;
     }
+
+    template<typename T1, typename... Args1, typename Alt, typename F>
+    auto elementwiseopR(const Alt& l, const Array<T1, Args1...>& r, F operation) {
+      auto out_ptr = Array<decltype(store(operation(l, *(r.begin())))), Args1...>::create();
+      auto& out = detail::unwrap(out_ptr);
+    
+      out.resize(r.getDimensions());
+    
+      auto outp = out.begin();
+      auto rp = r.begin();
+      while (outp != out.end()) {
+	*outp = operation(l, *rp);
+	++outp; ++rp;
+      }
+      return out_ptr;
+    }
+
   }
   
-  //Array and Array operations
-  template<typename T1, typename ...Args1, typename T2, typename ...Args2>
-  auto operator+(const Array<T1, Args1...>& l, const Array<T2, Args2...>& r) {
-    return detail::elementwiseop(l, r, [](const T1& l, const T2& r){ return l + r; });
+  template<typename ...Args, typename R>
+  auto operator+(const Array<Args...>& l, const R& r) {
+    if constexpr(std::is_base_of<detail::ArrayBase, R>())
+      return detail::elementwiseopLR(l, r, [](const typename Array<Args...>::Value& l, const typename R::Value& r){ return l + r; });
+    else
+      return detail::elementwiseopL(l, r, [](const typename Array<Args...>::Value& l, const R& r){ return l + r; });
   }
 
-  template<typename T1, typename ...Args1, typename T2, typename ...Args2>
-  auto operator-(const Array<T1, Args1...>& l, const Array<T2, Args2...>& r) {
-    return detail::elementwiseop(l, r, [](const T1& l, const T2& r){ return l - r; });
+   template<typename ...Args, typename L, typename std::enable_if<!std::is_base_of<detail::ArrayBase, L>::value>::type>
+  auto operator+(const L& l, const Array<Args...>& r) {
+    return detail::elementwiseopR(l, r, [](const L& l, const typename Array<Args...>::Value& r){ return l + r; });
   }
 
-  template<typename T1, typename ...Args1, typename T2, typename ...Args2>
-  auto operator*(const Array<T1, Args1...>& l, const Array<T2, Args2...>& r) {
-    return detail::elementwiseop(l, r, [](const T1& l, const T2& r){ return l * r; });
+  template<typename ...Args, typename R>
+  auto operator-(const Array<Args...>& l, const R& r) {
+    if constexpr(std::is_base_of<detail::ArrayBase, R>())
+      return detail::elementwiseopLR(l, r, [](const typename Array<Args...>::Value& l, const typename R::Value& r){ return l - r; });
+    else
+      return detail::elementwiseopL(l, r, [](const typename Array<Args...>::Value& l, const R& r){ return l - r; });
   }
 
-  template<typename T1, typename ...Args1, typename T2, typename ...Args2>
-  auto operator/(const Array<T1, Args1...>& l, const Array<T2, Args2...>& r) {
-    return detail::elementwiseop(l, r, [](const T1& l, const T2& r){ return l / r; });
+  template<typename ...Args, typename L, typename std::enable_if<!std::is_base_of<detail::ArrayBase, L>::value>::type>
+  auto operator-(const L& l, const Array<Args...>& r) {
+    return detail::elementwiseopR(l, r, [](const L& l, const typename Array<Args...>::Value& r){ return l - r; });
   }
 
-  /////////////////////////////////////////////////////////////
-  ////////////////   Constant and array operations 
-  /////////////////////////////////////////////////////////////
-  template<typename T1, typename ...Args1, typename C, typename std::enable_if<detail::IsConstant<C>::value>::type>
-  auto operator+(const Array<T1, Args1...>& l, const C& r) {
-    return detail::elementwiseop2(l, r, [](const T1& l, const C& r){ return l + r; });
-  }
-  template<typename T1, typename ...Args1, typename C, typename std::enable_if<detail::IsConstant<C>::value>::type>
-  auto operator+(const C& l, const Array<T1, Args1...>& r) {
-    return detail::elementwiseop2(r, l, [](const C& r, const T1& l){ return l + r; });
+
+  template<typename ...Args, typename R>
+  auto operator*(const Array<Args...>& l, const R& r) {
+    if constexpr(std::is_base_of<detail::ArrayBase, R>())
+      return detail::elementwiseopLR(l, r, [](const typename Array<Args...>::Value& l, const typename R::Value& r){ return l * r; });
+    else
+      return detail::elementwiseopL(l, r, [](const typename Array<Args...>::Value& l, const R& r){ return l * r; });
   }
 
-  template<typename T1, typename ...Args1, typename C, typename std::enable_if<detail::IsConstant<C>::value>::type>
-  auto operator*(const Array<T1, Args1...>& l, const C& r) {
-    return detail::elementwiseop2(l, r, [](const T1& l, const C& r){ return l * r; });
+  template<typename ...Args, typename L, typename std::enable_if<!std::is_base_of<detail::ArrayBase, L>::value>::type>
+  auto operator*(const L& l, const Array<Args...>& r) {
+    return detail::elementwiseopR(l, r, [](const L& l, const typename Array<Args...>::Value& r){ return l * r; });
   }
-  template<typename T1, typename ...Args1, typename C, typename std::enable_if<detail::IsConstant<C>::value>::type>
-  auto operator*(const C& l, const Array<T1, Args1...>& r) {
-    return detail::elementwiseop2(r, l, [](const C& r, const T1& l){ return l * r; });
+
+  template<typename ...Args, typename R>
+  auto operator/(const Array<Args...>& l, const R& r) {
+    if constexpr(std::is_base_of<detail::ArrayBase, R>())
+      return detail::elementwiseopLR(l, r, [](const typename Array<Args...>::Value& l, const typename R::Value& r){ return l / r; });
+    else
+      return detail::elementwiseopL(l, r, [](const typename Array<Args...>::Value& l, const R& r){ return l / r; });
+  }
+
+  template<typename ...Args, typename L, typename std::enable_if<!std::is_base_of<detail::ArrayBase, L>::value>::type>
+  auto operator/(const L& l, const Array<Args...>& r) {
+    return detail::elementwiseopR(l, r, [](const L& l, const typename Array<Args...>::Value& r){ return l / r; });
   }
 
   template<typename T, typename ...Args>
@@ -449,7 +482,6 @@ namespace sym {
   template<class ...Args>
   std::pair<int, int> BP(const Array<Args...>& v)
   { return std::make_pair(std::numeric_limits<int>::max(), std::numeric_limits<int>::max()); }
-
 }
 
 namespace std

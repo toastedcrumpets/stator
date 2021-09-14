@@ -130,6 +130,11 @@ namespace sym {
 
     inline Expr() {}
     inline Expr(const std::shared_ptr<RTBase>& p) : Base(p) {}
+    inline Expr(const Expr& p) : Base(p) {}
+    Expr& operator=(const Expr& v) {
+      Base::operator=(v);
+      return *this;
+    }
 
     template<class T, typename = typename std::enable_if<std::is_base_of<RTBase, T>::value>::type>
     inline Expr(const std::shared_ptr<T>& p) : Base(p) {}
@@ -157,6 +162,8 @@ namespace sym {
     inline
     Expr(const detail::NoIdentity&) { stator_throw() << "This should never be called as NoIdentity is not a usable type";}
 
+    template<class...Args> explicit Expr(const Array<Args...>&);
+    
     explicit Expr(const ArrayRT&);
     explicit Expr(const DictRT&);
 
@@ -393,6 +400,22 @@ namespace sym {
   Expr::Expr(const Var<N1>& v) : Base(VarRT::create(v)) {}
   
   inline Expr::Expr(const VarRT& v) : Base(v.shared_from_this()) {}
+
+
+  template<class...Args> 
+  Expr::Expr(const Array<Args...>& in) {
+    auto out_ptr = ArrayRT::create();
+    *this = out_ptr;
+    auto& out = *out_ptr;
+    out.resize(in.getDimensions());
+
+    auto outp = out.begin();
+    auto inp = in.begin();
+    while (outp != out.end()) {
+      *outp = *inp;
+      ++outp; ++inp;
+    }
+  }
 
   Expr::Expr(const ArrayRT& v) : Base(v.shared_from_this()) {}
   Expr::Expr(const DictRT& v) : Base(v.shared_from_this()) {}

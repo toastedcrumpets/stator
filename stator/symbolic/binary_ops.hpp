@@ -27,10 +27,11 @@ namespace sym {
   protected:
     BinaryOp(const LHS& l, const RHS& r): _l(l), _r(r) {}
   public:
+    BinaryOp() {}
     static BinaryOp create(const LHS& l, const RHS& r) { return BinaryOp(l, r); }
     
-    const LHS _l;
-    const RHS _r;
+    LHS _l;
+    RHS _r;
   };
   
   namespace detail {

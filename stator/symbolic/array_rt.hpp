@@ -24,10 +24,10 @@
 
 namespace sym {
   template<>
-  class Array<Expr, LinearAddressing<-1u>> : public RTBaseHelper<ArrayRT>, public Addressing<Expr, LinearAddressing<-1u>>  {
+  class Array<Expr, LinearAddressing<-1u>> : public RTBaseHelper<ArrayRT>, public Addressing<Expr, LinearAddressing<-1u>>, public detail::ArrayBase  {
     private:
     typedef Addressing<Expr, LinearAddressing<-1u>> Base;
-    
+
     Array(): Base(0) {}
 
     Array(const Base::Coords d):Base(d) {}
@@ -36,6 +36,8 @@ namespace sym {
 
     typedef std::shared_ptr<Array> ArrayPtr;
   public:
+    typedef Expr Value;
+    
     static auto create(Base::Coords d = 0) {
       return ArrayPtr(new Array(d));
     }

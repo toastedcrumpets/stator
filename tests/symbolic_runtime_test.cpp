@@ -191,7 +191,6 @@ UNIT_TEST( symbolic_rt_unary_ops )
   compare_expression(df, 1/x);
   UNIT_TEST_CHECK_CLOSE(simplify(sub(f, Expr(x=1.2))).as<double>(), 0.1823215567939546, 0.000000001);
 
-
   f = Expr(exp(log(x)));
   df = derivative(f, Expr(x));
 }

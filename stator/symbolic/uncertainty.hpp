@@ -21,11 +21,22 @@
 
 #include <stator/symbolic/symbolic.hpp>
 
-namespace sym {
-   template<class LHS, class RHS> auto uncertainty(const LHS& l, const RHS& r);
+namespace sym
+{
+  template <class LHS, class RHS>
+  auto uncertainty(const LHS &l, const RHS &r);
+  namespace detail
+  {
+    struct Uncertainty;
+  }
 
-   namespace detail {
-    struct Uncertainty {
+  template <class LHS, class RHS>
+  using UncertaintyOp = BinaryOp<LHS, detail::Uncertainty, RHS>;
+
+  namespace detail
+  {
+    struct Uncertainty
+    {
       static constexpr int leftBindingPower = 70;
       static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = false;
@@ -41,20 +52,24 @@ namespace sym {
       static inline std::string l_latex_repr() { return ""; }
       static inline std::string latex_repr() { return "\\pm"; }
       static inline std::string r_latex_repr() { return ""; }
-      template<class L, class R> static auto apply(const L& l, const R& r) {
-        return uncertainty(l,r);
+      template <class L, class R>
+      static auto apply(const L &l, const R &r)
+      {
+        return uncertainty(l, r);
       }
       static constexpr int type_index = 19;
     };
-  
-    template<class LHS, class RHS>
-    auto uncertainty_impl(const LHS& l, const RHS& r, last_choice) {
-      return BinaryOp<decltype(store(l)), detail::Uncertainty, decltype(store(r))>::create(l, r);
+
+    template <class LHS, class RHS>
+    auto uncertainty_impl(const LHS &l, const RHS &r, last_choice)
+    {
+      return UncertaintyOp<decltype(store(l)), decltype(store(r))>::create(l, r);
     }
   }
 
-  template<class LHS, class RHS>
-  auto uncertainty(const LHS& l, const RHS& r) {
+  template <class LHS, class RHS>
+  auto uncertainty(const LHS &l, const RHS &r)
+  {
     return detail::uncertainty_impl(l, r, detail::select_overload{});
   }
 }

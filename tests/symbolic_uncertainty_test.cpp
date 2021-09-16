@@ -24,7 +24,6 @@
 #include <stator/unit_test.hpp>
 
 UNIT_TEST( symbolic_uncertainty_static ) {
-
 }
 
 #include <stator/symbolic/runtime.hpp>

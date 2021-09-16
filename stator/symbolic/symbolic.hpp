@@ -129,6 +129,7 @@ namespace sym {
 #include <stator/symbolic/dict.hpp>
 #include <stator/symbolic/taylor.hpp>
 #include <stator/symbolic/units.hpp>
+#include <stator/symbolic/uncertainty.hpp>
 
 // If you need runtime expressions and parsing, please include
 // <stator/symbolic/runtime.hpp> instead of this file.

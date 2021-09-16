@@ -60,6 +60,7 @@ namespace sym {
       static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = true;
       static constexpr bool associative = true;
+      static constexpr bool wrapped = false;
       typedef Null left_identity;
       typedef Null right_identity;
       typedef NoIdentity left_zero;
@@ -80,6 +81,7 @@ namespace sym {
       static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
+      static constexpr bool wrapped = false;
       typedef NoIdentity left_identity;
       typedef Null right_identity;
       typedef NoIdentity left_zero;
@@ -99,6 +101,7 @@ namespace sym {
       static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = true;
       static constexpr bool associative = true;
+      static constexpr bool wrapped = false;
       typedef Unity left_identity;
       typedef Unity right_identity;
       typedef Null left_zero;
@@ -118,6 +121,7 @@ namespace sym {
       static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
+      static constexpr bool wrapped = false;
       typedef NoIdentity left_identity;
       typedef Unity right_identity;
       typedef Null left_zero;
@@ -137,6 +141,7 @@ namespace sym {
       static constexpr auto associativity = Associativity::RIGHT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
+      static constexpr bool wrapped = false;
       static inline std::string l_repr() { return ""; }
       static inline std::string repr() { return "^"; }
       static inline std::string r_repr() { return ""; }
@@ -160,6 +165,7 @@ namespace sym {
       static constexpr auto associativity = Associativity::RIGHT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
+      static constexpr bool wrapped = false;
       typedef NoIdentity left_identity;
       typedef NoIdentity right_identity;
       typedef NoIdentity left_zero;
@@ -181,6 +187,7 @@ namespace sym {
       static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
+      static constexpr bool wrapped = true;
       static inline std::string l_repr() { return ""; }
       static inline std::string repr() { return "["; }
       static inline std::string r_repr() { return "]"; }
@@ -446,7 +453,7 @@ namespace sym {
       LHS_repr = detail::paren_wrap<Config>(LHS_repr);
 
     std::string RHS_repr = repr<Config>(op._r);
-    if (this_BP.second > RHS_BP.first || Config::Force_parenthesis)
+    if (((this_BP.second > RHS_BP.first) && !Op::wrapped) || Config::Force_parenthesis)
       RHS_repr = detail::paren_wrap<Config>(RHS_repr);
 
     return (Config::Latex_output ? Op::l_latex_repr() : Op::l_repr())

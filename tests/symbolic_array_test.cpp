@@ -74,7 +74,7 @@ void test_array_impl(size_t storesize = 6) {
     UNIT_TEST_CHECK_EQUAL(B[1][2], 6);
   }
   
-/*  auto B_ptr = A + A;
+  auto B_ptr = A + A;
   auto& B = sym::detail::unwrap(B_ptr);
   UNIT_TEST_CHECK_EQUAL(B[0][0], 2 * 1);
   UNIT_TEST_CHECK_EQUAL(B[1][0], 2 * 2);
@@ -93,7 +93,6 @@ void test_array_impl(size_t storesize = 6) {
     UNIT_TEST_CHECK_EQUAL(C[0][2], 5);
     UNIT_TEST_CHECK_EQUAL(C[1][2], 6);
   }
-  */
 }
 
 

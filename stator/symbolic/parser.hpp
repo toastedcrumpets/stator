@@ -27,9 +27,11 @@
 #include <map>
 #include <sstream>
 
-namespace sym {
-  namespace detail {
-    /*! \brief Implementation of expression tokenization and parsing into Expr types.
+namespace sym
+{
+	namespace detail
+	{
+		/*! \brief Implementation of expression tokenization and parsing into Expr types.
 
       The structure of the code:
         - The splitting of the string into tokens occurs in the ExprTokenizer::consume member function. 
@@ -45,8 +47,8 @@ namespace sym {
       The algorithm is implemented over four key functions:
         1. Initialisation of all operator definitions takes place in the constructor ExprTokenizer::ExprTokenizer.
         2. Expression strings are first broken down into tokens. Tokens are substrings such as "2", "*", "sin", or "(". ExprTokenizer::next yields the current token, and the system is moved onto the next using ExprTokenizer::consume (where the actual tokenization takes place).
-	3. Parsing of "leaves" of the Abstract Syntax Tree (AST), such as variables, numbers, including functions/prefix-operators are handled via ExprTokenizer::parseToken. Functions and prefix-operators may contain sub-trees and these are parsed recursively. 
-	4. Full expression strings/trees are parsed via \ref ExprTokenizer::parseExpression. Its main purpose is to resolve binary operator precedence.
+	    3. Parsing of "leaves" of the Abstract Syntax Tree (AST), such as variables, numbers, including functions/prefix-operators are handled via ExprTokenizer::parseToken. Functions and prefix-operators may contain sub-trees and these are parsed recursively. 
+	    4. Full expression strings/trees are parsed via \ref ExprTokenizer::parseExpression. Its main purpose is to resolve binary operator precedence.
 
       The hardest part for me to understand from the work of Theodore
       Norvell was how the ExprTokenizer::parseExpression function
@@ -54,410 +56,467 @@ namespace sym {
       notes on this are available in the documentation for
       ExprTokenizer::parseExpression.
     */
-    class ExprTokenizer {
-    public:
-      ExprTokenizer(const std::string& str):
-	_str(str),
-	_start(0),
-	_end(0)
-      {
-	//This is a discussion of parsing precedence and how it works.
+		class ExprTokenizer
+		{
+		public:
+			ExprTokenizer(const std::string &str) : _str(str),
+													_start(0),
+													_end(0)
+			{
+				//This is a discussion of parsing precedence and how it works.
 
-	//Left operators are variables, numbers, functions, etc. They
-	//are potentially the left operand of a binary operation.
+				//Left operators are variables, numbers, functions, etc. They
+				//are potentially the left operand of a binary operation.
 
-	//Right operators always come after left operators, they can
-	//be binary operators like "+" or they can be other things
-	//like closing parenthesis.
+				//Right operators always come after left operators, they can
+				//be binary operators like "+" or they can be other things
+				//like closing parenthesis.
 
-	//Complex operations like the parenthetical grouping operator
-	//"()" start with a left operator "(", then finish with a
-	//right operator ")". On the other hand, array access starts
-	//with a right operator "[" as it needs to bind to something
-	//on the left and right of the "[", and it finishes with a
-	//right operator "]".
+				//Complex operations like the parenthetical grouping operator
+				//"()" start with a left operator "(", then finish with a
+				//right operator ")". On the other hand, array access starts
+				//with a right operator "[" as it needs to bind to something
+				//on the left and right of the "[", and it finishes with a
+				//right operator "]".
 
-	// Binding powers set which operator will bind to a
-	// token. Right operators have two binding powers (left and
-	// right), while left operators only have a right binding
-	// power. The way Pratt parsing works is that it climbs up the
-	// binding power in a loop, while recursing down in binding
-	// power.  Ignoring the implementation details, lets look at an example
+				// Binding powers set which operator will bind to a
+				// token. Right operators have two binding powers (left and
+				// right), while left operators only have a right binding
+				// power. The way Pratt parsing works is that it climbs up the
+				// binding power in a loop, while recursing down in binding
+				// power.  Ignoring the implementation details, lets look at an example
 
-	//Token           :  sin  x    +    2    +    3
-	//Handedness      :   L   L    R    L    R    L
-	//Binding powers  :  inf     10#11     10#11
-	//Parsed Tree     :  (((sin  x) + 2) + 3)
-	//
-	// Sin has a very high (inf) binding power, as we want it to
-	// grab whatever is to its right. Plus has a stronger right
-	// binding power than left as we want it to be left
-	// associative. To see this, we assigning tokens to the
-	// operators either side of them with the highest binding
-	// power which gives the resulting parse.
-	
-	_right_operators["="].reset(new BinaryOpToken<detail::Equality>());
-	_right_operators["+"].reset(new BinaryOpToken<detail::Add>());
-	_right_operators["-"].reset(new BinaryOpToken<detail::Subtract>());
-	_right_operators["*"].reset(new BinaryOpToken<detail::Multiply>());
-	_right_operators["/"].reset(new BinaryOpToken<detail::Divide>());
-	_right_operators["^"].reset(new BinaryOpToken<detail::Power>());
-	_right_operators["{"].reset(new WrappedBinaryOpToken<detail::Units>("}"));
+				//Token           :  sin  x    +    2    +    3
+				//Handedness      :   L   L    R    L    R    L
+				//Binding powers  :  inf     10#11     10#11
+				//Parsed Tree     :  (((sin  x) + 2) + 3)
+				//
+				// Sin has a very high (inf) binding power, as we want it to
+				// grab whatever is to its right. Plus has a stronger right
+				// binding power than left as we want it to be left
+				// associative. To see this, we assigning tokens to the
+				// operators either side of them with the highest binding
+				// power which gives the resulting parse.
 
-	//The unary operators, slightly higher binding power than addition/subtraction
-	_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower+1>());
-	_left_operators["-"].reset(new UnaryNegative<detail::Add::leftBindingPower+1>());
- 
-	_left_operators["("].reset(new ParenthesisToken);
-	//A halt token stops parseExpression processing. The right
-	//parenthesis should be handled by the previous entry.
-	_right_operators[")"].reset(new HaltToken);
+				_right_operators["="].reset(new BinaryOpToken<detail::Equality>());
+				_right_operators["+"].reset(new BinaryOpToken<detail::Add>());
+				_right_operators["-"].reset(new BinaryOpToken<detail::Subtract>());
+				_right_operators["*"].reset(new BinaryOpToken<detail::Multiply>());
+				_right_operators["/"].reset(new BinaryOpToken<detail::Divide>());
+				_right_operators["^"].reset(new BinaryOpToken<detail::Power>());
+				_right_operators["{"].reset(new BinaryOpToken<detail::Units>());
+				_right_operators["±"].reset(new BinaryOpToken<detail::Uncertainty>());
 
-	//Array construction token (i.e. [1,2, x + y])
-	_left_operators["["].reset(new ArrayToken);
+				//The unary operators, slightly higher binding power than addition/subtraction
+				_left_operators["+"].reset(new SkipToken<detail::Add::leftBindingPower + 1>());
+				_left_operators["-"].reset(new UnaryNegative<detail::Add::leftBindingPower + 1>());
 
-	//To allow commas to delimit statements/expressions i.e. in a list or dictionary.
-	_right_operators[","].reset(new HaltToken); 
-	
-	//Array access token (i.e. x[1])
-	_right_operators["["].reset(new WrappedBinaryOpToken<detail::ArrayAccess>("]"));
+				_left_operators["("].reset(new ParenthesisToken);
+				//A halt token stops parseExpression processing. The right
+				//parenthesis should be handled by the previous entry.
+				_right_operators[")"].reset(new HaltToken);
 
-	//Halt token for list access AND list construction
-	_right_operators["]"].reset(new HaltToken);
+				//Array construction token (i.e. [1,2, x + y])
+				_left_operators["["].reset(new ArrayToken);
 
-	//Dictionary construction
-	_left_operators["{"].reset(new DictToken);
-	_right_operators[":"].reset(new HaltToken); 
-	_right_operators["}"].reset(new HaltToken);
-	
-	//Most unary operators have high binding powers to grab the very next argument
-	_left_operators["sin"].reset(new UnaryOpToken<detail::Sine>());
-	_left_operators["cos"].reset(new UnaryOpToken<detail::Cosine>());
-	_left_operators["exp"].reset(new UnaryOpToken<detail::Exp>());
-	_left_operators["ln"].reset(new UnaryOpToken<detail::Log>());
-	
-	//The actual tokenisation is done in the consume() member
-	//function. The first call starts the process and clears the "end" state.
-	consume();
-      }
+				//To allow commas to delimit statements/expressions i.e. in a list or dictionary.
+				_right_operators[","].reset(new HaltToken);
 
-      std::string next() {
-	return empty() ? "" : _str.substr(_start, _end - _start);
-      }
+				//Array access token (i.e. x[1])
+				_right_operators["["].reset(new BinaryOpToken<detail::ArrayAccess>());
 
-      void expect(std::string token) {
-	if (next() != token)
-	  stator_throw() << "Expected " << ((token.empty()) ? "end of expression": ("\""+token+"\"")) << " but found " << (empty() ? "the end of expression" : next()) << "\" instead?\n" << parserLoc();
-	consume();
-      }
+				//Halt token for list access AND list construction
+				_right_operators["]"].reset(new HaltToken);
 
-      bool empty() const {
-	return _start == _str.size();
-      }
-      
-      void consume() {
-	_start = _end;
+				//Dictionary construction
+				_left_operators["{"].reset(new DictToken);
+				_right_operators[":"].reset(new HaltToken);
+				_right_operators["}"].reset(new HaltToken);
 
-	//Skip whitespace
-	while ((_str[_start] == ' ') && (_start < _str.size())) ++_start;
+				//Most unary operators have high binding powers to grab the very next argument
+				_left_operators["sin"].reset(new UnaryOpToken<detail::Sine>());
+				_left_operators["cos"].reset(new UnaryOpToken<detail::Cosine>());
+				_left_operators["exp"].reset(new UnaryOpToken<detail::Exp>());
+				_left_operators["ln"].reset(new UnaryOpToken<detail::Log>());
 
-	_end = _start;
+				//The actual tokenisation is done in the consume() member
+				//function. The first call starts the process and clears the "end" state.
+				consume();
+			}
 
-	//Check for sequence end
-	if (empty()) return;
+			std::string next()
+			{
+				return empty() ? "" : _str.substr(_start, _end - _start);
+			}
 
-	//Not at end of sequence so at least one character in symbol
-	_end = _start + 1;
+			void expect(std::string token)
+			{
+				if (next() != token)
+					stator_throw() << "Expected " << ((token.empty()) ? "end of expression" : ("\"" + token + "\"")) << " but found " << (empty() ? "the end of expression" : next()) << "\" instead?\n"
+								   << parserLoc();
+				consume();
+			}
 
-	//Parse numbers with decimal points and (possible signed)
-	//exponents. Signs at the front of numbers are parsed as unary
-	//operators.
-	if (std::isdigit(_str[_start])) {
-	  consumeFloat();
-	  return;
-	}
+			bool empty() const
+			{
+				return _start == _str.size();
+			}
 
-	//Parsing a string
-	if (std::isalpha(_str[_start])) {
-	  while ((_end < _str.size()) && std::isalpha(_str[_end]))
-	    ++_end;
-	  return;
-	}
+			void consume()
+			{
+				_start = _end;
 
-	//Allow non-alpha single character operators (longer operators are usually strings and caught above!)
-	if (_right_operators.find(_str.substr(_start, 1)) != _right_operators.end())
-	  return;
-	
-	if (_left_operators.find(_str.substr(_start, 1)) != _left_operators.end())
-	  return;
-	
-	stator_throw() << "Unrecognised token \"" << _str[_start] << "\"\n" << parserLoc();
-      }
+				//Skip whitespace
+				while ((_str[_start] == ' ') && (_start < _str.size()))
+					++_start;
 
-      void consumeFloat() {
-	bool decimal = false;
-	bool exponent = false;
-      
-	while (_end != _str.size()) {
-	  if (_str[_end] == '.') {
-	    if (!decimal && !exponent) {
-	      decimal = true;
-	      ++_end;
-	      continue;
-	    } else {
-	      stator_throw() << "Unexpected decimal point?\n" << parserLoc();
-	    }
-	  }
-	
-	  if ((_str[_end] == 'e') || (_str[_end] == 'E')) {
-	    if (!exponent) {
-	      exponent = true;
-	      decimal = true; //Don't allow decimals in the exponent
-	      ++_end;
+				_end = _start;
 
-	      if (_end == _str.size())
-		stator_throw() << "String ended during parsing of exponent\n" << parserLoc();
+				//Check for sequence end
+				if (empty())
+					return;
 
-	      //Eat the exponent sign if present
-	      if ((_str[_end] == '+') || (_str[_end] == '-'))
-		++_end;
-		
-	      if (_end == _str.size())
-		stator_throw() << "String ended during parsing of exponent\n" << parserLoc();
-		
-	      if (!std::isdigit(_str[_end]))
-		stator_throw() << "Malformed exponent?\n" << parserLoc();
-		
-	      continue;
-	    } else
-	      stator_throw() << "Double exponent?\n" << parserLoc();
-	  }
-	  
-	  if (std::isdigit(_str[_end])) {
-	    ++_end;
-	    continue;
-	  }
-	  
-	  break;
-	}
-      }
-      
-      std::string parserLoc() {
-	return _str + "\n"
-	  + std::string(_start, ' ') + std::string((_start < _end) ? _end - _start -1: 0, '-') + "^";
-      }
+				//Not at end of sequence so at least one character in symbol
+				_end = _start + 1;
 
-      struct RightOperatorBase {
-	virtual ~RightOperatorBase() {}
-	
-	/*! \brief Takes left operand and returns the corresponding
+				//Parse numbers with decimal points and (possible signed)
+				//exponents. Signs at the front of numbers are parsed as unary
+				//operators.
+				if (std::isdigit(_str[_start]))
+				{
+					consumeFloat();
+					return;
+				}
+
+				//Parsing a string, we consume the whole thing before parsing
+				if (std::isalpha(_str[_start]))
+				{
+					while ((_end < _str.size()) && std::isalpha(_str[_end]))
+						++_end;
+					return;
+				}
+
+				//Now parse non-alpha single character operators as longer operators are strings and caught above.
+				//One issue is that unicode is actually two characters, so here we look for the start byte of UTF-8 
+				//characters we want to parse. This needs extension if we want generality.
+				if ((_str[_start] == '\xc2') || (_str[_start] == '\xc3')) 
+					_end = _start + 2;
+				
+				if (_right_operators.find(_str.substr(_start, _end - _start)) != _right_operators.end())
+					return;
+
+				if (_left_operators.find(_str.substr(_start,  _end - _start)) != _left_operators.end())
+					return;
+
+				//We also allow some unicode
+
+
+
+				stator_throw() << "Unrecognised token \"" << _str.substr(_start, _end) << "\"\n"
+							   << parserLoc();
+			}
+
+			void consumeFloat()
+			{
+				bool decimal = false;
+				bool exponent = false;
+
+				while (_end != _str.size())
+				{
+					if (_str[_end] == '.')
+					{
+						if (!decimal && !exponent)
+						{
+							decimal = true;
+							++_end;
+							continue;
+						}
+						else
+						{
+							stator_throw() << "Unexpected decimal point?\n"
+										   << parserLoc();
+						}
+					}
+
+					if ((_str[_end] == 'e') || (_str[_end] == 'E'))
+					{
+						if (!exponent)
+						{
+							exponent = true;
+							decimal = true; //Don't allow decimals in the exponent
+							++_end;
+
+							if (_end == _str.size())
+								stator_throw() << "String ended during parsing of exponent\n"
+											   << parserLoc();
+
+							//Eat the exponent sign if present
+							if ((_str[_end] == '+') || (_str[_end] == '-'))
+								++_end;
+
+							if (_end == _str.size())
+								stator_throw() << "String ended during parsing of exponent\n"
+											   << parserLoc();
+
+							if (!std::isdigit(_str[_end]))
+								stator_throw() << "Malformed exponent?\n"
+											   << parserLoc();
+
+							continue;
+						}
+						else
+							stator_throw() << "Double exponent?\n"
+										   << parserLoc();
+					}
+
+					if (std::isdigit(_str[_end]))
+					{
+						++_end;
+						continue;
+					}
+
+					break;
+				}
+			}
+
+			std::string parserLoc()
+			{
+				return _str + "\n" + std::string(_start, ' ') + std::string((_start < _end) ? _end - _start - 1 : 0, '-') + "^";
+			}
+
+			struct RightOperatorBase
+			{
+				virtual ~RightOperatorBase() {}
+
+				/*! \brief Takes left operand and returns the corresponding
             Expr, fetching the right operands from the tokenizer.
 	 */
-	virtual Expr apply(Expr, ExprTokenizer&) const = 0;
-	/*! \brief Left binding power (Precedence of this operator)*/
-	virtual int LBP() const = 0;
-	/*! \brief Next binding power (highest precedence of the operator that this operator can be a left operand of)*/
-	virtual int NBP() const = 0;
-      };
+				virtual Expr apply(Expr, ExprTokenizer &) const = 0;
+				/*! \brief Left binding power (Precedence of this operator)*/
+				virtual int LBP() const = 0;
+				/*! \brief Next binding power (highest precedence of the operator that this operator can be a left operand of)*/
+				virtual int NBP() const = 0;
+			};
 
-      struct LeftOperatorBase {
-	virtual ~LeftOperatorBase() {}
-	
-	/*! \brief Takes one operand and returns the corresponding Expr.
+			struct LeftOperatorBase
+			{
+				virtual ~LeftOperatorBase() {}
+
+				/*! \brief Takes one operand and returns the corresponding Expr.
 	*/
-	virtual Expr apply(ExprTokenizer&) const = 0;
-	/*! \brief Binding power to the right arguments of the Token*/
-	virtual int BP() const = 0;
-      };
-      
-      template<class Op>
-      struct BinaryOpToken : RightOperatorBase {
-	Expr apply(Expr l, ExprTokenizer& tk) const {
-	  return Op::apply(l, tk.parseExpression(detail::RBP<Op>()));
-	}
-	    
-	int LBP() const { return Op::leftBindingPower; }
+				virtual Expr apply(ExprTokenizer &) const = 0;
+				/*! \brief Binding power to the right arguments of the Token*/
+				virtual int BP() const = 0;
+			};
 
-	int NBP() const { return detail::NBP<Op>(); }
-      };
+			template <class Op>
+			struct BinaryOpToken : RightOperatorBase
+			{
+				Expr apply(Expr l, ExprTokenizer &tk) const
+				{
+					if constexpr (!Op::wrapped)
+						return Op::apply(l, tk.parseExpression(detail::RBP<Op>()));
 
-      struct HaltToken : RightOperatorBase {
-	virtual Expr apply(Expr, ExprTokenizer&) const { stator_throw() << "Should never be called!"; }
-	//To ensure it is always treated as a separate expression, its BP is negative (nothing can claim it)
-	virtual int LBP() const { return -1; }
-	int NBP() const { stator_throw() << "Should never be called!"; }
-      };
+					//For wrapped RHS args, we bind everything till the Halt token
+					Expr retval = Op::apply(l, tk.parseExpression(0));
+					tk.expect(Op::r_repr());
+					return retval;
+				}
 
-      struct ParenthesisToken : public LeftOperatorBase {
-	Expr apply(ExprTokenizer& tk) const {
-	  Expr arg = tk.parseExpression(BP());
-	  tk.expect(")");
-	  return arg;
-	}
+				int LBP() const { return Op::leftBindingPower; }
 
-	//Parenthesis bind the whole following expression
-	int BP() const {
-	  return 0;
-	}
-      };
+				int NBP() const { return detail::NBP<Op>(); }
+			};
 
-      struct ArrayToken : public LeftOperatorBase {
-	Expr apply(ExprTokenizer& tk) const {
-	  auto a = ArrayRT::create();
+			struct HaltToken : RightOperatorBase
+			{
+				virtual Expr apply(Expr, ExprTokenizer &) const { stator_throw() << "Should never be called!"; }
+				//To ensure it is always treated as a separate expression, its BP is negative (nothing can claim it)
+				virtual int LBP() const { return -1; }
+				int NBP() const { stator_throw() << "Should never be called!"; }
+			};
 
-	  if (tk.next() == "]") {
-	    tk.consume();
-	    return a;
-	  }
-	  
-	  while (true) {
-	    auto e = tk.parseExpression(BP());
-	    a->push_back(e);
-	    if (tk.next() == "]") break;
-	    tk.expect(",");
-	  }
-	  
-	  tk.expect("]");
-	  return a;
-	}
+			struct ParenthesisToken : public LeftOperatorBase
+			{
+				Expr apply(ExprTokenizer &tk) const
+				{
+					Expr arg = tk.parseExpression(BP());
+					tk.expect(")");
+					return arg;
+				}
 
-	//Parenthesis bind the whole following expression
-	int BP() const {
-	  return 0;
-	}
-      };
+				//Parenthesis bind the whole following expression
+				int BP() const
+				{
+					return 0;
+				}
+			};
 
+			struct ArrayToken : public LeftOperatorBase
+			{
+				Expr apply(ExprTokenizer &tk) const
+				{
+					auto a = ArrayRT::create();
 
-      struct DictToken : public LeftOperatorBase {
-	Expr apply(ExprTokenizer& tk) const {
-	  auto a_ptr = DictRT::create();
-	  auto& a = *a_ptr;
-	  
-	  if (tk.next() == "}") {
-	    tk.consume();
-	    return a_ptr;
-	  }
-	  
-	  while (true) {
-	    Expr key_expr = tk.parseExpression(BP());
-	    const VarRT& key = key_expr.as<VarRT>();
-	    
-	    tk.expect(":");
-	    Expr value = tk.parseExpression(BP());
-	    a[key] = value;
-	    if (tk.next() == "}") break;
-	    tk.expect(",");
-	  }
-	  
-	  tk.expect("}");
-	  return a_ptr;
-	}
+					if (tk.next() == "]")
+					{
+						tk.consume();
+						return a;
+					}
 
-	//Parenthesis bind the whole following expression
-	int BP() const {
-	  return 0;
-	}
-      };
-      
-      template<class Op>
-      struct WrappedBinaryOpToken : RightOperatorBase {
-	WrappedBinaryOpToken(std::string end):
-	  _end(end)
-	{}
-	
-	Expr apply(Expr l, ExprTokenizer& tk) const {
-	  Expr retval = Op::apply(l, tk.parseExpression(detail::RBP<Op>()));
-	  tk.expect(_end);
-	  return retval;
-	}
-	    
-	int LBP() const { return Op::leftBindingPower; }
+					while (true)
+					{
+						auto e = tk.parseExpression(BP());
+						a->push_back(e);
+						if (tk.next() == "]")
+							break;
+						tk.expect(",");
+					}
 
-	int NBP() const { return detail::NBP<Op>(); }
+					tk.expect("]");
+					return a;
+				}
 
-	std::string _end;
-      };
+				//Parenthesis bind the whole following expression
+				int BP() const
+				{
+					return 0;
+				}
+			};
 
-      
-      template<class Op>
-      struct UnaryOpToken : LeftOperatorBase {
-	Expr apply(ExprTokenizer& tk) const {
-	  return Op::apply(tk.parseExpression(BP()));
-	}
+			struct DictToken : public LeftOperatorBase
+			{
+				Expr apply(ExprTokenizer &tk) const
+				{
+					auto a_ptr = DictRT::create();
+					auto &a = *a_ptr;
 
-	int BP() const {
-	  return Op::BP;
-	}
-      };
+					if (tk.next() == "}")
+					{
+						tk.consume();
+						return a_ptr;
+					}
 
-      template<int tBP>
-      struct SkipToken : public LeftOperatorBase {
-	Expr apply(ExprTokenizer& tk) const {
-	  return tk.parseExpression(BP());
-	}
-	
-	int BP() const {
-	  return tBP;
-	}
-      };
+					while (true)
+					{
+						Expr key_expr = tk.parseExpression(BP());
+						const VarRT &key = key_expr.as<VarRT>();
 
-      template<int tBP>
-      struct UnaryNegative : public LeftOperatorBase {
-	struct Visitor : VisitorHelper<Visitor> {
-	  template<class T> Expr apply(const T& val) {
-	    return Expr(-val);
-	  }
-	};
-	
-	Expr apply(ExprTokenizer& tk) const {
-	  Visitor v;
-	  return tk.parseExpression(BP())->visit(v);
-	}
-	
-	int BP() const {
-	  return tBP;
-	}
-      };
-      
-      std::map<std::string, shared_ptr<LeftOperatorBase> > _left_operators;
-      std::map<std::string, shared_ptr<RightOperatorBase> > _right_operators;
+						tk.expect(":");
+						Expr value = tk.parseExpression(BP());
+						a[key] = value;
+						if (tk.next() == "}")
+							break;
+						tk.expect(",");
+					}
 
-      /*!\brief Parses a single token (unary/prefix op, variable, or
+					tk.expect("}");
+					return a_ptr;
+				}
+
+				//Parenthesis bind the whole following expression
+				int BP() const
+				{
+					return 0;
+				}
+			};
+
+			template <class Op>
+			struct UnaryOpToken : LeftOperatorBase
+			{
+				Expr apply(ExprTokenizer &tk) const
+				{
+					return Op::apply(tk.parseExpression(BP()));
+				}
+
+				int BP() const
+				{
+					return Op::BP;
+				}
+			};
+
+			template <int tBP>
+			struct SkipToken : public LeftOperatorBase
+			{
+				Expr apply(ExprTokenizer &tk) const
+				{
+					return tk.parseExpression(BP());
+				}
+
+				int BP() const
+				{
+					return tBP;
+				}
+			};
+
+			template <int tBP>
+			struct UnaryNegative : public LeftOperatorBase
+			{
+				struct Visitor : VisitorHelper<Visitor>
+				{
+					template <class T>
+					Expr apply(const T &val)
+					{
+						return Expr(-val);
+					}
+				};
+
+				Expr apply(ExprTokenizer &tk) const
+				{
+					Visitor v;
+					return tk.parseExpression(BP())->visit(v);
+				}
+
+				int BP() const
+				{
+					return tBP;
+				}
+			};
+
+			std::map<std::string, shared_ptr<LeftOperatorBase>> _left_operators;
+			std::map<std::string, shared_ptr<RightOperatorBase>> _right_operators;
+
+			/*!\brief Parses a single token (unary/prefix op, variable, or
          number), where precedence issues do not arise.
        */
-      Expr parseToken() {
-	std::string token = next();
-	consume();
+			Expr parseToken()
+			{
+				std::string token = next();
+				consume();
 
-	if (token.empty())
-	  stator_throw() << "Unexpected end of expression?\n" << parserLoc();
+				if (token.empty())
+					stator_throw() << "Unexpected end of expression?\n"
+								   << parserLoc();
 
-	//Parse numbers
-	if (std::isdigit(token[0])) {
-	  std::stringstream ss;
-	  ss << token;
-	  double val;
-	  ss >> val;
-	  return Expr(val);
-	}
+				//Parse numbers
+				if (std::isdigit(token[0]))
+				{
+					std::stringstream ss;
+					ss << token;
+					double val;
+					ss >> val;
+					return Expr(val);
+				}
 
-	//Parse left operators
-	auto it = _left_operators.find(token);
-	if (it != _left_operators.end()) {
-	  return it->second->apply(*this);
-	}
+				//Parse left operators
+				auto it = _left_operators.find(token);
+				if (it != _left_operators.end())
+				{
+					return it->second->apply(*this);
+				}
 
-	//Its not a prefix operator or a number, if it is a single
-	//alpha character, then assume its a variable!
-	
-	for (const char& c : token)
-	  if (!std::isalpha(c))
-	    stator_throw() << "Could not parse \""+token+"\" as a valid token?\n" << parserLoc();
-	    
-	return VarRT::create(token);
-      }
+				//Its not a prefix operator or a number, if it is a single
+				//alpha character, then assume its a variable!
 
-      /*!\brief Main parsing entry function.
+				for (const char &c : token)
+					if (!std::isalpha(c))
+						stator_throw() << "Could not parse \"" + token + "\" as a valid token?\n"
+									   << parserLoc();
+
+				return VarRT::create(token);
+			}
+
+			/*!\brief Main parsing entry function.
 	
 	\arg minLBP The minimum binding power of an operator that this call
 	can collect. A value of zero collects all operators.
@@ -500,69 +559,72 @@ namespace sym {
 	left-associative operator).
 
        */
-      Expr parseExpression(int minLBP = 0) {
-	//Grab the first token (should be either a unary/prefix
-	//operator or a number/variable all of which may be a LHS of a
-	//multi arg operator (which are handled in this
-	//function). Unary/prefix operators are handled directly by
-	//parseToken()
-	Expr t = parseToken();
-	
-	//maxLBP is only allowed to decrease as it ensures the while
-	//loop climbs down the precedence tree (up the AST) to the
-	//root of the expression.
-	int maxLBP = std::numeric_limits<int>::max();
-	while (true) {
-	  std::string token = next();
+			Expr parseExpression(int minLBP = 0)
+			{
+				//Grab the first token (should be either a unary/prefix
+				//operator or a number/variable all of which may be a LHS of a
+				//multi arg operator (which are handled in this
+				//function). Unary/prefix operators are handled directly by
+				//parseToken()
+				Expr t = parseToken();
 
-	  //Handle the special case of end of string
-	  if (token.empty()) break;
+				//maxLBP is only allowed to decrease as it ensures the while
+				//loop climbs down the precedence tree (up the AST) to the
+				//root of the expression.
+				int maxLBP = std::numeric_limits<int>::max();
+				while (true)
+				{
+					std::string token = next();
 
-	  //Determine the type of operator found
-	  auto it = _right_operators.find(token);
+					//Handle the special case of end of string
+					if (token.empty())
+						break;
 
-	  //If there is no match, then return an error
-	  if (it == _right_operators.end())
-	    stator_throw() << "Expected right operator but got \""<< token << "\"?\n" << parserLoc();
+					//Determine the type of operator found
+					auto it = _right_operators.find(token);
 
-	  //If the operator has a lower binding power than what this
-	  //call can collect (as limited by minLBP), then return. If
-	  //an operator has already been collected and its next
-	  //binding power (stored in maxLBP) doesn't allow it to
-	  //collect this operator, then exit and allow the calling
-	  //function to handle this operator.
-	  if ((minLBP > it->second->LBP()) || (it->second->LBP() > maxLBP)) break;
-	  
-	  consume();
-	  t = it->second->apply(t, *this);
-	  maxLBP = it->second->NBP();
+					//If there is no match, then return an error
+					if (it == _right_operators.end())
+						stator_throw() << "Expected right operator but got \"" << token << "\"?\n"
+									   << parserLoc();
+
+					//If the operator has a lower binding power than what this
+					//call can collect (as limited by minLBP), then return. If
+					//an operator has already been collected and its next
+					//binding power (stored in maxLBP) doesn't allow it to
+					//collect this operator, then exit and allow the calling
+					//function to handle this operator.
+					if ((minLBP > it->second->LBP()) || (it->second->LBP() > maxLBP))
+						break;
+
+					consume();
+					t = it->second->apply(t, *this);
+					maxLBP = it->second->NBP();
+				}
+
+				return t;
+			}
+
+		private:
+			std::string _str;
+			std::size_t _start;
+			std::size_t _end;
+		};
 	}
-	
-	return t;
-      }
-      
-    private:
-    
-      std::string _str;
-      std::size_t _start;
-      std::size_t _end;
-    };
-  }
 
-  inline
-  Expr::Expr(const std::string& str)
-  {
-    auto tokenizer = detail::ExprTokenizer(str);
-    auto parsed = tokenizer.parseExpression();
-    auto simplified = simplify(parsed);
+	inline Expr::Expr(const std::string &str)
+	{
+		auto tokenizer = detail::ExprTokenizer(str);
+		auto parsed = tokenizer.parseExpression();
+		auto simplified = simplify(parsed);
 
-    *this = simplified;
+		*this = simplified;
 
-    //Check that the full string was parsed
-    if (!tokenizer.empty())
-      stator_throw() << "Parsing terminated unexpectedly early?\n" << tokenizer.parserLoc();
-  }
+		//Check that the full string was parsed
+		if (!tokenizer.empty())
+			stator_throw() << "Parsing terminated unexpectedly early?\n"
+						   << tokenizer.parserLoc();
+	}
 
-  inline
-  Expr::Expr(const char* str) : Expr(std::string(str)) {}
+	inline Expr::Expr(const char *str) : Expr(std::string(str)) {}
 }

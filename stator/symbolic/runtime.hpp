@@ -235,6 +235,7 @@ namespace sym {
       virtual RetType visit(const BinaryOp<Expr, detail::Equality, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::ArrayAccess, Expr>& ) = 0;
       virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& ) = 0;
+      virtual RetType visit(const BinaryOp<Expr, detail::Uncertainty, Expr>& ) = 0;
       virtual RetType visit(const ArrayRT& ) = 0;
       virtual RetType visit(const DictRT& ) = 0;
       virtual RetType visit(const UnaryOp<Expr, detail::Negate>& ) = 0;
@@ -278,6 +279,8 @@ namespace sym {
       inline virtual RetType visit(const BinaryOp<Expr, detail::ArrayAccess, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const BinaryOp<Expr, detail::Units, Expr>& x)
+      { return static_cast<Derived*>(this)->apply(x); }
+      inline virtual RetType visit(const BinaryOp<Expr, detail::Uncertainty, Expr>& x)
       { return static_cast<Derived*>(this)->apply(x); }
       inline virtual RetType visit(const ArrayRT& x)
       { return static_cast<Derived*>(this)->apply(x); }
@@ -897,6 +900,9 @@ namespace sym {
 
       Expr apply(const BinaryOp<Expr, detail::Units, Expr>& op)
       { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
+
+      Expr apply(const BinaryOp<Expr, detail::Uncertainty, Expr>& op)
+      { stator_throw() << "fast_sub cannot operate on this (" << repr(op) << ") expression"; }
       
       const VarRT& _var;
       double _replacement;
@@ -928,11 +934,12 @@ namespace sym {
     case detail::Type_index<BinaryOp<Expr, detail::Divide, Expr>>::value:   return c.visit(static_cast<const BinaryOp<Expr, detail::Divide, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Power, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Power, Expr>&>(*this));
     case detail::Type_index<BinaryOp<Expr, detail::Equality, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Equality, Expr>&>(*this));
-    case detail::Type_index<BinaryOp<Expr, detail::ArrayAccess, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::ArrayAccess, Expr>&>(*this));
-    case detail::Type_index<BinaryOp<Expr, detail::Units, Expr>>::value:    return c.visit(static_cast<const BinaryOp<Expr, detail::Units, Expr>&>(*this));
-    case detail::Type_index<ArrayRT>::value:                                return c.visit(static_cast<const ArrayRT&>(*this));
-    case detail::Type_index<DictRT>::value:                                   return c.visit(static_cast<const DictRT&>(*this));
-    case detail::Type_index<UnaryOp<Expr, detail::Negate>>::value:          return c.visit(static_cast<const UnaryOp<Expr, detail::Negate>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::ArrayAccess, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::ArrayAccess, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Units, Expr>>::value:       return c.visit(static_cast<const BinaryOp<Expr, detail::Units, Expr>&>(*this));
+    case detail::Type_index<BinaryOp<Expr, detail::Uncertainty, Expr>>::value: return c.visit(static_cast<const BinaryOp<Expr, detail::Uncertainty, Expr>&>(*this));
+    case detail::Type_index<ArrayRT>::value:                                   return c.visit(static_cast<const ArrayRT&>(*this));
+    case detail::Type_index<DictRT>::value:                                    return c.visit(static_cast<const DictRT&>(*this));
+    case detail::Type_index<UnaryOp<Expr, detail::Negate>>::value:             return c.visit(static_cast<const UnaryOp<Expr, detail::Negate>&>(*this));
     default: stator_throw() << "Unhandled type index (" << _type_idx << ") for the visitor";
     }
   }

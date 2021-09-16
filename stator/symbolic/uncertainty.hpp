@@ -22,39 +22,39 @@
 #include <stator/symbolic/symbolic.hpp>
 
 namespace sym {
-  template<class LHS, class RHS> auto units(const LHS& l, const RHS& r);
+   template<class LHS, class RHS> auto uncertainty(const LHS& l, const RHS& r);
 
-  namespace detail {
-    struct Units {
-      static constexpr int leftBindingPower = 60;
+   namespace detail {
+    struct Uncertainty {
+      static constexpr int leftBindingPower = 70;
       static constexpr auto associativity = Associativity::LEFT;
       static constexpr bool commutative = false;
       static constexpr bool associative = false;
-      static constexpr bool wrapped = true;
+      static constexpr bool wrapped = false;
       typedef NoIdentity left_identity;
-      typedef Unity right_identity;
-      typedef Null left_zero;
+      typedef Null right_identity;
+      typedef NoIdentity left_zero;
       typedef NoIdentity right_zero;
       static inline std::string l_repr() { return ""; }
-      static inline std::string repr() { return "{"; }
-      static inline std::string r_repr() { return "}"; }
+      static inline std::string repr() { return "±"; }
+      static inline std::string r_repr() { return ""; }
       static inline std::string l_latex_repr() { return ""; }
-      static inline std::string latex_repr() { return "\\left\\{"; }
-      static inline std::string r_latex_repr() { return "\\right\\}"; }
+      static inline std::string latex_repr() { return "\\pm"; }
+      static inline std::string r_latex_repr() { return ""; }
       template<class L, class R> static auto apply(const L& l, const R& r) {
-        return units(l, r);
+        return uncertainty(l,r);
       }
-      static constexpr int type_index = 18;
+      static constexpr int type_index = 19;
     };
-
+  
     template<class LHS, class RHS>
-    auto units_impl(const LHS& l, const RHS& r, last_choice) {
-      return BinaryOp<decltype(store(l)), detail::Units, decltype(store(r))>::create(l, r);
+    auto uncertainty_impl(const LHS& l, const RHS& r, last_choice) {
+      return BinaryOp<decltype(store(l)), detail::Uncertainty, decltype(store(r))>::create(l, r);
     }
   }
 
   template<class LHS, class RHS>
-  auto units(const LHS& l, const RHS& r) {
-    return detail::units_impl(l, r, detail::select_overload{});
+  auto uncertainty(const LHS& l, const RHS& r) {
+    return detail::uncertainty_impl(l, r, detail::select_overload{});
   }
 }

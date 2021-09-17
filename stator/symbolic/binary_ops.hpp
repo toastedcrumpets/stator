@@ -247,11 +247,16 @@ namespace sym {
     return store(AddOp<decltype(store(l)), decltype(store(r))>::create(l, r));
   }
 
+  template<class LHS, class RHS>
+    auto multiply_impl(const LHS& l, const RHS& r, detail::last_choice) {
+      return store(MultiplyOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+  }
+
   /*! \brief Symbolic multiplication operator. */
   template<class LHS, class RHS,
 	   typename = typename std::enable_if<ApplySymbolicOps<LHS, RHS>::value>::type>
   auto operator*(const LHS& l, const RHS& r) {
-    return store(MultiplyOp<decltype(store(l)), decltype(store(r))>::create(l, r));
+    return multiply_impl(l, r, detail::select_overload{});
   }
 
   /*! \brief Symbolic subtraction operator. */

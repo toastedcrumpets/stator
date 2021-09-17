@@ -437,19 +437,21 @@ namespace sym {
     return detail::elementwiseopR(l, r, [](const L& l, const typename Array<Args...>::Value& r){ return l - r; });
   }
 
+  
+    template<typename ...LArgs, typename ...RArgs>
+    auto multiply_impl(const Array<LArgs...>& l, const Array<RArgs...>& r, detail::choice<0>) {
+      return detail::elementwiseopLR(l, r, [](const typename Array<LArgs...>::Value& l, const typename Array<RArgs...>::Value& r){ return l * r; });
+    }
 
-  template<typename ...Args, typename R>
-  auto operator*(const Array<Args...>& l, const R& r) {
-    if constexpr(std::is_base_of<detail::ArrayBase, R>())
-      return detail::elementwiseopLR(l, r, [](const typename Array<Args...>::Value& l, const typename R::Value& r){ return l * r; });
-    else
-      return detail::elementwiseopL(l, r, [](const typename Array<Args...>::Value& l, const R& r){ return l * r; });
-  }
+    template<typename ...LArgs, typename RHS>
+    auto multiply_impl(const Array<LArgs...>& l, const RHS& r, detail::choice<2>) {
+        return detail::elementwiseopL(l, r, [](const typename Array<LArgs...>::Value& l, const RHS& r){ return l * r; });
+    }
 
-  template<typename ...Args, typename L, typename std::enable_if<!std::is_base_of<detail::ArrayBase, L>::value>::type>
-  auto operator*(const L& l, const Array<Args...>& r) {
-    return detail::elementwiseopR(l, r, [](const L& l, const typename Array<Args...>::Value& r){ return l * r; });
-  }
+    template<typename ...RArgs, typename LHS>
+    auto multiply_impl(const LHS& l, const Array<RArgs...>& r, detail::choice<3>) {
+      return detail::elementwiseopR(l, r, [](const LHS& l, const typename Array<RArgs...>::Value& r){ return l * r; });
+    }
 
   template<typename ...Args, typename R>
   auto operator/(const Array<Args...>& l, const R& r) {

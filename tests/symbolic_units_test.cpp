@@ -42,8 +42,8 @@ UNIT_TEST(symbolic_units_dynamic) {
     UNIT_TEST_CHECK_EQUAL(sym::repr(e), "1.2{m^2/s}");
   }
   {
-    auto e1 = sym::Expr("1{m^2/s}*2{kg}");
+    auto e1 = sym::Expr("2{m^2/s}*4{kg}");
     auto e2 = sym::simplify(e1);
-    //UNIT_TEST_CHECK_EQUAL(sym::repr(e2), "4{m^2/s*kg}");
+    UNIT_TEST_CHECK_EQUAL(sym::repr(e2), "8{m^2/s*kg}");
   }
 }

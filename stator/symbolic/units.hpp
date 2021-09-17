@@ -85,8 +85,24 @@ namespace sym
     return detail::units_impl(l, r, detail::select_overload{});
   }
 
+  /*! \brief the specialisations of units operations */
   template<class LLHS, class LRHS, class RLHS, class RRHS>
-  auto operator*(const UnitsOp<LLHS, LRHS>& l, const UnitsOp<RLHS, RRHS>& r)  {
-    return units(l._l * r._l, l._r * r._r);
+    auto multiply_impl(const UnitsOp<LLHS, LRHS>& l, const UnitsOp<RLHS, RRHS>& r, detail::choice<0>)  {
+      return units(l._l * r._l, l._r * r._r);
+    } 
+
+    template<class LLHS, class LRHS, class RHS>
+    auto multiply_impl(const UnitsOp<LLHS, LRHS>& l, const RHS& r, detail::choice<1>)  {
+      return units(l._l * r, l._r);
+    }
+
+    template<class RLHS, class RRHS, class LHS>
+    auto multiply_impl(const LHS& l, const UnitsOp<RLHS, RRHS>& r, detail::choice<1>)  {
+      return units(l * r._l, r._l);
+    }
+    
+  template<class LLHS, class LRHS, class RLHS, class RRHS>
+  auto operator/(const UnitsOp<LLHS, LRHS>& l, const UnitsOp<RLHS, RRHS>& r)  {
+    return units(l._l / r._l, l._r / r._r);
   }
 }

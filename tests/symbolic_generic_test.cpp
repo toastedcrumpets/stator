@@ -324,3 +324,13 @@ UNIT_TEST( derivative_addition )
 
   UNIT_TEST_CHECK(compare_expression(simplify(derivative(simplify(C<2>() * x * x + x), x)), C<4>() * x + C<1>()));
 }
+
+UNIT_TEST( compile_time_expression_copying )
+{
+  Var<x_str> x;
+  //Create an expression to be overwritten
+  auto f = 2.0 * x + 1.0;
+  //Overwrite the expression
+  f = 4.125 * x + 0.5;
+  UNIT_TEST_CHECK_EQUAL(sym::repr(f), "4.125*x+0.5");
+}

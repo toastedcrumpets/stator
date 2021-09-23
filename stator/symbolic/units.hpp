@@ -65,9 +65,8 @@ namespace sym
     {
       //When all else fails, just return the binary op, storing the units for later
       return UnitsOp<decltype(store(l)), decltype(store(r))>::create(l, r);
-    }
-
-
+    }    
+ 
     /*
     template <class ULHS, class URHS, class RHS>
     auto units_impl(const UnitsOp<ULHS, URHS> &l, const RHS &r, choice<1>)
@@ -86,23 +85,27 @@ namespace sym
   }
 
   /*! \brief the specialisations of units operations */
-  template<class LLHS, class LRHS, class RLHS, class RRHS>
-    auto multiply_impl(const UnitsOp<LLHS, LRHS>& l, const UnitsOp<RLHS, RRHS>& r, detail::choice<0>)  {
-      return units(l._l * r._l, l._r * r._r);
-    } 
+  template <class LLHS, class LRHS, class RLHS, class RRHS>
+  auto multiply_impl(const UnitsOp<LLHS, LRHS> &l, const UnitsOp<RLHS, RRHS> &r, detail::choice<0>)
+  {
+    return units(l._l * r._l, l._r * r._r);
+  }
 
-    template<class LLHS, class LRHS, class RHS>
-    auto multiply_impl(const UnitsOp<LLHS, LRHS>& l, const RHS& r, detail::choice<1>)  {
-      return units(l._l * r, l._r);
-    }
+  template <class LLHS, class LRHS, class RHS>
+  auto multiply_impl(const UnitsOp<LLHS, LRHS> &l, const RHS &r, detail::choice<1>)
+  {
+    return units(l._l * r, l._r);
+  }
 
-    template<class RLHS, class RRHS, class LHS>
-    auto multiply_impl(const LHS& l, const UnitsOp<RLHS, RRHS>& r, detail::choice<1>)  {
-      return units(l * r._l, r._l);
-    }
-    
-  template<class LLHS, class LRHS, class RLHS, class RRHS>
-  auto operator/(const UnitsOp<LLHS, LRHS>& l, const UnitsOp<RLHS, RRHS>& r)  {
+  template <class RLHS, class RRHS, class LHS>
+  auto multiply_impl(const LHS &l, const UnitsOp<RLHS, RRHS> &r, detail::choice<1>)
+  {
+    return units(l * r._l, r._l);
+  }
+
+  template <class LLHS, class LRHS, class RLHS, class RRHS>
+  auto operator/(const UnitsOp<LLHS, LRHS> &l, const UnitsOp<RLHS, RRHS> &r)
+  {
     return units(l._l / r._l, l._r / r._r);
   }
 }

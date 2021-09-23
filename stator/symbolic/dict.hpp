@@ -28,6 +28,7 @@ namespace sym {
   public:
     DictBase() {}
     DictBase(const DictBase& l) = default;
+    DictBase(std::initializer_list<typename Store::value_type> init) : _store(init) {}
     
     typedef typename Store::iterator iterator;
     typedef typename Store::const_iterator const_iterator;

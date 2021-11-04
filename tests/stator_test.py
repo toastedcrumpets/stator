@@ -11,7 +11,7 @@ class Testfit(unittest.TestCase):
     def test_interface(self):
         self.assertEqual(repr(Expr("1+1")),"Expr('2')")
         self.assertEqual(repr(Expr("1=1")),"Expr('1=1')")
-        self.assertEqual(repr(Expr("x[1]")),"Expr('x[1]')")
+        #self.assertEqual(repr(Expr("x[1]")),"Expr('x[1]')")
 
     def test_list(self):
         self.assertEqual(repr(Expr("[]")),"Expr('[]')")

@@ -1288,10 +1288,10 @@ namespace sym {
 	--real_order;
 
     for (int m(real_order-1); m >= 0; --m)
-	if (std::signbit(f[m]) != std::signbit(f[real_order])) {
+	if ((f[m] != 0) && (std::signbit(f[m]) != std::signbit(f[real_order]))) {
 	  Coeff_t tempub = std::numeric_limits<Coeff_t>::infinity();
 	  for (int k(real_order); k > m; --k)
-	    if (std::signbit(f[k]) != std::signbit(f[m]))
+	    if ((f[k] != 0) && (std::signbit(f[k]) != std::signbit(f[m])))
 	      {
 		Coeff_t temp = std::pow(-(1 << times_used[k]) * f[m] / f[k], 1.0 / (k - m));
 		++times_used[k];

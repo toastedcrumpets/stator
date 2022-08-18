@@ -132,6 +132,13 @@ void compare_roots(T1 roots, T2 actual_roots, Func f, double tolerance = 0.00124
   }
 }
 
+UNIT_TEST( quartic_root_tests)
+{
+  //Equations with zeros in them are a problem for the real root solver
+  auto roots = sym::solve_real_roots(sym::Polynomial<4> {1, 0, 0, 1, 1});
+  UNIT_TEST_CHECK_EQUAL(roots.size(), 0u);
+}
+
 UNIT_TEST(poly_quadratic_roots_simple)
 {
   using namespace sym;

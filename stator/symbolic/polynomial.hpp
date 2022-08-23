@@ -1065,7 +1065,9 @@ namespace sym {
 
 	template<class Coeff_t2>
 	size_t roots(const Coeff_t2& a, const Coeff_t2& b) const {
-	  return std::abs(int(sign_changes(a)) - int(sign_changes(b)));
+    int sign_changes_a = sign_changes(a);
+    int sign_changes_b = sign_changes(b);
+	  return std::abs(sign_changes_a - sign_changes_b);
 	}
 	
 	

@@ -28,6 +28,12 @@
 # define UNIT_TEST_CHECK_SMALL(A, TOL) ASSERT_NEAR(A, 0, TOL);
 # define UNIT_TEST_ERROR(MSG) 
 
+# define DISABLED_UNIT_TEST_CHECK_EQUAL(A, B)  {}
+# define DISABLED_UNIT_TEST_CHECK(Expr)  {}
+# define DISABLED_UNIT_TEST_CHECK_CLOSE(A, B, TOL)  {}
+# define DISABLED_UNIT_TEST_CHECK_SMALL(A, TOL) {}
+# define DISABLED_UNIT_TEST_ERROR(MSG) {}
+
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

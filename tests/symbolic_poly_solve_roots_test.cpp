@@ -132,13 +132,6 @@ void compare_roots(T1 roots, T2 actual_roots, Func f, double tolerance = 0.00124
   }
 }
 
-UNIT_TEST( quartic_root_tests)
-{
-  //Equations with zeros in them are a problem for the real root solver
-  auto roots = sym::solve_real_roots(sym::Polynomial<4> {1, 0, 0, 1, 1});
-  UNIT_TEST_CHECK_EQUAL(roots.size(), 0u);
-}
-
 UNIT_TEST(poly_quadratic_roots_simple)
 {
   using namespace sym;
@@ -692,4 +685,47 @@ UNIT_TEST( generic_solve_real_roots_2 )
   std::cout.precision(20);
   //Roots are, -1+-i, 0.5*(1+-i\sqrt{11})
   //std::cout << LinBairstowSolve(Polynomial<4>{6,4,3,1,1}, 1e-14) << std::endl;
+}
+
+UNIT_TEST( quartic_root_tests)
+{
+  //Equations with zeros in them are an edge case for the bounds check in the Sturm solver
+  {
+    auto roots = sym::solve_real_roots(sym::Polynomial<4> {1, 0, 0, 1, 1});
+    UNIT_TEST_CHECK_EQUAL(roots.size(), 0u);
+  }
+
+
+  {
+    //https://www.wolframalpha.com/input?i2d=true&i=35842-x*57720%2Bx*x*59799.999999999985448084771633148-x*x*x*5.2252677024996035907674102414044e-12%2Bx*x*x*x*2.0194839173657902218540251271239e-28
+    sym::Polynomial<4> g = {
+      35842,
+      -57720,
+      59799.999999999985448084771633148,
+      -5.2252677024996035907674102414044e-12,
+      2.0194839173657902218540251271239e-28
+    };
+
+    auto roots = sym::solve_real_roots(g);
+    DISABLED_UNIT_TEST_CHECK_EQUAL(roots.size(), 0u);
+
+    //https://www.wolframalpha.com/input?i2d=true&i=14482.000000000001818989403545856-83591.999999999985448084771633148*x%2B84887.999999999970896169543266296*x*x%2Bx*x*x*1.3022974889306702395208061776649e-11%2Bx*x*x*x*8.0779356694631608874161005084957e-28
+    sym::Polynomial<4> f = {
+      14482.000000000001818989403545856,
+      -83591.999999999985448084771633148,
+      84887.999999999970896169543266296,
+      1.3022974889306702395208061776649e-11,
+      8.0779356694631608874161005084957e-28
+    };
+
+    roots = sym::solve_real_roots(f);
+    DISABLED_UNIT_TEST_CHECK_EQUAL(roots.size(), 2u);
+
+    sym::StackVector<double, 2> f_roots{
+      0.2243674923730396943773527317913,
+      0.760365332054441265251282862558
+    };
+
+    compare_roots(roots, f_roots, f);
+  }
 }

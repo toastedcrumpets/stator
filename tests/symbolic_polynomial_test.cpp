@@ -688,26 +688,26 @@ UNIT_TEST( function_poly_derivatives_special )
 // Broken in the massive refactor where I changed store(), to properly
 // implement runtime types, commit on May 11th 2021 at ~15:00
 //
-//UNIT_TEST( Poly_Vector_symbolic )
-//{
-//  using namespace sym;
-//
-//  static_assert(sym::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
-//  
-//  UNIT_TEST_CHECK(compare_expression(derivative(Vector{1,2,3}, Var<>()), Null()));
-//  UNIT_TEST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
-//  UNIT_TEST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
-//
-//  const Polynomial<1> x{0, 1};
-//
+UNIT_TEST( Poly_Vector_symbolic )
+{
+  using namespace sym;
+
+  static_assert(sym::detail::IsConstant<Vector>::value, "Vectors are not considered constant!");
+  
+  UNIT_TEST_CHECK(compare_expression(derivative(Vector{1,2,3}, Var<>()), Null()));
+  UNIT_TEST_CHECK(compare_expression(Unity() * Vector{1,2,3}, Vector{1,2,3}));
+  UNIT_TEST_CHECK(compare_expression(Vector{1,2,3} * Unity(), Vector{1,2,3}));
+
+  const Polynomial<1> x{0, 1};
+
 //  const size_t testcount = 100;
 //  const double errlvl = 1e-10;
 //
-//  Vector test1 = sub(Vector{0,1,2} * Var<>(), Var<>() = 2);
-//  UNIT_TEST_CHECK(test1[0] == 0);
-//  UNIT_TEST_CHECK(test1[1] == 2);
-//  UNIT_TEST_CHECK(test1[2] == 4);
-//
+  Vector test1 = sub(Vector{0,1,2} + Var<>(), Var<>() = Vector{2,2,2});
+  UNIT_TEST_CHECK(test1[0] == 0);
+  UNIT_TEST_CHECK(test1[1] == 2);
+  UNIT_TEST_CHECK(test1[2] == 4);
+
 //  //A tough test is to implement the Rodriugues formula symbolically.
 //  RNG.seed();
 //  for (size_t i(0); i < testcount; ++i)
@@ -727,5 +727,5 @@ UNIT_TEST( function_poly_derivatives_special )
 //    }
 //
 //  UNIT_TEST_CHECK((toArithmetic(Vector{1,2,3}) == Vector{1,2,3}));
-//}
+}
 

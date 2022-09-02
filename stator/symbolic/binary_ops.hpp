@@ -72,7 +72,7 @@ namespace sym {
       static inline std::string latex_repr() { return "+"; }
       static inline std::string r_latex_repr() { return ""; }
       //Apply has to accept by const ref, as returned objs may reference/alias the arguments, so everything needs at least the parent scope
-      template<class L, class R> static auto apply(const L& l, const R& r) { return l + r; }
+      template<class L, class R> static auto apply(const L& l, const R& r) { return store(l + r); }
       static constexpr int type_index = 8;
     };
 
@@ -92,7 +92,7 @@ namespace sym {
       static inline std::string l_latex_repr() { return ""; }
       static inline std::string latex_repr() { return "-"; }
       static inline std::string r_latex_repr() { return ""; }
-      template<class L, class R> static auto apply(const L& l, const R& r) { return l - r; }
+      template<class L, class R> static auto apply(const L& l, const R& r) { return store(l - r); }
       static constexpr int type_index = 9;
     };
 
@@ -112,7 +112,7 @@ namespace sym {
       static inline std::string l_latex_repr() { return ""; }
       static inline std::string latex_repr() { return "\\times "; }
       static inline std::string r_latex_repr() { return ""; }
-      template<class L, class R> static auto apply(const L& l, const R& r) { return l * r; }
+      template<class L, class R> static auto apply(const L& l, const R& r) { return store(l * r); }
       static constexpr int type_index = 10;
     };
 
@@ -132,7 +132,7 @@ namespace sym {
       static inline std::string l_latex_repr() { return "\\frac{"; }
       static inline std::string latex_repr() { return "}{"; }
       static inline std::string r_latex_repr() { return "}"; }
-      template<class L, class R> static auto apply(const L& l, const R& r) { return l / r; }
+      template<class L, class R> static auto apply(const L& l, const R& r) { return store(l / r); }
       static constexpr int type_index = 11;
     };
 
@@ -156,7 +156,7 @@ namespace sym {
       //the MSVSC compiler gets confused
       template<class L, class R,
 	       typename = typename std::enable_if<!std::is_base_of<Eigen::EigenBase<R>, R>::value>::type>
-      static auto apply(const L& l, const R& r) { return pow(l, r); }
+      static auto apply(const L& l, const R& r) { return store(pow(l, r)); }
       static constexpr int type_index = 12;
     };
 
@@ -177,7 +177,7 @@ namespace sym {
       static inline std::string latex_repr() { return "="; }
       static inline std::string r_latex_repr() { return ""; }
       template<class L, class R> static auto apply(const L& l, const R& r) {
-	return BinaryOp<decltype(store(l)), detail::Equality, decltype(store(r))>::create(l, r);
+	      return BinaryOp<decltype(store(l)), detail::Equality, decltype(store(r))>::create(l, r);
       }
       static constexpr int type_index = 13;
     };
@@ -199,9 +199,7 @@ namespace sym {
       typedef NoIdentity right_zero;
       typedef NoIdentity left_zero;
       template<class L, class R>
-      static auto apply(const L& l, const R& r) -> decltype(store(l[r])) {
-        return l[r];
-      }
+      static auto apply(const L& l, const R& r) { return store(l[r]); }
       static constexpr int type_index = 14;
     };
   }

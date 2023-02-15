@@ -198,7 +198,7 @@ namespace sym {
 
     virtual Expr clone() const = 0;
 
-    virtual bool operator==(const Expr o) const = 0;
+    virtual bool operator==(const Expr& o) const = 0;
 
     const int _type_idx;
 
@@ -218,10 +218,10 @@ namespace sym {
       return Expr(std::make_shared<Derived>(static_cast<const Derived&>(*this)));
     }
     
-    bool operator==(const Expr o) const {
+    bool operator==(const Expr& o) const {
       auto other = dynamic_pointer_cast<const Derived>(o);
       if (!other)
-	return false;
+	      return false;
       return *static_cast<const Derived*>(this) == *other;
     }
   };  
@@ -268,7 +268,11 @@ namespace sym {
   public:
     ConstantRT(const T& v): _val(v) {}
     
-    bool operator==(const Expr o) const;
+    bool operator==(const Expr& o) const;
+
+    bool operator==(const ConstantRT& o) const {
+      return _val == o._val;
+    }
     
     const T& get() const { return _val; }
     
@@ -306,7 +310,7 @@ namespace sym {
   }
 
   template<class T>
-  bool ConstantRT<T>::operator==(const Expr o) const {
+  bool ConstantRT<T>::operator==(const Expr& o) const {
     detail::CompareConstantsVisitor<T> visitor(_val);
     o->visit(visitor);
     return visitor._value;
